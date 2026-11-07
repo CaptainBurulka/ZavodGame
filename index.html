@@ -487,6 +487,7 @@ main{flex:1;min-height:0;position:relative}
         </div>
         <div id="askbox" class="psnag pask pframe gold ppanel" hidden>
           <div class="pask-row"><i class="picon" id="askicon"></i><p class="pdeal" id="asktxt"></p></div>
+          <div class="pbets" id="askstakes" hidden></div>
           <div class="pbtn-row"><button class="pbtn ghost" id="askno">Ні</button><button class="pbtn" id="askyes">Так</button></div>
         </div>
         <div id="snagbox" class="psnag pframe curse ppanel" hidden>
@@ -829,6 +830,21 @@ const CONFIG = {
     chance: 0.07, cooldown: 5, minCoins: 30, stakeShare: 0.08, stake: [20, 300], margin: 0.88, coef: [1.3, 8],
     types: { species: 3, heavy: 3, clean: 2, stars: 2 },
     speciesCasts: 3, heavyP: 0.3, cleanCoef: 2, starsCoef: 2.3,
+  },
+  // Заклад Водяника на твою рибалку. Пропонує раз на every закидів. Шанс рахується з виводок «середнього гравця»
+  // (реакція avgReact с) при поточних снастях, наживці й місці; коефіцієнт = margin / шанс. Виграш — монети й перла.
+  wager: {
+    every: [15, 25], stakes: [25, 50, 100], margin: 0.9, coef: [1.2, 8], pearls: 1,
+    missRate: 0.12, // скільки клювань середній гравець проґавить
+    avgReact: 0.3, sims: 120,
+    types: { species: 3, heavy: 2, clean: 2 },
+    // minLand: лише риба, яку середній гравець витягує хоча б так часто — інакше вміння перевертало б заклад у вигідний
+    species: { casts: [5, 10], minP: 0.3, maxP: 0.7, minLand: 0.65 },
+    heavy: { casts: 5, aimP: 0.4, minLand: 0.65 },
+    // «K чистих виводок за N виводок»: поспіль у середнього гравця майже не буває (лише ~12% виводок на 3 зірки)
+    clean: { need: [2, 3], casts: [2, 12], minP: 0.25, maxP: 0.6 },
+    // the clean wager reads the player's own recent form (decay per fight); the average player's odds stand in for `prior` fights
+    form: { decay: 0.97, prior: 2 },
   },
   // Екран «Поки тебе не було» — якщо гра була закрита хоча б стільки хвилин.
   away: { minutes: 30 },
@@ -2001,6 +2017,134 @@ function settleBet(S, fish, red) {
 }
 const betText = b => b.type === 'species' ? `${b.n} за ${b.casts} закиди` : b.type === 'heavy' ? `риба важча за ${String(b.kg).replace('.', ',')} кг наступним` : b.type === 'clean' ? 'наступна риба без жодної червоної зони' : 'наступна риба на 3 зірки';
 
+/* ---------- Vodianyk's wager on your fishing ---------- */
+const WG = CONFIG.wager;
+// How an average player does with this fish here: the share landed, and the share of those led clean (3 stars).
+// The same simulated hands every time for the same tackle, so the odds never wobble between two offers.
+const landCache = new Map();
+function landOdds(fish, rod, location, zone, fx) {
+  const key = [fish.n, rod, location, zone, fx.snapMul, fx.tensionMul, fx.zoneMul, fx.progressMul].join('|');
+  if (landCache.has(key)) return landCache.get(key);
+  let land = 0, clean = 0;
+  for (let i = 0; i < WG.sims; i++) {
+    const r0 = seededRng(9173 + i * 31), r = newReel(fish, rod, location, r0, fx, { zone });
+    let holding = false, t = 0, bias = 0;
+    const lag = [];
+    for (let k = 0; k < 30000; k++) {
+      const dt = 1 / 60; t += dt;
+      if (k % 30 === 0) bias = (r0() - 0.5) * 0.25;
+      const want = !(r.diveWarn || r.diving > 0 || r.jerkWarn) && r.tension < r.zoneC + bias;
+      lag.push([t + WG.avgReact, want]);
+      while (lag.length && lag[0][0] <= t) holding = lag.shift()[1];
+      let st = reelStep(r, dt, holding, r0);
+      if (st === 'snag') st = resolveSnag(r, true, r0) === 'snap' ? 'snap' : 'play';
+      if (st === 'land') { land++; if (reelStars(r) === 3) clean++; break; }
+      if (st !== 'play') break;
+    }
+  }
+  const out = { land: land / WG.sims, clean: land ? clean / land : 0 };
+  landCache.set(key, out);
+  return out;
+}
+const wagerCoef = p => Math.max(WG.coef[0], Math.min(WG.coef[1], Math.round((WG.margin / Math.max(1e-6, p)) * 10) / 10));
+// ctx: { location, bait, zone, phase, rod, fx }. Returns an offer with its true chance, or null.
+function offerWager(S, ctx, rng = Math.random) {
+  if (S.wager || S.bet || S.coins < WG.stakes[0]) return null;
+  const table = fishTable(ctx), total = table.reduce((a, e) => a + e.w, 0);
+  const hit = 1 - WG.missRate;
+  const odds = e => landOdds(e.fish, ctx.rod, ctx.location, ctx.zone, ctx.fx);
+  const type = pickWeighted(WG.types, rng);
+  if (type === 'species') {
+    const pool = table.filter(e => !e.fish.junk && !e.fish.item && odds(e).land >= WG.species.minLand).sort(() => rng() - 0.5);
+    for (const e of pool) {
+      const per = (e.w / total) * hit * odds(e).land;
+      for (let n = WG.species.casts[0]; n <= WG.species.casts[1]; n++) {
+        const p = 1 - (1 - per) ** n;
+        if (p >= WG.species.minP && p <= WG.species.maxP) return { type, n: e.fish.n, casts: n, p, coef: wagerCoef(p) };
+      }
+    }
+    return null;
+  }
+  if (type === 'heavy') {
+    const n = WG.heavy.casts;
+    // every fish counts with its true odds; hard ones are tallied apart
+    const perAt = (kg, hardOnly) => table.reduce((a, e) => {
+      if (e.fish.junk || e.fish.item) return a;
+      if (hardOnly && odds(e).land >= WG.heavy.minLand) return a;
+      const [w0, w1] = e.fish.w, over = kg <= w0 ? 1 : kg >= w1 ? 0 : (w1 - kg) / (w1 - w0);
+      return a + (e.w / total) * hit * odds(e).land * over;
+    }, 0);
+    // the round weight whose odds over n casts come nearest the aim, if hard fish make no more than a quarter of them:
+    // where a big fish decides it, skill would turn the wager
+    let best = null;
+    for (const kg of [0.5, 0.8, 1, 1.5, 2, 3, 4, 5, 7, 10, 15, 20, 30, 50, 80]) {
+      const per = perAt(kg, false);
+      if (!per || perAt(kg, true) / per > 0.25) continue;
+      const p = 1 - (1 - per) ** n;
+      if (p > 0.05 && (!best || Math.abs(p - WG.heavy.aimP) < Math.abs(best.p - WG.heavy.aimP))) best = { type, kg, casts: n, p, coef: wagerCoef(p) };
+    }
+    return best && best.p >= 0.15 && best.p <= 0.75 ? best : null;
+  }
+  // clean: of the fights that end with a fish (junk aside), the share led clean
+  let fights = 0, cleanW = 0;
+  for (const e of table) {
+    if (e.fish.junk || e.fish.item) continue;
+    const o = odds(e), w = e.w / total;
+    fights += w; cleanW += w * o.land * o.clean;
+  }
+  const base = fights ? cleanW / fights : 0, form = S.form || { f: 0, c: 0 };
+  const step = (form.c + base * WG.form.prior) / (form.f + WG.form.prior);
+  // chance of at least `need` clean ones in n fights
+  const atLeast = (n, need) => { let miss = 0, c = 1; for (let k = 0; k < need; k++) { miss += c * step ** k * (1 - step) ** (n - k); c = (c * (n - k)) / (k + 1); } return 1 - miss; };
+  for (let need = WG.clean.need[1]; need >= WG.clean.need[0]; need--) {
+    for (let n = Math.max(need, WG.clean.casts[0]); n <= WG.clean.casts[1]; n++) {
+      const p = atLeast(n, need);
+      if (p >= WG.clean.minP && p <= WG.clean.maxP) return { type: 'clean', need, casts: n, p, coef: wagerCoef(p) };
+    }
+  }
+  return null;
+}
+function acceptWager(S, offer, stake) {
+  if (!offer || S.wager || S.bet || !WG.stakes.includes(stake) || S.coins < stake) return false;
+  S.coins -= stake;
+  S.wager = { ...offer, stake, left: offer.casts || 0, got: 0 };
+  return true;
+}
+// After a cast that reached a bite. fish: the landed catch or null; fought: whether a fight happened.
+// Returns { won, coins, pearls, w } once the wager is decided.
+function settleWager(S, fish, fought) {
+  // the player's form: how often their fights end clean (junk is no fight)
+  if (fought && !(fish && (fish.junk || fish.item))) {
+    const f = S.form || (S.form = { f: 0, c: 0 });
+    f.f = f.f * WG.form.decay + 1;
+    f.c = f.c * WG.form.decay + (fish && fish.q === 3 ? 1 : 0);
+  }
+  const w = S.wager;
+  if (!w) return null;
+  let won = null;
+  if (w.type === 'species') {
+    if (fish && fish.n === w.n) won = true;
+    else if (--w.left <= 0) won = false;
+  } else if (w.type === 'heavy') {
+    if (fish && !fish.junk && fish.w > w.kg) won = true;
+    else if (--w.left <= 0) won = false;
+  } else if (fought) {
+    if (fish && (fish.junk || fish.item)) return null; // junk is no fight to judge
+    if (fish && fish.q === 3 && ++w.got >= w.need) won = true;
+    else if (--w.left <= 0) won = false;
+  }
+  if (won === null) return null;
+  S.wager = null;
+  const coins = won ? Math.round(w.stake * w.coef) : 0, pearls = won ? WG.pearls : 0;
+  S.coins += coins;
+  S.pearls = (S.pearls || 0) + pearls;
+  S.stats.wagers = (S.stats.wagers || 0) + 1;
+  if (won) S.stats.wagersWon = (S.stats.wagersWon || 0) + 1;
+  return { won, coins, pearls, w };
+}
+const wagerText = w => w.type === 'species' ? `${w.n} за ${w.casts} закидів` : w.type === 'heavy' ? `риба важча ${String(w.kg).replace('.', ',')} кг за ${w.casts} закидів` : w.casts === w.need ? `${w.need} чисті виводки поспіль` : `${w.need} чисті виводки за ${w.casts} виводок`;
+const wagerProgress = w => w.type === 'clean' ? `${w.got}/${w.need} чистих · ${w.casts - w.left}/${w.casts}` : `${w.casts - w.left}/${w.casts} закидів`;
+
 /* core/mood.js */
 // Vodianyk's mood: fed by what he is given, worn down by time, soured by insults and big wins.
 
@@ -2457,7 +2601,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 14;
+const SCHEMA_VERSION = 15;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2498,6 +2642,9 @@ const defaultState = () => ({
   event: null, // the running event: { k, casts | until, ... }
   sinceEvent: 0,
   bet: null, // grandpa Panas's bet in play
+  wager: null, // Vodianyk's wager on the fishing: { type, n|kg|need, casts, left, got, coef, stake }
+  sinceWager: 0,
+  form: { f: 0, c: 0 },
   ng: 0,
   ended: false,
   buffs: { golden: 0, curse: 0 },
@@ -2607,6 +2754,8 @@ const MIGRATIONS = {
     const back = G && typeof G.stake === 'number' ? (G.phase === 'won' ? G.pot : G.phase === 'lost' ? 0 : G.stake) : 0;
     return { ...d, v: 14, shells: null, coins: (d.coins || 0) + back };
   },
+  // v15: Vodianyk's wagers.
+  14: d => ({ ...d, v: 15, wager: null, sinceWager: 0, form: { f: 0, c: 0 } }),
 };
 
 function migrate(data) {
@@ -6740,6 +6889,7 @@ function renderHud(){
   if(S.buffs.curse>0)b.push(`<span class="pchip curse">Прокляття ×${S.buffs.curse}</span>`);
   const ev=eventOn(S);
   if(ev){const d=CONFIG.events.list[ev.k];b.push(`<span class="pchip event">${d.name}${ev.casts!=null?` · ${ev.casts}`:ev.until?` · ${Math.max(0,Math.ceil((ev.until-Date.now())/1000))} с`:''}</span>`)}
+  if(S.wager)b.push(`<span class="pchip bet">Заклад: ${S.wager.type==='species'?S.wager.n:S.wager.type==='heavy'?`>${String(S.wager.kg).replace('.',',')} кг`:'чисті'} · ${wagerProgress(S.wager)}</span>`);
   if(S.bet)b.push(`<span class="pchip bet">Парі ×${String(S.bet.coef).replace('.',',')}${S.bet.type==='species'?` · ${S.bet.left}`:''}</span>`);
   if(S.father)b.push(`<span class="pchip rare">Батько поруч${S.father.loc===S.location?'':` · ${CONFIG.locations[S.father.loc].name}`}</span>`);
   const chips=b.join('');
@@ -7133,7 +7283,7 @@ function lose(text,event){
   const red=F.reel?F.reel.red:0;
   if(F.reel){useBait();F.reel=null}
   F.father=false;save();
-  setTimeout(()=>afterCast(null,red),0);
+  setTimeout(()=>afterCast(null,red,true),0);
   say(text,'bad');if(event==='snap'){SFX.snap();MUSIC.snap()}else SFX.bad();scene.emit(event);nextNightIfDue();updateAct()
 }
 function enterSnag(){
@@ -7177,7 +7327,7 @@ function land(){
   const {fish:c,notes,isNew,rewards}=landFish(S,F.fish,Math.random,{stars,zone:F.zone,father:F.father,priceMul:eventFx(S).priceMul||1});
   // a named legend leaves its own symbol for the reels, the first time
   if(F.fish.named&&isNew){S.gifts.push(F.fish.n);setTimeout(()=>toast('Водяник чекає з подарунком: обертання з легендою'),2200)}
-  afterCast(c,red);
+  afterCast(c,red,true);
   F.cardIndex=S.net.length-1;F.reel=null;F.father=false;
   save();
   for(const r of rewards){toast(`Колекція «${CONFIG.locations[r.key].name}» повна: +${fmt(r.coins)} монет`);SFX.win()}
@@ -7331,7 +7481,13 @@ scene.onThunder=()=>setTimeout(()=>SFX.thunder(),250);
 const pendingNews=[];
 let sincePanas=0,lastChip=0;
 // After every fight or missed bite: the bet settles, an event counts down or begins. News waits until the card is closed.
-function afterCast(fish,red){
+function afterCast(fish,red,fought=false){
+  S.sinceWager=(S.sinceWager||0)+1;
+  const wr=settleWager(S,fish,fought);
+  if(wr)pendingNews.push(()=>{
+    if(wr.won){toast(`Заклад виграно: +${fmt(wr.coins)} і ${wr.pearls} перла`);say('Водяник плюється, але віддає. Слово є слово.','gold',2400);SFX.pearl();flyCoins($('#act'),4)}
+    else{toast(`Заклад програно: −${fmt(wr.w.stake)}`);say('Водяник реготить так, що вода йде брижами.','bad',2400);SFX.bad()}
+  });
   const b=settleBet(S,fish,red);
   if(b)pendingNews.push(()=>{
     if(b.won){toast(`Парі виграно: +${fmt(b.coins)}`);say('Дід Панас чухає потилицю й відраховує монети.','gold',2400);SFX.win();flyCoins($('#act'),4)}
@@ -7366,6 +7522,8 @@ function openAsk(kind){
     $('#askicon').className='picon ic-mavka';
     $('#asktxt').innerHTML=`«Віддай мені <b>${best.n}</b> — віддячу щедро. А ні, то й ні: не ображуся.»`;
     $('#askyes').textContent='Віддати';$('#askno').textContent='Ні';
+  }else if(kind==='wager'){
+    renderWagerAsk();
   }else{
     const o=ask.offer;
     $('#askicon').className='picon ic-panas';
@@ -7374,10 +7532,33 @@ function openAsk(kind){
   }
   $('#askbox').hidden=false;SFX.event();
 }
-function closeAsk(){ask.kind=null;ask.offer=null;$('#askbox').hidden=true}
+function closeAsk(){ask.kind=null;ask.offer=null;$('#askbox').hidden=true;$('#askstakes').hidden=true}
+function renderWagerAsk(){
+  const o=ask.offer;
+  $('#askicon').className='picon ic-tab-slot';
+  $('#asktxt').innerHTML=`Водяник: «Б’юсь об заклад, не вийде: <b>${wagerText(o)}</b>.» Шанс ${o.type==='clean'?'з твоєю нинішньою вправністю':'з твоїми снастями'} ~${Math.round(o.p*100)}%. Виграєш — ставка ×${String(o.coef).replace('.',',')} і перла.`;
+  $('#askstakes').innerHTML=WG.stakes.map(v=>`<button data-st="${v}" class="${ask.stake===v?'on':''}" ${S.coins<v?'disabled':''}>${v}</button>`).join('');
+  $('#askstakes').hidden=false;
+  $('#askyes').textContent=`Б’юсь · ${ask.stake} → ${fmt(Math.round(ask.stake*o.coef))}`;$('#askno').textContent='Ні';
+}
+$('#askstakes').addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b||b.disabled)return;ask.stake=+b.dataset.st;renderWagerAsk()});
+$('#askstakes').addEventListener('pointerdown',e=>e.stopPropagation());
+// Vodianyk's wager comes now and then; grandpa Panas only when no wager of any kind is running.
+function maybeWager(){
+  if(tut.on||cardOpen||F.state!=='idle'||ask.kind||S.wager||S.bet||tab!=='pond')return false;
+  if(!S.wagerNext)S.wagerNext=WG.every[0]+Math.floor(Math.random()*(WG.every[1]-WG.every[0]+1));
+  if((S.sinceWager||0)<S.wagerNext)return false;
+  const p=aimPx();if(!p)return false;
+  const ctx={location:S.location,bait:S.bait.on,zone:zoneOfPx(p),phase:S.night.phase,rod:S.lv.rod,fx:artifactFx(S)};
+  const o=offerWager(S,ctx);
+  S.sinceWager=0;S.wagerNext=0;
+  if(!o)return false;
+  ask.offer=o;ask.stake=WG.stakes.filter(v=>v<=S.coins).slice(-1)[0]>=50?50:WG.stakes[0];openAsk('wager');return true;
+}
 function maybePanas(){
   const P=CONFIG.panas;
-  if(tut.on||cardOpen||F.state!=='idle'||ask.kind||S.bet||sincePanas<P.cooldown||Math.random()>=P.chance||tab!=='pond')return;
+  if(maybeWager())return;
+  if(tut.on||cardOpen||F.state!=='idle'||ask.kind||S.bet||S.wager||sincePanas<P.cooldown||Math.random()>=P.chance||tab!=='pond')return;
   const p=aimPx();if(!p)return;
   const o=offerBet(S,{location:S.location,bait:S.bait.on,zone:zoneOfPx(p),phase:S.night.phase});
   if(!o)return;
@@ -7390,11 +7571,14 @@ $('#askyes').addEventListener('click',e=>{e.stopPropagation();
       say(`Мавка забрала ${r.fish.n} і засміялась. Тобі: ${what}.`,'gold',3600);SFX.ghost()}
   }else if(ask.kind==='panas'){
     if(acceptBet(S,ask.offer)){say('Дід плює в долоню. Парі!','gold',1800);SFX.coin()}closeAsk();
+  }else if(ask.kind==='wager'){
+    if(acceptWager(S,ask.offer,ask.stake)){say('З-під води ляснула долоня: заклад!','gold',1800);SFX.coin()}closeAsk();
   }
   save();renderHud();updateAct(true);
 });
 $('#askno').addEventListener('click',e=>{e.stopPropagation();
   if(ask.kind==='mavka'){mavkaRefuse(S);say('Мавка знизала плечима й пірнула в очерет.','',2200)}
+  else if(ask.kind==='wager')say('Водяник знизує плечима й булькає щось образливе.','',1600);
   else say('«Та й не треба», — бурчить дід.','',1600);
   closeAsk();save();renderHud();
 });
