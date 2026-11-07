@@ -104,6 +104,12 @@ main{flex:1;min-height:0;position:relative}
 .pside:disabled .picon{opacity:.45}
 .psnag{position:absolute;left:calc(var(--px)*4);right:calc(var(--px)*4);bottom:calc(var(--px)*16);z-index:2;text-align:center}
 .psnag .pdeal{margin:0}
+.pask-row{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:calc(var(--px)*3);text-align:left}
+.pchip.event{color:var(--shimmer)}
+.pchip.bet{color:var(--lamp)}
+.pbest-q{display:flex;gap:var(--px)}
+.pbest-q .picon{width:calc(var(--px)*5)!important;height:calc(var(--px)*5)!important}
+.pbest-hint{grid-column:1/-1;font-size:20px;line-height:1.05;color:var(--fog)}
 .pstars{display:flex;justify-content:center;gap:calc(var(--px)*2);min-height:calc(var(--px)*7)}
 .pstars:empty{display:none}
 .pupg.on .pupg-name{color:var(--gold)}
@@ -452,6 +458,10 @@ main{flex:1;min-height:0;position:relative}
         <div id="power" class="pmeter pframe deep" hidden>
           <span>Закид</span><div class="pbar" id="wbar"><div class="pbar-zone lit" id="wmark"></div><div class="pbar-needle" id="wneedle"></div></div>
         </div>
+        <div id="askbox" class="psnag pask pframe gold ppanel" hidden>
+          <div class="pask-row"><i class="picon" id="askicon"></i><p class="pdeal" id="asktxt"></p></div>
+          <div class="pbtn-row"><button class="pbtn ghost" id="askno">Ні</button><button class="pbtn" id="askyes">Так</button></div>
+        </div>
         <div id="snagbox" class="psnag pframe curse ppanel" hidden>
           <p class="pdeal" id="snagtxt">Зачепилась за корч!</p>
           <div class="pbtn-row"><button class="pbtn ghost" id="snagcut">Різати</button><button class="pbtn" id="snagpull">Смикнути</button></div>
@@ -684,7 +694,20 @@ const CONFIG = {
     { n: 'Стерлядь', t: 'epic', w: [1, 4], p: 150, d: 0.78, pattern: 'nervous' },
     { n: 'Місячна рибка', t: 'legend', w: [0.3, 0.9], p: 420, d: 0.93, glow: true, pattern: 'ghost' },
     { n: 'Білуга', t: 'legend', w: [40, 120], p: 520, d: 0.95, pattern: ['dive', 'jerk'] },
+    // Іменні легенди: не клюють звичайно, лише коли збіглися умови з legends. stages — бій у кілька етапів.
+    { n: 'Баба Килина', t: 'legend', named: true, w: [14, 22], p: 700, d: 0.9, pattern: 'heavy', stages: ['heavy', 'nervous', 'trick'], prog: 0.8 },
+    { n: 'Сивий Остап', t: 'legend', named: true, w: [9, 14], p: 800, d: 0.92, pattern: 'trick', stages: ['trick', 'jerk', 'trick'] },
+    { n: 'Старий Митрофан', t: 'legend', named: true, w: [90, 160], p: 1200, d: 0.95, pattern: 'dive', stages: ['heavy', 'dive', 'jerk'], prog: 0.85 },
+    { n: 'Чорна Бранка', t: 'legend', named: true, w: [150, 260], p: 1600, d: 0.97, pattern: 'ghost', stages: ['dive', 'ghost', 'jerk'], prog: 0.8 },
   ],
+  // Де й коли виходить кожна іменна легенда. phases — фази місяця, bait — наживка, zone — зона води.
+  // chance — шанс на клюванні, коли все збіглося; again — шанс, якщо її вже ловили.
+  legends: {
+    'Баба Килина': { loc: 'zavod', bait: ['moth'], zone: 'snag', phases: [3, 4, 5], chance: 0.14, again: 0.04, hint: 'Кажуть, стара коропиха бере мотиля під корчем, коли місяць повніє.' },
+    'Сивий Остап': { loc: 'ruslo', bait: ['live'], zone: 'deep', phases: [7, 0, 1], chance: 0.14, again: 0.04, hint: 'Сивий судак полює на живця в глибині, коли місяця майже не видно.' },
+    'Старий Митрофан': { loc: 'vyr', bait: ['live', 'moon'], zone: 'snag', phases: [4], anyPhaseBait: 'moon', chance: 0.12, again: 0.04, hint: 'Митрофан виходить з-під корча на живця в повню. А на місячного мотиля — будь-коли.' },
+    'Чорна Бранка': { loc: 'pleso', bait: ['moon'], zone: 'deep', phases: [0, 1, 2, 3, 4, 5, 6, 7], chance: 0.1, again: 0.03, hint: 'Про Бранку шепочуть лише одне: місячний мотиль, глибина Чорного плеса.' },
+  },
 
   // Рибне місце. tierMul множить ваги рівнів наживки, решта множить складність виводки.
   locations: {
@@ -738,6 +761,30 @@ const CONFIG = {
   // Верші: ловлять самі, по рибині раз на every хвилин, до cap риб; повна верша просто чекає.
   // Ставиш із наживкою з торби (хліб теж можна). Риба переважно дрібна й середня.
   traps: { slots: 3, cost: [0, 300, 1200], every: 50, cap: 10, tierMul: { junk: 1, common: 1.4, uncommon: 1, rare: 0.15, epic: 0, legend: 0 } },
+  // Події: з шансом chance після закиду, що дійшов до клювання, не частіше ніж раз на cooldown закидів.
+  // casts — скільки закидів триває, seconds — скільки секунд. weight — як часто випадає серед інших.
+  events: {
+    chance: 0.09, cooldown: 6,
+    list: {
+      fog: { name: 'Туман', casts: 4, weight: 1, hideBite: true, biteWindowMul: 1.5, tierMul: { rare: 1.5, epic: 1.5, legend: 1.5 }, text: 'Туман ліг на воду. Поплавка не видно: слухай, коли клюне. Зате сміливіша риба виходить.' },
+      storm: { name: 'Гроза', casts: 4, weight: 1, snapMul: 0.9, priceMul: 1.3, text: 'Гроза! Леска рветься легше, зате вся риба зараз на третину дорожча.' },
+      song: { name: 'Русалчин спів', casts: 4, weight: 0.8, hideBite: true, biteWindowMul: 1.5, fakeEvery: [1.2, 2.6], tierMul: { rare: 1.4, epic: 1.4 }, text: 'З очерету співають. Поплавок смикатиметься й без риби: справжнє клювання — зі сплеском.' },
+      cat: { name: 'Кіт на містку', seconds: 60, weight: 0.8, stealAfter: 9, needFish: true, text: 'На місток вийшов чорний кіт і дивиться на садок. Прожени його, поки не поцупив рибу!' },
+      wisps: { name: 'Вогники потерчат', casts: 3, weight: 0.7, radius: 9, tierMul: { rare: 4, epic: 4, legend: 3 }, text: 'Над водою зависли вогники. Закинь туди, де вони кружляють: там щось рідкісне.' },
+      moon: { name: 'Щедрий місяць', casts: 5, weight: 0.8, waitMul: 0.5, text: 'Місяць розщедрився: кілька закидів клює вдвічі швидше.' },
+      fair: { name: 'Ярмарок у селі', seconds: 90, weight: 0.7, marketMul: 1.5, needFish: true, text: 'У селі ярмарок! Півтори хвилини скупники платять у півтора раза більше. Продавай зараз.' },
+      mavka: { name: 'Мавка на березі', weight: 0.6, offer: true, needGoodFish: true, text: 'З верболозу визирає мавка: «Дай найкращу рибу з садка — віддячу.»' },
+      chorus: { name: 'Жаб’ячий хор', casts: 4, weight: 0.8, signalMul: 2.5, signalMax: 5, text: 'Жаби завели хор, і риба заворушилась: сигналів на воді вдвічі більше.' },
+    },
+    // Що дає мавка за рибу: одне з цього.
+    mavka: { golden: 2, moon: 3, gift: 'Місячна рибка', weights: { golden: 2, moon: 2, gift: 1 } },
+  },
+  // Дід Панас пропонує парі перед закидом. Коефіцієнт — від справжнього шансу, з margin на користь діда.
+  panas: {
+    chance: 0.07, cooldown: 5, minCoins: 30, stakeShare: 0.08, stake: [20, 300], margin: 0.88, coef: [1.3, 8],
+    types: { species: 3, heavy: 3, clean: 2, stars: 2 },
+    speciesCasts: 3, heavyP: 0.3, cleanCoef: 2, starsCoef: 2.3,
+  },
   // Екран «Поки тебе не було» — якщо гра була закрита хоча б стільки хвилин.
   away: { minutes: 30 },
   // Нагорода за всіх риб місця, один раз.
@@ -910,6 +957,10 @@ const CONFIG = {
       'Сом': { value: 0.2, centerMul: 10, desc: 'Платить лише в центрі, зате ×10' },
       'Стерлядь': { value: 0.22, skullProof: true, desc: 'Черепи її не чіпають' },
       'Білуга': { value: 0.45, desc: 'Цариця дна' },
+      'Баба Килина': { value: 0.12, coins: 15, legend: true, desc: 'Щоразу, як видно, кидає 15 монет' },
+      'Сивий Остап': { value: 0.1, copy: true, copyMul: 2, legend: true, desc: 'Платить удвічі більше за найсильнішого сусіда' },
+      'Старий Митрофан': { value: 0.3, centerMul: 4, anywhere: true, legend: true, desc: 'Платить усюди, а в центрі вчетверо' },
+      'Чорна Бранка': { value: 0.3, wild: true, skullProof: true, legend: true, desc: 'Вайлд, якого не беруть черепи' },
       'Місячна рибка': { value: 0.1, wild: true, desc: 'Замінює будь-який символ на лінії, крім черепа. У повню скарб через неї подвійний' },
     },
     sacrificeStarBonus: [0, 0, 0, 0.25], // пожертвувана риба на 3 зірки сильніша на 25%
@@ -1184,10 +1235,11 @@ const collectionDone = (S, key) => LOC[key].fish.every(n => isKnown(S, n));
 // Returns whether this species is new, plus any collection rewards it completed.
 function recordCatch(S, c) {
   const entry = S.bestiary[c.n], isNew = !entry;
-  if (isNew) S.bestiary[c.n] = { count: 1, best: c.w };
+  if (isNew) S.bestiary[c.n] = { count: 1, best: c.w, q: c.q || 0 };
   else {
     entry.count++;
     entry.best = Math.max(entry.best, c.w);
+    entry.q = Math.max(entry.q || 0, c.q || 0);
   }
   const rewards = [];
   for (const key of Object.keys(LOC)) {
@@ -1209,7 +1261,8 @@ const demandMul = (S, name) => {
   const up = d.up.find(e => e.n === name);
   return up ? up.mul : d.down && d.down.n === name ? d.down.mul : 1;
 };
-const marketMul = (S, name, extra = 0) => Math.max(MK.floor, 1 - (S.market[name] || 0) - extra) * demandMul(S, name);
+const fairMul = S => (S.event && S.event.k === 'fair' && eventOn(S) ? CONFIG.events.list.fair.marketMul : 1);
+const marketMul = (S, name, extra = 0) => Math.max(MK.floor, 1 - (S.market[name] || 0) - extra) * demandMul(S, name) * fairMul(S);
 const salePrice = (S, f) => Math.max(1, Math.round(f.price * marketMul(S, f.n)));
 
 // Every sale pushes the price down, and it is the next fish that feels it.
@@ -1226,7 +1279,7 @@ function sellFish(S, index) {
 
 // Orders the net can fill go first, at their bonus; the rest goes to the market.
 function sellAllValue(S) {
-  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, demand: S.demand, board: S.board.map(o => ({ ...o, done: true })), coins: 0, stats: { earned: 0 } };
+  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, demand: S.demand, event: S.event, board: S.board.map(o => ({ ...o, done: true })), coins: 0, stats: { earned: 0 } };
   return sellAll(T, true).coins;
 }
 
@@ -1385,7 +1438,7 @@ function tierWeights(baitLv, moonBait) {
 const baitDef = key => FC.baits[key] || FC.baits.bread;
 
 // Chances of every species at one spot: place, moon, bait, zone of the water and a signal the float landed on.
-function fishTable({ location = 'zavod', phase = null, bait = 'bread', zone = null, signal = null, fx = NO_FX } = {}) {
+function fishTable({ location = 'zavod', phase = null, bait = 'bread', zone = null, signal = null, fx = NO_FX, tierMul = null } = {}) {
   const loc = CONFIG.locations[location], F = CONFIG.night.full, B = baitDef(bait);
   const names = new Set(loc.fish);
   if (phase === F.phase) F.guests.forEach(n => names.add(n));
@@ -1395,7 +1448,7 @@ function fishTable({ location = 'zavod', phase = null, bait = 'bread', zone = nu
   const base = tierWeights(B.lv, !!B.moon), Z = zone && FC.zones[zone], sig = signal && FC.signals.types[signal];
   const list = [];
   for (const t in byTier) {
-    let w = base[t] * (loc.tierMul[t] ?? 1) * ((B.tierMul && B.tierMul[t]) ?? 1) * ((Z && Z.tierMul[t]) ?? 1);
+    let w = base[t] * (loc.tierMul[t] ?? 1) * ((B.tierMul && B.tierMul[t]) ?? 1) * ((Z && Z.tierMul[t]) ?? 1) * ((tierMul && tierMul[t]) ?? 1);
     if (t === 'legend') {
       if (phase === F.phase) w += F.legendWeight;
       w *= fx.legendMul;
@@ -1507,7 +1560,9 @@ function landFish(S, fish, rng = Math.random, extra = {}) {
   const notes = [];
   const fatherK = extra.father ? rangeRnd(rng, FC.release.fatherW[0], FC.release.fatherW[1]) : 0;
   const q = extra.father ? 1 : rng();
-  let price = fish.p * (FC.price.min + FC.price.range * q) * (fatherK || 1) * artifactFx(S).priceMul;
+  let price = fish.p * (FC.price.min + FC.price.range * q) * (fatherK || 1) * artifactFx(S).priceMul * (extra.priceMul || 1);
+  if (extra.priceMul > 1) notes.push('storm');
+  if (fish.named) notes.push('named');
   const stars = fish.junk ? 0 : extra.stars || 0;
   if (stars) price *= FC.quality.priceMul[stars - 1];
   if (stars === 3) notes.push('clean');
@@ -1549,7 +1604,7 @@ const mergePatterns = p => Object.assign({}, ...[].concat(p).map(k => FC.reel.pa
 
 // opts: { zone, snag (roll the snag), father }
 function newReel(fish, rodLv, locationKey = 'zavod', rng = Math.random, fx = NO_FX, opts = {}) {
-  const R = FC.reel, P = mergePatterns(fish.pattern), Z = opts.zone && FC.zones[opts.zone];
+  const R = FC.reel, P = mergePatterns(fish.stages ? fish.stages[0] : fish.pattern), Z = opts.zone && FC.zones[opts.zone];
   const snagRoll = Z && Z.snagChance && rng() < Z.snagChance;
   return {
     fish, rodLv, P, fx, loc: CONFIG.locations[locationKey],
@@ -1557,6 +1612,7 @@ function newReel(fish, rodLv, locationKey = 'zavod', rng = Math.random, fx = NO_
     zoneTension: Z ? Z.tensionMul : 1,
     red: 0, out: 0, grace: 0, tired: 0, tiredDone: fish.d < FC.tired.minD,
     snagAt: snagRoll ? between(rng, FC.snag.at) : null, snagged: false,
+    stage: 0, // named legends fight in stages, each with its own tricks
     tension: R.startTension, prog: R.startProgress, surgeT: R.firstSurge, time: 0, zoneC: R.zoneCenter, half: R.zoneHalf.base,
     surged: false, events: [],
     zoneShift: 0, nextShift: null, zoneNext: null,
@@ -1686,6 +1742,19 @@ function reelStep(r, dt, holding, rng = Math.random) {
   const excused = r.diving > 0 || r.diveWarn || r.jerkWarn || r.ghost > 0 || r.grace > 0 || tiredNow;
   if (!inZone && !excused) r.out += dt;
   if (r.tension >= R.snapAt * fx.snapMul) return 'snap';
+  // a named legend changes its ways at each third of the fight
+  const st = r.fish.stages;
+  if (st && r.stage < st.length - 1 && r.prog >= (r.stage + 1) / st.length) {
+    r.stage++;
+    r.P = mergePatterns(st[r.stage]);
+    const P2 = r.P;
+    r.jumpT = P2.jumpEvery ? between(rng, P2.jumpEvery) : Infinity; r.nextShift = null; r.zoneNext = null; r.zoneShift = 0;
+    r.jerkT = P2.jerkEvery ? between(rng, P2.jerkEvery) : Infinity; r.jerkWarn = false;
+    r.diveT = P2.diveEvery ? between(rng, P2.diveEvery) : Infinity; r.diveWarn = false; r.diving = 0;
+    r.ghostT = P2.ghostEvery ? between(rng, P2.ghostEvery) : Infinity; r.ghost = 0;
+    r.tension = Math.min(r.tension + 0.12, 0.85);
+    r.events.push('stage');
+  }
   if (r.snagAt !== null && r.prog >= r.snagAt && r.prog < 1) {
     r.snagAt = null;
     r.snagged = true;
@@ -1717,6 +1786,142 @@ function reelStars(r) {
   if (r.red <= Q.two.red && out <= Q.two.out) return 2;
   return 1;
 }
+
+/* ---------- named legends ---------- */
+const LEG = CONFIG.legends;
+// The named legend that could take this bait here and now, if any.
+function legendFor(S, { location, bait, zone, phase }, rng = Math.random) {
+  for (const [n, L] of Object.entries(LEG)) {
+    if (L.loc !== location || L.zone !== zone || !L.bait.includes(bait)) continue;
+    if (!L.phases.includes(phase) && L.anyPhaseBait !== bait) continue;
+    if (rng() < (S.bestiary[n] ? L.again : L.chance)) return FISH_BY_NAME[n];
+  }
+  return null;
+}
+
+/* ---------- events ---------- */
+const EV = CONFIG.events;
+const eventDef = S => (S.event ? EV.list[S.event.k] : null);
+// The live event, or null once its casts or seconds ran out.
+function eventOn(S, now = Date.now()) {
+  const e = S.event;
+  if (!e) return null;
+  if (e.until && now >= e.until) return null;
+  if (e.casts != null && e.casts <= 0) return null;
+  return e;
+}
+const eventFx = (S, now = Date.now()) => (eventOn(S, now) ? EV.list[S.event.k] : {});
+
+// After a cast that reached a bite: the running event counts down, or a new one may start.
+// ctx: { netGood, netAny } — some events need fish in the net.
+function eventAfterCast(S, ctx, rng = Math.random, now = Date.now()) {
+  S.sinceEvent = (S.sinceEvent || 0) + 1;
+  const e = S.event;
+  if (e && e.casts != null) { e.casts--; if (e.casts <= 0) { S.event = null; return { ended: e.k }; } return null; }
+  if (e && !eventOn(S, now)) S.event = null;
+  if (S.event || S.sinceEvent < EV.cooldown || rng() >= EV.chance) return null;
+  const pool = {};
+  for (const [k, d] of Object.entries(EV.list)) {
+    if (d.needFish && !ctx.netAny) continue;
+    if (d.needGoodFish && !ctx.netGood) continue;
+    pool[k] = d.weight;
+  }
+  const k = pickWeighted(pool, rng), d = EV.list[k];
+  S.event = { k, casts: d.casts ?? null, until: d.seconds ? now + d.seconds * 1000 : null };
+  if (k === 'wisps') { S.event.u = 0.12 + rng() * 0.5; S.event.v = 0.15 + rng() * 0.45; }
+  if (k === 'cat') S.event.stealAt = now + d.stealAfter * 1000;
+  S.sinceEvent = 0;
+  return { started: k };
+}
+// Time-based events end by themselves; returns the key that ended.
+function eventTick(S, now = Date.now()) {
+  if (S.event && S.event.until && now >= S.event.until) { const k = S.event.k; S.event = null; return k; }
+  return null;
+}
+
+// The cat takes the newest fish from the net and goes.
+function catSteals(S) {
+  if (!S.event || S.event.k !== 'cat' || !S.net.length) return null;
+  const f = S.net.pop();
+  S.event = null;
+  return f;
+}
+const shooCat = S => { if (S.event && S.event.k === 'cat') { S.event = null; return true; } return false; };
+
+// The mavka takes the best fish in the net and gives one of her gifts.
+function mavkaTrade(S, rng = Math.random) {
+  if (!S.event || S.event.k !== 'mavka') return null;
+  let best = -1;
+  S.net.forEach((f, i) => { if (!f.junk && (best < 0 || f.price > S.net[best].price)) best = i; });
+  if (best < 0) { S.event = null; return null; }
+  const fish = S.net.splice(best, 1)[0], M = EV.mavka, kind = pickWeighted(M.weights, rng);
+  if (kind === 'golden') S.buffs.golden += M.golden;
+  else if (kind === 'moon') S.bait.have.moon = (S.bait.have.moon || 0) + M.moon;
+  else S.gifts.push(M.gift);
+  S.event = null;
+  return { fish, kind };
+}
+const mavkaRefuse = S => { if (S.event && S.event.k === 'mavka') S.event = null; };
+
+/* ---------- grandpa Panas's bets ---------- */
+const PZ = CONFIG.panas;
+const betStake = S => Math.max(PZ.stake[0], Math.min(PZ.stake[1], Math.round((S.coins * PZ.stakeShare) / 10) * 10));
+const roundCoef = p => Math.max(PZ.coef[0], Math.min(PZ.coef[1], Math.round((PZ.margin / Math.max(1e-6, p)) * 10) / 10));
+
+// A bet fitted to where you fish now. ctx: { location, bait, zone, phase }.
+function offerBet(S, ctx, rng = Math.random) {
+  if (S.bet || S.coins < PZ.minCoins + betStake(S)) return null;
+  const list = fishTable(ctx).filter(e => !e.fish.junk), total = list.reduce((a, e) => a + e.w, 0) + fishTable(ctx).filter(e => e.fish.junk).reduce((a, e) => a + e.w, 0);
+  if (!list.length) return null;
+  const type = pickWeighted(PZ.types, rng), stake = betStake(S);
+  if (type === 'species') {
+    const e = list[Math.floor(rng() * list.length)], p1 = e.w / total, p = 1 - (1 - p1) ** PZ.speciesCasts;
+    return { type, n: e.fish.n, casts: PZ.speciesCasts, coef: roundCoef(p), stake };
+  }
+  if (type === 'heavy') {
+    // the weight that roughly heavyP of bites beat
+    const ws = [];
+    for (let i = 0; i < 300; i++) {
+      let x = rng() * total, f = null;
+      for (const e of fishTable(ctx)) if ((x -= e.w) < 0) { f = e.fish; break; }
+      f = f || list[0].fish;
+      ws.push(f.junk ? 0 : f.w[0] + rng() * (f.w[1] - f.w[0]));
+    }
+    ws.sort((a, b) => b - a);
+    const kg = Math.max(0.3, Math.round(ws[Math.floor(ws.length * PZ.heavyP)] * 10) / 10);
+    const p = ws.filter(w => w > kg).length / ws.length;
+    return { type, kg, coef: roundCoef(p), stake };
+  }
+  if (type === 'clean') return { type, coef: PZ.cleanCoef, stake };
+  return { type: 'stars', coef: PZ.starsCoef, stake };
+}
+function acceptBet(S, offer) {
+  if (!offer || S.bet || S.coins < offer.stake) return false;
+  S.coins -= offer.stake;
+  S.bet = { ...offer, left: offer.casts || 1 };
+  return true;
+}
+// After a fight: fish is the landed catch or null, red is seconds spent in the red. Returns { won, coins } once settled.
+function settleBet(S, fish, red) {
+  const b = S.bet;
+  if (!b) return null;
+  let won = null;
+  if (b.type === 'species') {
+    if (fish && fish.n === b.n) won = true;
+    else if (--b.left <= 0) won = false;
+  } else if (!fish) won = false;
+  else if (b.type === 'heavy') won = fish.w > b.kg;
+  else if (b.type === 'clean') won = !fish.junk && red <= 0;
+  else won = fish.q === 3;
+  if (won === null) return null;
+  S.bet = null;
+  const coins = won ? Math.round(b.stake * b.coef) : 0;
+  S.coins += coins;
+  S.stats.bets = (S.stats.bets || 0) + 1;
+  if (won) S.stats.betsWon = (S.stats.betsWon || 0) + 1;
+  return { won, coins, bet: b };
+}
+const betText = b => b.type === 'species' ? `${b.n} за ${b.casts} закиди` : b.type === 'heavy' ? `риба важча за ${String(b.kg).replace('.', ',')} кг наступним` : b.type === 'clean' ? 'наступна риба без жодної червоної зони' : 'наступна риба на 3 зірки';
 
 /* core/mood.js */
 // Vodianyk's mood: fed by what he is given, worn down by time, soured by insults and big wins.
@@ -1974,7 +2179,7 @@ function evaluateGrid(grid, ctx) {
     const d = SYM[c.k];
     if (!d || !isFishSym(c.k)) { val[r][x] = d && d.value ? d.value : 0; return; }
     let v = symValue(c);
-    if (d.centerMul) v = r === 1 && x === 1 ? v * d.centerMul : 0;
+    if (d.centerMul) v = r === 1 && x === 1 ? v * d.centerMul : d.anywhere ? v : 0;
     if (d.newMoonMul && phase === NIGHT.newMoon.phase) v *= d.newMoonMul;
     val[r][x] = v;
   }));
@@ -2015,7 +2220,7 @@ function evaluateGrid(grid, ctx) {
     const d = SYM[c.k];
     if (!d || !d.copy || eaten.has(r * 3 + x)) return;
     const best = Math.max(0, ...neighbours(r, x).map(([a, b]) => (isFishSym(at(a, b).k) ? val[a][b] : 0)));
-    boosted[r][x] = Math.max(boosted[r][x], best);
+    boosted[r][x] = Math.max(boosted[r][x], best * (d.copyMul || 1));
   }));
   // skulls drain the fish next to them
   grid.forEach((row, r) => row.forEach((c, x) => {
@@ -2301,7 +2506,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2339,6 +2544,9 @@ const defaultState = () => ({
   traps: [null], // one trap comes free; null is an empty one
   gifts: [], // symbols the buyer gave, waiting to be put on a reel
   seen: 0, // when the game was last open
+  event: null, // the running event: { k, casts | until, ... }
+  sinceEvent: 0,
+  bet: null, // grandpa Panas's bet in play
   ng: 0,
   ended: false,
   buffs: { golden: 0, curse: 0 },
@@ -2411,6 +2619,8 @@ const MIGRATIONS = {
     const { orders, ordersNight, ...rest } = d;
     return { ...rest, v: 8, night: { phase: moonPhaseAt(Date.now()) }, board: [], demand: null, marketAt: 0, traps: [null], gifts: [], seen: 0 };
   },
+  // v9: events, grandpa Panas's bets and named legends. The bestiary starts remembering the best quality.
+  8: d => ({ ...d, v: 9, event: null, sinceEvent: 0, bet: null }),
 };
 
 function migrate(data) {
@@ -2973,6 +3183,10 @@ const FISH_SPRITE = {
   'Кістка утопленика': 'fish_bone',
   'Минь': 'fish_burbot',
   'Білуга': 'fish_beluga',
+  'Баба Килина': 'fish_carp',
+  'Сивий Остап': 'fish_zander',
+  'Старий Митрофан': 'fish_catfish',
+  'Чорна Бранка': 'fish_beluga',
 };
 
 /* ---------- mill wheel: spokes drawn at an angle, so turning is real rotation ---------- */
@@ -3571,6 +3785,64 @@ defineSprites({
     'hh..............',
     '................',
   ]] },
+  panas: { fps: 1, frames: [[
+    '................',
+    '.....gggggg.....',
+    '....gLLLLLLg....',
+    '..gggggggggggg..',
+    '.gLLLLLLLLLLLLg.',
+    '....mmmmmmmm....',
+    '....mvmmmmvm....',
+    '....mmmmrmmm....',
+    '...bbbmmmmbbb...',
+    '..bbb.bbbb.bbb..',
+    '.......bb.......',
+    '.....bbbbbb.....',
+    '....hhhhhhhh....',
+    '...hhhhhhhhhh...',
+    '...hhhhhhhhhh...',
+    '................',
+  ]] },
+  mavka: { fps: 1, frames: [[
+    '................',
+    '....rgr..grg....',
+    '...EEEEEEEEEE...',
+    '..EEfMMMMMMfEE..',
+    '..EfMvMMMMvMfE..',
+    '..EfMMMMMMMMfE..',
+    '..EfMMMrrMMMfE..',
+    '..EfEMMMMMMEfE..',
+    '..EfE.MMMM.EfE..',
+    '..Ef.ssssss.fE..',
+    '..E..ssssss..E..',
+    '..E.ssssssss.E..',
+    '....ssssssss....',
+    '...ssssssssss...',
+    '................',
+    '................',
+  ]] },
+  cat: { fps: 3, frames: [
+    [
+      '.v.v........',
+      '.vvv........',
+      'vgvgv.......',
+      'vvnvv.....v.',
+      '.vvvvvvvvv..',
+      '.vnvvvvvvv..',
+      '.v.v...v.v..',
+      '............',
+    ],
+    [
+      '.v.v......v.',
+      '.vvv......v.',
+      'vgvgv.....v.',
+      'vvnvv....v..',
+      '.vvvvvvvvv..',
+      '.vnvvvvvvv..',
+      '.v.v...v.v..',
+      '............',
+    ],
+  ] },
   icon_trap: { fps: 1, frames: [[
     '..hhhh..',
     '.hbhbhh.',
@@ -4027,6 +4299,10 @@ class PondScene {
     this.strike = 0;
     this.joy = 0;
     this.lastFloat = { x: 0, y: 0 };
+    this.fakeT = 0;
+    this.flashT = 0;
+    this.nextFlash = 3;
+    this.cat = null; // { x, gone }
     this.surf = null;
   }
 
@@ -4034,6 +4310,7 @@ class PondScene {
     this.surf = new Surface(w, h);
     this.back = new Surface(w, h);
     this.geo = pondGeometry(w, h);
+    this.rain = seededList(40, 55, r => ({ x: r() * w, y: r() * h, s: 60 + r() * 40 }));
     this.stars = seededList(46, 7, r => ({ x: Math.floor(r() * w), y: Math.floor(r() * this.geo.horizon * 0.8), p: r() * 6, bright: r() > 0.7 }));
     const g = this.geo, waterH = g.bridgeY - g.horizon;
     this.flies = seededList(12, 21, r => ({ x: r() * w, y: g.horizon + r() * waterH, p: r() * 6, s: 0.3 + r() * 0.5 }));
@@ -4094,6 +4371,9 @@ class PondScene {
       case 'snag': this.shake = 0.15; this.shiver = 0.4; this.addRing(f.x + 1, f.y + 5, 6); break;
       case 'snag-free': this.shiver = 0.3; this.addRing(f.x + 1, f.y + 5, 12); this.splash(f.x + 1, f.y + 3, 6); break;
       case 'tired': this.addRing(f.x + 1, f.y + 5, 10); break;
+      case 'fake': this.fakeT = 0.45; break;
+      case 'stage': this.shake = 0.25; this.shiver = 0.5; this.addRing(f.x + 1, f.y + 5, 16); this.splash(f.x + 1, f.y + 2, 8); break;
+      case 'cat-gone': if (this.cat) this.cat.gone = true; break;
       case 'release': { const g = this.geo, x = g.home.x - 4, y = g.home.y - 1; this.addRing(x, y + 2, 10); this.splash(x, y, 4); break; }
       case 'nibble': this.twitch = 0.22; this.addRing(f.x + 1, f.y + 6, 5); break;
       case 'bite': this.freeze = HIT_STOP; this.twitch = 0; this.addRing(f.x + 1, f.y + 6, 14); this.splash(f.x + 1, f.y + 4, 4); break;
@@ -4152,6 +4432,13 @@ class PondScene {
     this.shiver = Math.max(0, this.shiver - dt);
     this.strike = Math.max(0, this.strike - dt);
     this.joy = Math.max(0, this.joy - dt);
+    this.fakeT = Math.max(0, this.fakeT - dt);
+    this.flashT = Math.max(0, this.flashT - dt);
+    if (this.cat) {
+      const g = this.geo, home = g.fisherX - 20;
+      if (this.cat.gone) { this.cat.x += dt * 45; if (this.cat.x > g.w + 4) this.cat = null; }
+      else if (this.cat.x > home) this.cat.x = Math.max(home, this.cat.x - dt * 18);
+    }
     if (this.jump) {
       this.jump.t += dt * 1.3;
       if (this.jump.t >= 1) {
@@ -4237,6 +4524,18 @@ class PondScene {
     if (art.wheel) {
       const wheel = SPRITES.mill_wheel;
       S.drawSprite(wheel, frameAt(wheel, t), w - wheel.w + 6, horizon - 20);
+    }
+    const ev = view.event;
+    if (ev && ev.k === 'fog') {
+      for (let y = horizon; y < bridgeY; y++) S.dither(0, y, w, 1, null, 'fog', 0.42 + 0.12 * Math.sin(y * 0.7 + t * 0.6));
+    }
+    if (ev && ev.k === 'wisps') {
+      const c = waterPoint(g, ev.u, ev.v);
+      for (let i = 0; i < 4; i++) {
+        const a = t * (0.9 + i * 0.3) + i * 1.7, x = c.x + Math.cos(a) * (4 + i), y = c.y - 3 + Math.sin(a * 1.3) * 2;
+        S.px(x, y, i % 2 ? 'frogL' : 'magicL');
+        if (Math.sin(t * 5 + i) > 0.3) S.px(x, y - 1, 'moon');
+      }
     }
     for (const r of this.rings) {
       const k = r.r / r.max;
@@ -4385,14 +4684,44 @@ class PondScene {
     }
     let frame = 0;
     if (fl.flying) frame = 0;
-    else if (view.state === 'bite' || view.state === 'reel') frame = 2;
+    else if (view.state === 'bite' || view.state === 'reel' || this.fakeT > 0) frame = 2;
     else if (this.twitch > 0) frame = 1;
     const bob = view.state === 'waiting' && Math.floor(t * 1.5) % 2 === 1 ? 1 : 0;
     this.lastFloat = { x: fl.x, y: fl.y };
     if (view.ghost) return; // the moon fish has taken the float out of sight
+    if (view.event && view.event.k === 'fog' && view.state !== 'reel') return; // fog swallows the float
     // a dark edge: red and bone alone are too close to the water to spot quickly
     S.drawOutline(SPRITES.float, frame, fl.x, fl.y + bob, 'void');
     S.drawSprite(SPRITES.float, frame, fl.x, fl.y + bob);
+  }
+
+  // A storm: slanted rain over everything, and now and then the sky turns white.
+  drawWeather(view) {
+    const S = this.surf, g = this.geo;
+    if (!view.event || view.event.k !== 'storm') return;
+    for (const d of this.rain) {
+      const y = (d.y + this.t * d.s) % g.h, x = (d.x - this.t * d.s * 0.3 + g.w * 4) % g.w;
+      S.line(x, y, x - 1, y + 3, 'shimmer');
+    }
+    this.nextFlash -= 1 / 60;
+    if (this.nextFlash <= 0) { this.nextFlash = 5 + ((this.t * 7) % 6); this.flashT = 0.12; if (this.onThunder) this.onThunder(); }
+    if (this.flashT > 0 && !this.calm) S.dither(0, 0, g.w, g.horizon, null, 'bone', 0.5);
+  }
+
+  // The black cat walks onto the bridge and sits by the net; shooed or fed, it runs off to the right.
+  drawCat(view) {
+    const g = this.geo, on = view.event && view.event.k === 'cat';
+    if (on && !this.cat) this.cat = { x: g.w + 2, gone: false };
+    if (!on && this.cat && !this.cat.gone) this.cat.gone = true;
+    if (!this.cat) return;
+    const sp = SPRITES.cat;
+    this.surf.drawSprite(sp, frameAt(sp, this.t), Math.round(this.cat.x), g.bridgeY - sp.h + 1, this.cat.gone);
+  }
+  // Is a scene point on the cat?
+  hitCat(x, y) {
+    if (!this.cat || this.cat.gone) return false;
+    const g = this.geo;
+    return x >= this.cat.x - 6 && x <= this.cat.x + 18 && y >= g.bridgeY - 18 && y <= g.bridgeY + 6;
   }
 
   drawParticles() {
@@ -4430,6 +4759,8 @@ class PondScene {
     this.drawRodAndFloat(view, pose);
     this.drawLantern(view);
     this.drawParticles();
+    this.drawWeather(view);
+    this.drawCat(view);
     if (this.shake > 0 && !this.calm) screenShake(S, this.t);
   }
 }
@@ -4582,6 +4913,7 @@ class SlotScene {
   drawCell(key, x, y, winTop, winH, g = 0) {
     const S = this.surf, sp = symbolSprite(key);
     const dx = x + ((16 - sp.w) >> 1), dy = y + ((SYMBOL_H - sp.h) >> 1);
+    if (SC.symbols[key] && SC.symbols[key].legend && dy >= winTop && dy + sp.h <= winTop + winH) S.drawOutline(sp, 0, dx, dy, 'gold');
     S.drawSpriteWindow(sp, 0, dx, dy, winTop, winH);
     // a pike that has eaten shows its growth as gold dots
     if (g > 0 && key === 'Щука') {
@@ -5907,7 +6239,8 @@ function createAmbience(eng) {
 // D minor and the Vodianyk's Ukrainian Dorian contain. Most of them push the music down for a moment.
 
 const SFX_NAMES = ['plop', 'nibble', 'bite', 'catch', 'bad', 'tick', 'stop', 'win', 'coin', 'jerk', 'warn', 'dive', 'ghost', 'snap', 'night',
-  'signal', 'splash', 'shimmer', 'snag', 'tired', 'clean', 'release', 'father', 'aim'];
+  'signal', 'splash', 'shimmer', 'snag', 'tired', 'clean', 'release', 'father', 'aim',
+  'thunder', 'meow', 'song', 'event', 'stage'];
 
 const SN = { D2: 38, D3: 50, D4: 62, E3: 52, F4: 65, A4: 69, D5: 74, E5: 76, F5: 77, A5: 81, D6: 86 };
 
@@ -5945,6 +6278,11 @@ function createSfx(eng, music) {
     clean: () => { duck(); [SN.D5, SN.F5, SN.A5, SN.D6].forEach((m, i) => box(m, 0.25 + i * 0.06, 0.06, 0.4)); },
     release: () => { bubble(eng, { bus: 'sfx', t: at(), from: 600, to: 150, dur: 0.18, gain: v(0.1), wet: 0.4 }); str(SN.D4, 0.15, 0.06, 0.6); },
     father: () => flute(eng, { bus: 'sfx', midi: SN.D4, t: at(0.3), dur: 0.9, gain: v(0.05) }),
+    thunder: () => { duck(); kick(eng, { bus: 'sfx', t: at(), gain: v(0.3) }); kick(eng, { bus: 'sfx', t: at(0.18), gain: v(0.2) }); shaker(eng, { bus: 'sfx', t: at(0.05), gain: v(0.08) }); str(SN.D2 - 2, 0.02, 0.12, 1.2); },
+    meow: () => { flute(eng, { bus: 'sfx', midi: SN.A5, t: at(), dur: 0.18, gain: v(0.05) }); flute(eng, { bus: 'sfx', midi: SN.F5, t: at(0.16), dur: 0.3, gain: v(0.045) }); },
+    song: () => [SN.A4, SN.D5, SN.F5, SN.E5].forEach((m, i) => flute(eng, { bus: 'sfx', midi: m, t: at(i * 0.22), dur: 0.3, gain: v(0.035) })),
+    event: () => { duck(); box(SN.D5, 0, 0.06, 0.6); box(SN.A4, 0.12, 0.05, 0.6); str(SN.D3, 0.05, 0.08, 0.8); },
+    stage: () => { duck(); str(SN.D2, 0, 0.16, 0.6); for (const dt of [0, 0.12]) box(SN.F5, dt, 0.05, 0.15); },
   };
   const out = {};
   for (const k of SFX_NAMES) out[k] = () => { if (live()) sounds[k](); };
@@ -6119,7 +6457,7 @@ function spriteDataUrl(sprite,silhouette=false){
 function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
-  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap'};
+  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka'};
   for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYM_SPRITE)names['sym-'+SYM_SPRITE[k]]=SYM_SPRITE[k];
@@ -6146,6 +6484,9 @@ function renderHud(){
   const b=[];
   if(S.buffs.golden>0)b.push(`<span class="pchip golden">Луска ×${S.buffs.golden}</span>`);
   if(S.buffs.curse>0)b.push(`<span class="pchip curse">Прокляття ×${S.buffs.curse}</span>`);
+  const ev=eventOn(S);
+  if(ev){const d=CONFIG.events.list[ev.k];b.push(`<span class="pchip event">${d.name}${ev.casts!=null?` · ${ev.casts}`:ev.until?` · ${Math.max(0,Math.ceil((ev.until-Date.now())/1000))} с`:''}</span>`)}
+  if(S.bet)b.push(`<span class="pchip bet">Парі ×${String(S.bet.coef).replace('.',',')}${S.bet.type==='species'?` · ${S.bet.left}`:''}</span>`);
   if(S.father)b.push(`<span class="pchip rare">Батько поруч${S.father.loc===S.location?'':` · ${CONFIG.locations[S.father.loc].name}`}</span>`);
   const chips=b.join('');
   if(chips!==hud.chips){hud.chips=chips;$('#buffs').innerHTML=chips}
@@ -6257,7 +6598,9 @@ const CARD_NOTES={
   curse:'<span style="color:var(--red)">Прокляття: ціна вдвічі менша</span>',
   clean:`<span style="color:var(--gold)">Чиста виводка! Ціна ×${String(CONFIG.fishing.quality.priceMul[2]).replace(".",",")}</span>`,
   rough:`<span style="color:var(--fog)">Пошарпана виводка: ціна ×${String(CONFIG.fishing.quality.priceMul[0]).replace(".",",")}</span>`,
-  father:'<span style="color:var(--magicL)">Батько! Трофейний розмір</span>'
+  father:'<span style="color:var(--magicL)">Батько! Трофейний розмір</span>',
+  storm:'<span style="color:var(--shimmer)">Гроза: ціна ×1,3</span>',
+  named:'<span style="color:var(--gold)">Іменна легенда! Її знатимуть у всіх селах</span>'
 };
 const cardArt={fish:null,surf:null,ctx:$('#ccv').getContext('2d')};
 
@@ -6365,7 +6708,8 @@ function spawnSignal(){
 }
 function signalsTick(dt){
   signals.next-=dt;
-  if(signals.next<=0){signals.next=rnd(SIG.every[0],SIG.every[1]);if(signals.list.length<SIG.max)spawnSignal()}
+  const ch=eventFx(S),mul=ch.signalMul||1;
+  if(signals.next<=0){signals.next=rnd(SIG.every[0],SIG.every[1])/mul;if(signals.list.length<(ch.signalMax||SIG.max))spawnSignal()}
   for(const s of signals.list)s.t+=dt;
   signals.list=signals.list.filter(s=>s.t<s.life);
 }
@@ -6417,7 +6761,10 @@ function updateAct(force){
       else{const p=aimPx(),z=p?FCU.zones[zoneOfPx(p)].name:'';key='idle'+z+S.bait.on;label='Закинути';hint=`${z?`Ціль: ${z}. `:''}Утримуй і відпусти на мітці. Торкнись води, щоб цілитись`}break;
     case 'aim':key='aim';label='Відпусти!';cls='reel is-pressed';hint='Відпусти, коли стрілка на світлій мітці';break;
     case 'cast':case 'waiting':key='wait';label='Чекай…';cls='wait';hint='Коли поплавок пірне, підсікай. Смикнеш раніше, риба втече.';break;
-    case 'bite':key='bite';label='ПІДСІКАЙ!';cls='bite';hint='Зараз!';break;
+    case 'bite':
+      // in fog and under the mermaid's song only the ear tells a bite
+      if(eventFx(S).hideBite){key='wait';label='Чекай…';cls='wait';hint='Коли поплавок пірне, підсікай. Смикнеш раніше, риба втече.';break}
+      key='bite';label='ПІДСІКАЙ!';cls='bite';hint='Зараз!';break;
     case 'snag':key='snag';label='Корч!';cls='wait';hint='Смикнути: шанс вирвати. Різати: рибу й наживку втратиш, леску ні.';break;
     case 'reel':
       if(F.reel&&(F.reel.diveWarn||F.reel.diving>0)){key='dive';label='ВІДПУСТИ!';cls='bite';hint='Риба пішла під корч. Тримати зараз значить порвати леску.';break}
@@ -6435,6 +6782,7 @@ function updateAct(force){
 function press(e){
   if(e){e.preventDefault()}
   if(cardOpen){closeCard();return}
+  if(!$('#askbox').hidden&&F.state==='idle'){toast('Спершу дай відповідь');return}
   switch(F.state){
     case 'idle':
       if(S.net.length>=netCapacity(S)){sellAllFrom($('#act'));return}
@@ -6453,6 +6801,9 @@ function release(){
 $('#act').addEventListener('pointerdown',press);
 $('#scene').addEventListener('pointerdown',e=>{
   if(e.target.closest('.pcard,.psnag'))return;
+  // the cat: a tap on it sends it off, and casts nothing
+  const cp=scenePoint(e);
+  if(cp&&scene.hitCat(cp.x,cp.y)&&shooCat(S)){e.preventDefault();scene.emit('cat-gone');SFX.meow();say('Кіт ображено пішов. Риба ціла.','good',1800);save();renderHud();return}
   // a touch on the water while the rod is free picks where to cast, and starts the swing at once
   if(F.state==='idle'&&!cardOpen&&S.net.length<netCapacity(S)){
     const p=scenePoint(e);
@@ -6484,8 +6835,10 @@ function throwCast(){
   for(const sg of signals.list){const p=waterPoint(g,sg.u,sg.v),d=Math.hypot(p.x-F.spot.x,p.y-F.spot.y);if(d<=best){best=d;hit=sg}}
   F.signal=hit?hit.type:null;
   if(hit)signals.list.splice(signals.list.indexOf(hit),1);
+  const ev=eventOn(S);F.wisp=false;
+  if(ev&&ev.k==='wisps'){const w=waterPoint(g,ev.u,ev.v);F.wisp=Math.hypot(w.x-F.spot.x,w.y-F.spot.y)<=CONFIG.events.list.wisps.radius}
   const miss=F.power-castNeed(g,aim),tol=castTolerance(g);
-  F.castNote=hit?`${SIG.types[hit.type].name}! Влучив`:Math.abs(miss)<=tol?'Точно в ціль':miss<0?'Недокинув':'Перекинув';
+  F.castNote=F.wisp?'Вогники над поплавком':hit?`${SIG.types[hit.type].name}! Влучив`:Math.abs(miss)<=tol?'Точно в ціль':miss<0?'Недокинув':'Перекинув';
   F.state='cast';F.t=0;
 }
 const powerEls={bar:$('#wbar'),mark:$('#wmark'),needle:$('#wneedle'),width:0,last:''};
@@ -6505,10 +6858,13 @@ function syncPower(){
 }
 
 function hook(){
-  F.state='reel';F.reel=newReel(F.fish,S.lv.rod,S.location,Math.random,artifactFx(S),{zone:F.zone,father:F.father});
+  // the storm makes every line weaker
+  const fx={...artifactFx(S)},sm=eventFx(S).snapMul;if(sm)fx.snapMul*=sm;
+  F.state='reel';F.reel=newReel(F.fish,S.lv.rod,S.location,Math.random,fx,{zone:F.zone,father:F.father});
   scene.emit('hook');
   $('#meter').hidden=false;
   meterEls.width=0; // re-measure: the bar has no width while hidden, and the phone may have turned
+  if(F.fish.named){say(`${F.fish.n}! Легенда вийшла до тебе.`,'gold',2600);SFX.stage();return}
   if(F.father){say('Це батько! Тримайся.','gold',2200);SFX.father();return}
   const d=F.fish.d;
   const feel=d<.35?'Легенька':d<.6?'Тягне помітно':d<.8?'Важка риба!':'Щось величезне…';
@@ -6516,8 +6872,10 @@ function hook(){
 }
 function lose(text,event){
   F.state='idle';F.holding=false;$('#meter').hidden=true;$('#snagbox').hidden=true;
+  const red=F.reel?F.reel.red:0;
   if(F.reel){useBait();F.reel=null}
   F.father=false;save();
+  setTimeout(()=>afterCast(null,red),0);
   say(text,'bad');if(event==='snap'){SFX.snap();MUSIC.snap()}else SFX.bad();scene.emit(event);nextNightIfDue();updateAct()
 }
 function enterSnag(){
@@ -6556,9 +6914,12 @@ function nextNightIfDue(force){
 }
 
 function land(){
-  const stars=reelStars(F.reel);
+  const stars=reelStars(F.reel),red=F.reel.red;
   useBait();
-  const {fish:c,notes,isNew,rewards}=landFish(S,F.fish,Math.random,{stars,zone:F.zone,father:F.father});
+  const {fish:c,notes,isNew,rewards}=landFish(S,F.fish,Math.random,{stars,zone:F.zone,father:F.father,priceMul:eventFx(S).priceMul||1});
+  // a named legend leaves its own symbol for the reels, the first time
+  if(F.fish.named&&isNew){S.gifts.push(F.fish.n);setTimeout(()=>toast('Символ легенди чекає у Водяника'),2200)}
+  afterCast(c,red);
   F.cardIndex=S.net.length-1;F.reel=null;F.father=false;
   save();
   for(const r of rewards){toast(`Колекція «${CONFIG.locations[r.key].name}» повна: +${fmt(r.coins)} монет`);SFX.win()}
@@ -6576,13 +6937,14 @@ function openCard(c,notes,isNew){
   $('#cbtns').classList.toggle('one',!canRelease(c));
   $('#catch').hidden=false;updateAct(true);
 }
-function closeCard(){cardOpen=false;$('#catch').hidden=true;nextNightIfDue();updateAct(true)}
+function closeCard(){cardOpen=false;$('#catch').hidden=true;nextNightIfDue();updateAct(true);flushNews()}
 $('#crel').addEventListener('click',e=>{
   e.stopPropagation();
   const r=releaseFish(S,F.cardIndex);
   if(!r)return;
   save();scene.emit('release');SFX.release();
   cardOpen=false;$('#catch').hidden=true;
+  setTimeout(flushNews,1900);
   if(r.father){say('Пливи, малеча. …А біля корчів щось важко хлюпнуло. Батько прийшов подякувати?','gold',3600);setTimeout(SFX.father,400)}
   else say('Пливи, малеча. Рости.','',1800);
   renderHud();nextNightIfDue();updateAct(true);
@@ -6620,6 +6982,7 @@ const REEL_EVENT={
   ghost:()=>{say('Зникла…','gold',800);SFX.ghost()},
   'ghost-end':()=>SFX.nibble(),
   tired:()=>{say('Видихлась! Тягни!','gold',1200);SFX.tired();updateAct()},
+  stage:()=>{say(F.reel&&F.reel.stage===1?'Друга сила! Вона міняє хитрощі':'Остання сила! Ще трохи','gold',1600);SFX.stage();updateAct()},
   'tired-end':()=>updateAct(),
 };
 function reelFeedback(R){
@@ -6636,7 +6999,8 @@ function update(dt){
       F.t+=dt/FC.castTime;
       if(F.t>=1){
         F.t=0;F.state='waiting';
-        F.wait=waitTime(S.lv.lamp,Math.random,artifactFx(S))*FC.zones[F.zone].waitMul*(F.signal?SIG.waitMul:1);
+        F.wait=waitTime(S.lv.lamp,Math.random,artifactFx(S))*FC.zones[F.zone].waitMul*(F.signal?SIG.waitMul:1)*(eventFx(S).waitMul||1);
+        F.fakeT=rnd(.8,1.6);
         F.nibT=rnd(FC.nibbleFirstRange[0],FC.nibbleFirstRange[1]);
         scene.emit('cast-land',F.spot);SFX.plop();
         say(`${F.castNote} · ${FC.zones[F.zone].name}`,F.signal?'gold':'',1500);
@@ -6647,14 +7011,20 @@ function update(dt){
       F.t+=dt;F.nibT-=dt;
       if(artifactFx(S).seeBite){const left=Math.ceil(F.wait-F.t);if(left!==F.seenLeft){F.seenLeft=left;$('#hint').textContent=`Око щуки: клюне за ${Math.max(0,left)} с`}}
       if(F.nibT<=0&&F.t<F.wait-FC.nibbleQuietBeforeBite){F.nibT=rnd(FC.nibbleRange[0],FC.nibbleRange[1]);scene.emit('nibble');SFX.nibble()}
+      // the mermaid's song pulls the float under with no fish on it
+      {const fe=eventFx(S).fakeEvery;if(fe){F.fakeT-=dt;if(F.fakeT<=0&&F.t<F.wait-1){F.fakeT=rnd(fe[0],fe[1]);scene.emit('fake');SFX.song()}}}
       if(F.t>=F.wait){
-        F.state='bite';F.biteT=0;F.win=biteWindow(S.lv.rod,artifactFx(S))*(tut.on?TUTORIAL_BITE_SLACK:1);
+        const efx=eventFx(S);
+        F.state='bite';F.biteT=0;F.win=biteWindow(S.lv.rod,artifactFx(S))*(tut.on?TUTORIAL_BITE_SLACK:1)*(efx.biteWindowMul||1);
         const father=fatherBites(S);F.father=!!father;
-        F.fish=father||pickFish({location:S.location,phase:S.night.phase,bait:F.bait,zone:F.zone,signal:F.signal,fx:artifactFx(S)});
+        const ctx={location:S.location,phase:S.night.phase,bait:F.bait,zone:F.zone};
+        const named=!father&&!tut.on?legendFor(S,ctx):null;
+        const tm=F.wisp?CONFIG.events.list.wisps.tierMul:efx.tierMul||null;
+        F.fish=father||named||pickFish({...ctx,signal:F.signal,fx:artifactFx(S),tierMul:tm});
         countCast(S);save();renderHud();scene.emit('bite');say('Клює!','gold',900);SFX.bite();updateAct();
       }
       break;
-    case 'bite':F.biteT+=dt;if(F.biteT>F.win){F.state='idle';say(F.father?'Батько обнюхав гачок і пішов. Ще повернеться? Навряд.':'Не встиг, риба зірвалась з гачка','bad');F.father=false;SFX.bad();nextNightIfDue();updateAct()}break;
+    case 'bite':F.biteT+=dt;if(F.biteT>F.win){F.state='idle';say(F.fish&&F.fish.named?`${F.fish.n} лише торкнулась гачка. Колись іще вийде.`:F.father?'Батько обнюхав гачок і пішов. Ще повернеться? Навряд.':'Не встиг, риба зірвалась з гачка','bad');F.father=false;SFX.bad();nextNightIfDue();updateAct();afterCast(null,0)}break;
     case 'reel':{
       const R=F.reel,status=reelStep(R,dt,F.holding);
       if(R.surged)scene.emit('surge');
@@ -6677,17 +7047,103 @@ function loop(now){
     scene.advance(dt);
     const fighting=F.state==='reel'||F.state==='snag';
     scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:S.lv.lamp,moonPhase:S.night.phase,location:S.location,
-      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView()});
+      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView(),event:eventOn(S)});
     scene.surf.present(ctx);
   }
   if(tab==='slot')slotTick(dt);
   if(cardOpen)cardTick(now/1000);
+  eventsTick(now);
   finaleTick(dt);
   tutorialTick();
   soundTick();
   hudTick(dt);
   fpsTick(now);
   requestAnimationFrame(loop);
+}
+
+/* ui/events.js */
+/* ---------- events, grandpa Panas and the mavka ---------- */
+scene.onThunder=()=>setTimeout(()=>SFX.thunder(),250);
+const pendingNews=[];
+let sincePanas=0,lastChip=0;
+// After every fight or missed bite: the bet settles, an event counts down or begins. News waits until the card is closed.
+function afterCast(fish,red){
+  const b=settleBet(S,fish,red);
+  if(b)pendingNews.push(()=>{
+    if(b.won){toast(`Парі виграно: +${fmt(b.coins)}`);say('Дід Панас чухає потилицю й відраховує монети.','gold',2400);SFX.win();flyCoins($('#act'),4)}
+    else{toast(`Парі програно: −${fmt(b.bet.stake)}`);say('Дід Панас ховає монети в кисет і хитро мружиться.','bad',2400);SFX.bad()}
+  });
+  const ev=eventAfterCast(S,{netAny:S.net.length>0,netGood:S.net.some(f=>!f.junk)});
+  if(ev&&ev.started)pendingNews.push(()=>announceEvent(ev.started));
+  if(ev&&ev.ended)pendingNews.push(()=>toast(`${CONFIG.events.list[ev.ended].name} минув`));
+  sincePanas++;
+  save();renderHud();
+  flushNews();
+}
+function flushNews(){
+  if(cardOpen||F.state!==('idle'))return;
+  let delay=0;
+  while(pendingNews.length){const f=pendingNews.shift();setTimeout(f,delay);delay+=1400}
+  setTimeout(maybePanas,delay+200);
+}
+function announceEvent(k){
+  const d=CONFIG.events.list[k];
+  SFX.event();toast(d.name);say(d.text,'gold',4200);renderHud();
+  if(k==='mavka')openAsk('mavka');
+  if(k==='storm')SFX.thunder();
+}
+// One ask at a time, in the scene: grandpa Panas's bet or the mavka's trade.
+const ask={kind:null,offer:null};
+function openAsk(kind){
+  ask.kind=kind;
+  if(kind==='mavka'){
+    let best=null;S.net.forEach(f=>{if(!f.junk&&(!best||f.price>best.price))best=f});
+    if(!best){mavkaRefuse(S);return}
+    $('#askicon').className='picon ic-mavka';
+    $('#asktxt').innerHTML=`«Віддай мені <b>${best.n}</b> — віддячу щедро. А ні, то й ні: не ображуся.»`;
+    $('#askyes').textContent='Віддати';$('#askno').textContent='Ні';
+  }else{
+    const o=ask.offer;
+    $('#askicon').className='picon ic-panas';
+    $('#asktxt').innerHTML=`Дід Панас: «Б’юсь об заклад, не буде: <b>${betText(o)}</b>. Ставиш ${fmt(o.stake)}? Як будеш правий, дам ×${String(o.coef).replace('.',',')}.»`;
+    $('#askyes').textContent=`Б’юсь · ${fmt(o.stake)}`;$('#askno').textContent='Ні, діду';
+  }
+  $('#askbox').hidden=false;SFX.event();
+}
+function closeAsk(){ask.kind=null;ask.offer=null;$('#askbox').hidden=true}
+function maybePanas(){
+  const P=CONFIG.panas;
+  if(tut.on||cardOpen||F.state!=='idle'||ask.kind||S.bet||sincePanas<P.cooldown||Math.random()>=P.chance||tab!=='pond')return;
+  const p=aimPx();if(!p)return;
+  const o=offerBet(S,{location:S.location,bait:S.bait.on,zone:zoneOfPx(p),phase:S.night.phase});
+  if(!o)return;
+  sincePanas=0;ask.offer=o;openAsk('panas');
+}
+$('#askyes').addEventListener('click',e=>{e.stopPropagation();
+  if(ask.kind==='mavka'){
+    const r=mavkaTrade(S);closeAsk();
+    if(r){const what=r.kind==='golden'?`${CONFIG.events.mavka.golden} золоті луски на наступні рибини`:r.kind==='moon'?`${CONFIG.events.mavka.moon} місячних мотилі`:'символ «Місячна рибка» — чекає у Водяника';
+      say(`Мавка забрала ${r.fish.n} і засміялась. Тобі: ${what}.`,'gold',3600);SFX.ghost()}
+  }else if(ask.kind==='panas'){
+    if(acceptBet(S,ask.offer)){say('Дід плює в долоню. Парі!','gold',1800);SFX.coin()}closeAsk();
+  }
+  save();renderHud();updateAct(true);
+});
+$('#askno').addEventListener('click',e=>{e.stopPropagation();
+  if(ask.kind==='mavka'){mavkaRefuse(S);say('Мавка знизала плечима й пірнула в очерет.','',2200)}
+  else say('«Та й не треба», — бурчить дід.','',1600);
+  closeAsk();save();renderHud();
+});
+// Each frame: timed events end, the cat steals, the chips count down once a second.
+function eventsTick(now){
+  if(S.event&&S.event.k==='cat'&&S.event.stealAt&&now>=S.event.stealAt){
+    const f=catSteals(S);
+    if(f){scene.emit('cat-gone');toast(`Кіт поцупив: ${f.n}`);say('Кіт схопив рибину й чкурнув з містка!','bad',2400);SFX.meow();save();renderHud();updateAct(true)}
+    else S.event.stealAt=null;
+  }
+  const ended=eventTick(S,now);
+  if(ended){toast(`${CONFIG.events.list[ended].name} минув`);save();renderHud();if(tab==='market')renderMarket()}
+  if(now-lastChip>1000&&S.event&&S.event.until){lastChip=now;renderHud();if(tab==='market'&&S.event.k==='fair')renderMarket()}
 }
 
 /* ui/market.js */
@@ -7196,17 +7652,23 @@ function soundSlotResult(out){
 
 /* ui/meta.js */
 /* ---------- the bestiary ---------- */
+const bestStars=e=>e&&e.q?` <span class="pbest-q">${'<i class="picon ic-star-on"></i>'.repeat(e.q)}</span>`:'';
 function renderBestiary(){
   const places=Object.entries(CONFIG.locations).map(([k,l])=>{
     const p=collectionProgress(S,k),got=S.rewarded.includes(k);
     const rows=l.fish.map(n=>{
       const known=isKnown(S,n),e=S.bestiary[n],f=fishByName(n);
       const icon=known?fishIconClass(n):silhouetteClass(n);
-      return `<div class="pbest${known?'':' unknown'}"><i class="picon ${icon}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}</span><span class="pbest-kg">${e.best.toFixed(2).replace('.',',')} кг</span>`:`<span class="pbest-tier">${TIERS[f.t].label}</span>`}</div>`;
+      return `<div class="pbest${known?'':' unknown'}"><i class="picon ${icon}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}${bestStars(e)}</span><span class="pbest-kg">${e.best.toFixed(2).replace('.',',')} кг</span>`:`<span class="pbest-tier">${TIERS[f.t].label}</span>`}</div>`;
     }).join('');
     return `<div class="pframe ${got?'gold ':''}ppanel"><h3>${l.name}</h3><p class="psub">${p.have}/${p.all} · ${got?'нагороду отримано':`за всіх ${fmt(CONFIG.collection.rewards[k])} монет`}</p><div class="pbests">${rows}</div></div>`;
   }).join('');
-  $('#bestlist').innerHTML=places;
+  // the named legends: a silhouette and a rumour until caught
+  const legends=Object.entries(CONFIG.legends).map(([n,L])=>{
+    const known=isKnown(S,n),e=S.bestiary[n];
+    return `<div class="pbest${known?'':' unknown'}"><i class="picon ${known?fishIconClass(n):silhouetteClass(n)}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}${bestStars(e)}</span><span class="pbest-kg">${e.best.toFixed(1).replace('.',',')} кг</span>`:`<span class="pbest-tier">${CONFIG.locations[L.loc].name}</span>`}<span class="pbest-hint">${L.hint}</span></div>`;
+  }).join('');
+  $('#bestlist').innerHTML=places+`<div class="pframe gold ppanel"><h3>Іменні легенди</h3><p class="psub">По одній на кожну воду. Виходять, лише коли все збіглося. Перша зловлена дає свій символ на барабан.</p><div class="pbests">${legends}</div></div>`;
   $('#bestcount').textContent=`${knownCount(S)}/${CONFIG.fish.length}`;
 }
 $('#bestopen').addEventListener('click',()=>{renderBestiary();$('#bestiary').hidden=false});
