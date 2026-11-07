@@ -597,7 +597,6 @@ main{flex:1;min-height:0;position:relative}
           <div class="pwin-sum"><span id="shround"></span><b id="shpotv">0</b><span id="shnext"></span></div>
           <div class="pbtn-row"><button class="pbtn ghost" id="shtake">Забрати</button><button class="pbtn" id="shagain">Ще раз</button></div>
         </div>
-        <div class="pbets" id="shbets"></div>
         <button id="shplay" class="pbtn mainact">Грати</button>
         <div class="pframe ppanel">
           <h3>Мушлі</h3>
@@ -737,6 +736,8 @@ const CONFIG = {
     { n: 'Стерлядь', t: 'epic', w: [1, 4], p: 150, d: 0.78, pattern: 'nervous' },
     { n: 'Місячна рибка', t: 'legend', w: [0.3, 0.9], p: 420, d: 0.93, glow: true, pattern: 'ghost' },
     { n: 'Білуга', t: 'legend', w: [40, 120], p: 520, d: 0.95, pattern: ['dive', 'jerk'] },
+    // Перлівниця: не риба, а квиток у Мушлі Водяника. Ловиться окремим жеребом (fishing.mussel), продається дешево.
+    { n: 'Перлівниця', t: 'junk', junk: true, item: true, w: [0.1, 0.3], p: 6, d: 0.05, pattern: 'dead' },
     // Іменні легенди: не клюють звичайно, лише коли збіглися умови з legends. stages — бій у кілька етапів.
     { n: 'Баба Килина', t: 'legend', named: true, w: [14, 22], p: 700, d: 0.86, pattern: 'heavy', stages: ['heavy', 'nervous', 'trick'] },
     { n: 'Сивий Остап', t: 'legend', named: true, w: [9, 14], p: 800, d: 0.86, pattern: 'trick', stages: ['trick', 'jerk', 'trick'] },
@@ -869,6 +870,7 @@ const CONFIG = {
       { id: 'line', kind: 'fish', name: 'Чорна волосінь', price: 12, icon: 'am_line', desc: 'Леска витримує на 2% більший натяг — рідше рветься на самій межі.', fx: { snapMul: 1.02 } },
       { id: 'feather', kind: 'fish', name: 'Совине перо', price: 6, icon: 'am_feather', desc: 'Сигнали на воді з’являються вдвічі частіше.', fx: { signalMul: 2 } },
       { id: 'lure', kind: 'fish', name: 'Батькова блешня', price: 8, icon: 'am_lure', desc: 'Відпущена риба кличе батька вдвічі частіше.', fx: { fatherAdd: 0.2 } },
+      { id: 'bell', kind: 'fish', name: 'Мідний дзвоник', price: 10, icon: 'am_bell', desc: 'Перлівниці ловляться в півтора раза частіше.', fx: { musselMul: 1.5 } },
     ],
   },
 
@@ -927,6 +929,8 @@ const CONFIG = {
     snag: { at: [0.25, 0.7], pull: 0.5, perRod: 0.06, pullTension: 0.78 },
     // Відпустити можна рибу з нижньої половини ваги свого виду. Тоді з шансом father за within закидів на цьому місці клюне батько.
     release: { maxQ: 0.5, father: 0.2, within: [3, 10], fatherW: [1.15, 1.4], fatherD: 0.08 },
+    // Перлівниця на клюванні: шанс за зоною води (мілина — найчастіше); оберіг множить на musselMul.
+    mussel: { name: 'Перлівниця', chance: { shallow: 0.11, deep: 0.045, snag: 0.07 } },
     castTime: 0.55,
     waitRange: [2.5, 7],
     waitMin: 1.2,
@@ -992,7 +996,7 @@ const CONFIG = {
       hook: { name: 'Гачок', plural: 'гачки', three: 5, two: 0.5 },
       frog: { name: 'Жаба', plural: 'жаби', three: 12, two: 1 },
       // перли за три зорі: pearls за кожні 10 монет ставки, не більше pearlsMax — перла коштує однаково на будь-якій ставці
-      star: { name: 'Зоря', plural: 'зорі', three: 10, pearls: 2, pearlsMax: 20, golden: true },
+      star: { name: 'Зоря', plural: 'зорі', three: 10, pearls: 3, pearlsMax: 30, golden: true },
       moon: { name: 'Місяць', plural: 'місяці', jackpot: true },
       skull: { name: 'Череп', plural: 'черепи', skull: true },
     },
@@ -1050,14 +1054,13 @@ const CONFIG = {
     artifactSlots: 3,
     // Мушлі Водяника. Перлина ×pay. rounds — скільки обмінів і секунд на обмін у кожному раунді «Ще раз».
     // Ситий мішає повільніше (durMul), злий кладе 4 мушлі й платить angryPay. Три вгадані поспіль — ще й наживка.
+    // Мушлі Водяника грають на перлівницю з садка. Вгадав раунд — на кону pots[раунд] перл; «Ще раз» на тій самій перлівниці
+    // ставить їх знову, а обмінів більше й вони швидші. Програв — перлівниця пропала. Ситий мішає повільніше, злий кладе angryN мушлі.
     shells: {
-      // Баланс: при ×2 будь-хто, хто вгадує перший раунд частіше ніж у половині випадків і забирає, виходить у плюс.
-      // Тому вже перший раунд складний: модель уважного гравця вгадує ~50%, «ідеального» ~57%.
-      bets: [10, 25, 50, 100], n: 3, pay: 2, angryN: 4, angryPay: 2.5, angrySwapsMul: 1.5, satedDurMul: 1.06, satedSwapsMul: 1.1,
-      rounds: [{ swaps: 15, dur: 0.2 }, { swaps: 16, dur: 0.17 }, { swaps: 18, dur: 0.15 }],
+      n: 3, angryN: 4, satedDurMul: 1.1,
+      pots: [1, 2, 4],
+      rounds: [{ swaps: 9, dur: 0.25 }, { swaps: 15, dur: 0.18 }, { swaps: 18, dur: 0.15 }],
       showTime: 1, revealTime: 1.1,
-      reward: { moon: 2, live: 1, moth: 1 }, // ваги
-      rewardPack: { moon: 1, live: 4, moth: 5 }, // скільки дають
     },
     deal: {
       costShare: 0.5,
@@ -1201,7 +1204,7 @@ const artifactById = id => ARTIFACT_BY_ID[id];
 const NO_FX = Object.freeze({
   priceMul: 1, tensionMul: 1, surgeMul: 1, zoneMul: 1, progressMul: 1, waitMul: 1, snapMul: 1, junkMul: 1, legendMul: 1,
   jackpotShareMul: 1, angerMul: 1, slotPayMul: 1, diveLoseMul: 1, hookPayMul: 1, frogPayMul: 1,
-  frogRight: 0, hookTwo: 0, noCurse: false, freeSpinMul: 1, starPearlMul: 1, biteGlow: 0, signalMul: 1, fatherAdd: 0,
+  frogRight: 0, hookTwo: 0, noCurse: false, musselMul: 1, freeSpinMul: 1, starPearlMul: 1, biteGlow: 0, signalMul: 1, fatherAdd: 0,
   biteWindowAdd: 0, netCapAdd: 0,  curseAdd: 0, seeBite: false,
 });
 
@@ -1302,7 +1305,7 @@ const FISH = Object.fromEntries(CONFIG.fish.map(f => [f.n, f]));
 
 /* ---------- bestiary ---------- */
 const isKnown = (S, name) => !!S.bestiary[name];
-const knownCount = S => CONFIG.fish.filter(f => isKnown(S, f.n)).length;
+const knownCount = S => CONFIG.fish.filter(f => !f.item && isKnown(S, f.n)).length;
 const collectionProgress = (S, key) => ({ have: LOC[key].fish.filter(n => isKnown(S, n)).length, all: LOC[key].fish.length });
 const collectionDone = (S, key) => LOC[key].fish.every(n => isKnown(S, n));
 
@@ -2333,14 +2336,18 @@ function dive(S, rng = Math.random) {
   return { result: 'deeper', mul: level.mul };
 }
 
-/* ---------- Vodianyk's shells ---------- */
+/* ---------- Vodianyk's shells: played for a mussel, won in pearls ---------- */
 const SH = SC.shells;
+const MUSSEL = CONFIG.fishing.mussel.name;
+const musselCount = S => S.net.filter(f => f.n === MUSSEL).length;
+// The chance a bite is a mussel, in this water.
+const musselChance = (S, zone) => (CONFIG.fishing.mussel.chance[zone] || 0) * artifactFx(S).musselMul;
 // What the mood does to the shells, and why, in words.
 function shellsMood(S) {
   const mood = moodOf(S);
-  if (mood === 'angry') return { n: SH.angryN, pay: SH.angryPay, durMul: 1, swapsMul: SH.angrySwapsMul, reason: `Водяник злий — сьогодні ${SH.angryN} мушлі, зате перлина платить ×${String(SH.angryPay).replace('.', ',')}` };
-  if (mood === 'sated') return { n: SH.n, pay: SH.pay, durMul: SH.satedDurMul, swapsMul: SH.satedSwapsMul, reason: 'Водяник ситий і лінивий — мішає повільніше' };
-  return { n: SH.n, pay: SH.pay, durMul: 1, reason: '' };
+  if (mood === 'angry') return { n: SH.angryN, durMul: 1, reason: `Водяник злий — сьогодні ${SH.angryN} мушлі` };
+  if (mood === 'sated') return { n: SH.n, durMul: SH.satedDurMul, reason: 'Водяник ситий і лінивий — мішає повільніше' };
+  return { n: SH.n, durMul: 1, reason: '' };
 }
 // The swaps of one round as pairs of positions. The pearl simply follows them: no other rule decides where it is.
 function makeSwaps(n, count, rng = Math.random) {
@@ -2357,48 +2364,40 @@ const followPearl = (start, swaps) => swaps.reduce((p, [a, b]) => (p === a ? b :
 function dealRound(G, rng) {
   const R = SH.rounds[G.round - 1];
   G.start = Math.floor(rng() * G.n);
-  G.swaps = makeSwaps(G.n, Math.round(R.swaps * (G.swapsMul || 1)), rng);
+  G.swaps = makeSwaps(G.n, R.swaps, rng);
   G.dur = Math.round(R.dur * G.durMul * 1000) / 1000;
   G.pearl = followPearl(G.start, G.swaps);
   G.phase = 'play';
 }
-const canPlayShells = (S, bet) => !S.shells && SH.bets.includes(bet) && S.coins >= bet;
-function startShells(S, bet, rng = Math.random) {
-  if (!canPlayShells(S, bet)) return null;
+const canPlayShells = S => !S.shells && musselCount(S) > 0;
+function startShells(S, rng = Math.random) {
+  if (!canPlayShells(S)) return null;
   const m = shellsMood(S);
-  S.coins -= bet;
-  S.shells = { stake: bet, pot: bet, round: 1, n: m.n, pay: m.pay, durMul: m.durMul, swapsMul: m.swapsMul || 1 };
+  S.net.splice(S.net.findIndex(f => f.n === MUSSEL), 1);
+  S.shells = { pot: 0, round: 1, n: m.n, durMul: m.durMul };
   dealRound(S.shells, rng);
   return S.shells;
 }
 // The tap. The pearl is where the swaps carried it; nothing moves after this.
-function pickShell(S, slot, rng = Math.random) {
+function pickShell(S, slot) {
   const G = S.shells;
   if (!G || G.phase !== 'play' || slot < 0 || slot >= G.n) return null;
   const won = slot === G.pearl, before = G.pot;
   G.picked = slot;
+  moodAfterSpin(S);
   if (!won) {
     G.phase = 'lost';
-    feedMood(S, G.stake);
-    moodAfterSpin(S);
     S.stats.shellsLost = (S.stats.shellsLost || 0) + 1;
     return { won, before, pot: 0, pearl: G.pearl };
   }
-  G.pot = Math.round(G.pot * G.pay);
+  G.pot = SH.pots[G.round - 1];
   G.phase = 'won';
-  moodAfterSpin(S);
   const out = { won, before, pot: G.pot, pearl: G.pearl, round: G.round };
-  if (G.round >= SH.rounds.length) {
-    // three in a row: the pot and a rare bait, and the game is over
-    const k = pickWeighted(SH.reward, rng);
-    S.bait.have[k] = (S.bait.have[k] || 0) + SH.rewardPack[k];
-    out.reward = { k, n: SH.rewardPack[k] };
-    out.taken = takeShells(S);
-  }
+  if (G.round >= SH.rounds.length) out.taken = takeShells(S);
   return out;
 }
 const canAgain = S => !!S.shells && S.shells.phase === 'won' && S.shells.round < SH.rounds.length;
-// The whole pot goes back under the shells, faster this time.
+// The pearls go back under the shells on the same mussel, faster this time.
 function shellsAgain(S, rng = Math.random) {
   if (!canAgain(S)) return null;
   S.shells.round++;
@@ -2408,12 +2407,11 @@ function shellsAgain(S, rng = Math.random) {
 function takeShells(S) {
   const G = S.shells;
   if (!G) return 0;
-  const coins = G.phase === 'won' ? G.pot : 0;
-  S.coins += coins;
-  if (coins > G.stake * 4) angerMood(S, SC.mood.angerBigWin);
+  const pearls = G.phase === 'won' ? G.pot : 0;
+  S.pearls = (S.pearls || 0) + pearls;
   S.shells = null;
-  S.stats.shellsWon = (S.stats.shellsWon || 0) + (coins ? 1 : 0);
-  return coins;
+  if (pearls) S.stats.shellsWon = (S.stats.shellsWon || 0) + 1;
+  return pearls;
 }
 const closeShells = S => { if (S.shells && S.shells.phase === 'lost') S.shells = null; };
 
@@ -2459,7 +2457,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 13;
+const SCHEMA_VERSION = 14;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2603,6 +2601,12 @@ const MIGRATIONS = {
   },
   // v13: amulets.
   12: d => ({ ...d, v: 13, amulets: { owned: [], on: [] } }),
+  // v14: the shells play for mussels and pearls. A coin game left mid-way gives back its stake, or the pot if a round was won.
+  13: d => {
+    const G = d.shells;
+    const back = G && typeof G.stake === 'number' ? (G.phase === 'won' ? G.pot : G.phase === 'lost' ? 0 : G.stake) : 0;
+    return { ...d, v: 14, shells: null, coins: (d.coins || 0) + back };
+  },
 };
 
 function migrate(data) {
@@ -3170,6 +3174,7 @@ const FISH_SPRITE = {
   'Сивий Остап': 'fish_zander',
   'Старий Митрофан': 'fish_catfish',
   'Чорна Бранка': 'fish_beluga',
+  'Перлівниця': 'fish_mussel',
 };
 
 /* ---------- mill wheel: spokes drawn at an angle, so turning is real rotation ---------- */
@@ -4060,6 +4065,16 @@ defineSprites({
     '................',
     '................',
     '................',
+  ]] },
+  fish_mussel: { fps: 1, frames: [[
+    '....dddddddd....',
+    '..ddwwwwwwwwdd..',
+    '.dwwlwwlwwlwwwd.',
+    'dwwwlwwlwwlwwwwd',
+    'dmmmmmmmmmmmmmMd',
+    '.dwwwwwwwwwwwwd.',
+    '..ddwwwwwwwwdd..',
+    '....dddddddd....',
   ]] },
   icon_trap: { fps: 1, frames: [[
     '..hhhh..',
@@ -6839,18 +6854,19 @@ const CARD_NOTES={
   rough:`<span style="color:var(--fog)">Пошарпана виводка: ціна ×${String(CONFIG.fishing.quality.priceMul[0]).replace(".",",")}</span>`,
   father:'<span style="color:var(--magicL)">Батько! Трофейний розмір</span>',
   storm:'<span style="color:var(--shimmer)">Гроза: ціна ×1,3</span>',
-  named:'<span style="color:var(--gold)">Іменна легенда! Її знатимуть у всіх селах</span>'
+  named:'<span style="color:var(--gold)">Іменна легенда! Її знатимуть у всіх селах</span>',
+  mussel:'<span style="color:var(--moon)">Квиток у Мушлі Водяника — або продай на ринку</span>'
 };
 const cardArt={fish:null,surf:null,ctx:$('#ccv').getContext('2d')};
 
 function fillCard(c,notes,isNew){
   const pcard=$('#ccard'),tier=$('#ctier');
   pcard.className='pcard pframe'+(c.t==='legend'||c.golden?' gold':c.t==='epic'?' curse':'');
-  tier.className='pbanner '+c.t;tier.textContent=TIERS[c.t].label;
+  tier.className='pbanner '+c.t;tier.textContent=c.n===MUSSEL?'Знахідка':TIERS[c.t].label;
   $('#cname').textContent=c.n;
   $('#cw').textContent=`${c.w.toFixed(2).replace('.',',')} кг`;
   $('#cp').textContent=`${c.price} мон.`;
-  $('#cnote').innerHTML=notes.map(n=>CARD_NOTES[n]).join('<br>');
+  $('#cnote').innerHTML=(c.n===MUSSEL?['mussel']:notes).map(n=>CARD_NOTES[n]).join('<br>');
   $('#cstars').innerHTML=c.q?[1,2,3].map(i=>`<i class="picon ${i<=c.q?'ic-star-on':'ic-star-off'}"></i>`).join(''):'';
   $('#cstamp').hidden=!isNew;
   sizeCardArt(c);
@@ -7264,8 +7280,9 @@ function update(dt){
         const father=fatherBites(S);F.father=!!father;
         const ctx={location:S.location,phase:S.night.phase,bait:F.bait,zone:F.zone};
         const named=!father&&!tut.on?legendFor(S,ctx):null;
+        const mussel=!father&&!named&&!tut.on&&Math.random()<musselChance(S,F.zone)?fishByName(MUSSEL):null;
         const tm=F.wisp?CONFIG.events.list.wisps.tierMul:efx.tierMul||null;
-        F.fish=father||named||pickFish({...ctx,signal:F.signal,fx:artifactFx(S),tierMul:tm});
+        F.fish=father||named||mussel||pickFish({...ctx,signal:F.signal,fx:artifactFx(S),tierMul:tm});
         countCast(S);save();renderHud();scene.emit('bite');say('Клює!','gold',900);SFX.bite();updateAct();
       }
       break;
@@ -7820,14 +7837,14 @@ $('#amulist').addEventListener('click',e=>{
 });
 
 /* ui/shells.js */
-/* ---------- Vodianyk's shells: watch the pearl, tap the shell ---------- */
+/* ---------- Vodianyk's shells: a mussel in, pearls out ---------- */
 // ui: idle | show | shuffle | pick | reveal. Taps count only in pick.
-const sh={mode:'slot',bet:SC.shells.bets[1],ui:'idle'};
+const sh={mode:'slot',ui:'idle'};
 const SHC=SC.shells;
 const PLACE3=['ліворуч','посередині','праворуч'],PLACE4=['під крайньою лівою мушлею','під другою зліва','під другою справа','під крайньою правою мушлею'];
 const placeWord=(slot,n)=>(n>3?PLACE4:PLACE3)[slot];
-$('#shbets').innerHTML=SHC.bets.map(b=>`<button data-b="${b}">${b}</button>`).join('');
-$('#shrules').textContent=`Водяник показує, під якою мушлею перлина, і перемішує. Стеж і торкнись мушлі. Перлина — ставка ×${SHC.pay}; ні — ставку втрачено. Після виграшу можна «Ще раз»: уся сума на кону ставиться знову, а мушлі мішаються швидше й довше. Три вгадані поспіль — ще й рідкісна наживка. Злий Водяник кладе ${SHC.angryN} мушлі й платить ×${String(SHC.angryPay).replace('.',',')}, ситий мішає повільніше. Перлина завжди там, куди її перенесли мушлі.`;
+const pearlsWord=n=>{const a=n%100,b=n%10;return a>10&&a<15?'перл':b===1?'перла':b>=2&&b<=4?'перли':'перл'};
+$('#shrules').textContent=`Ставка — перлівниця з садка: лови їх на мілині. Водяник показує, під якою мушлею перлина, і перемішує; стеж і торкнись мушлі. Вгадав — ${SHC.pots[0]} ${pearlsWord(SHC.pots[0])}. «Ще раз» на тій самій перлівниці — ${SHC.pots[1]}, потім ${SHC.pots[2]}, але мішає швидше й довше. Не вгадав — перлівниця пропала. Злий Водяник кладе ${SHC.angryN} мушлі, ситий мішає повільніше. Перлина завжди там, куди її перенесли мушлі.`;
 function setMode(m){
   if(sh.ui==='show'||sh.ui==='shuffle'||sh.ui==='reveal')return;
   sh.mode=m;
@@ -7841,32 +7858,30 @@ $('#slotmode').addEventListener('click',e=>{const b=e.target.closest('button');i
 function enterShells(){
   const G=S.shells;
   if(G&&G.phase==='play'){slotScene.shellsSetup(G.n,G.pearl);sh.ui='pick';slotMsg('Мушлі вже перемішані. Де перлина?','gold');return}
-  if(G&&G.phase==='won'){slotScene.shellsSetup(G.n,G.pearl);slotScene.shellsLiftPearl(true);sh.ui='idle';slotMsg(`На кону ${fmt(G.pot)}. Забрати чи ще раз?`,'gold');return}
-  closeShells(S);
-  const m=shellsMood(S);slotScene.shellsSetup(m.n,Math.floor((m.n-1)/2));sh.ui='idle';
-  slotMsg('Водяник розклав мушлі на камені. Ставиш?');
+  if(G&&G.phase==='won'){slotScene.shellsSetup(G.n,G.pearl);slotScene.shellsLiftPearl(true);sh.ui='idle';slotMsg(`На кону ${G.pot} ${pearlsWord(G.pot)}. Забрати чи ще раз?`,'gold');return}
+  closeShells(S);enterShellsIdle();sh.ui='idle';
+  slotMsg(musselCount(S)?'Водяник розклав мушлі на камені. Граєш на перлівницю?':'Без перлівниці Водяник не грає. Лови їх на мілині.');
 }
+function enterShellsIdle(){const m=shellsMood(S);slotScene.shellsSetup(m.n,Math.floor((m.n-1)/2))}
 function renderShells(){
   renderAmulets();
   $('#pearlv').textContent=fmt(S.pearls||0);
-  const G=S.shells,m=G?{n:G.n,reason:''}:shellsMood(S);
-  $('#shmood').textContent=G?(G.n>SHC.n?`Водяник злий — ${G.n} мушлі, перлина ×${String(G.pay).replace('.',',')}`:G.durMul>1?'Водяник ситий — мішає повільніше':''):m.reason;
+  const G=S.shells,m=shellsMood(S);
+  $('#shmood').textContent=G?(G.n>SHC.n?`Водяник злий — ${G.n} мушлі`:G.durMul>1?'Водяник ситий — мішає повільніше':''):m.reason;
   $('#shmood').hidden=!$('#shmood').textContent;
   const won=!!G&&G.phase==='won'&&sh.ui==='idle';
   $('#shpot').hidden=!won;
   if(won){
     $('#shround').textContent=`Раунд ${G.round} з ${SHC.rounds.length} вгадано`;
-    $('#shpotv').textContent=fmt(G.pot);
-    $('#shnext').textContent=G.round<SHC.rounds.length?`Ще раз: ${fmt(G.pot)} → ${fmt(Math.round(G.pot*G.pay))}, мішатиме швидше`:'';
-    $('#shtake').textContent=`Забрати · ${fmt(G.pot)}`;
+    $('#shpotv').textContent=`${G.pot} ${pearlsWord(G.pot)}`;
+    $('#shnext').textContent=G.round<SHC.rounds.length?`Ще раз: ${G.pot} → ${SHC.pots[G.round]}, мішатиме швидше. Програєш — нічого`:'';
+    $('#shtake').textContent=`Забрати · ${G.pot} ${pearlsWord(G.pot)}`;
     $('#shagain').hidden=G.round>=SHC.rounds.length;
   }
-  if(!SHC.bets.includes(sh.bet)||S.coins<sh.bet){const ok=[...SHC.bets].reverse().find(v=>v<=S.coins);if(ok)sh.bet=ok}
-  document.querySelectorAll('#shbets button').forEach(b=>{const v=+b.dataset.b;b.classList.toggle('on',sh.bet===v);b.disabled=S.coins<v||!!G||sh.ui!=='idle'});
-  const busy=!!G||sh.ui!=='idle';
-  $('#shbets').hidden=busy;$('#shplay').hidden=busy;
-  $('#shplay').disabled=!canPlayShells(S,sh.bet);
-  $('#shplay').textContent=canPlayShells(S,sh.bet)?`Грати · ${fmt(sh.bet)}`:'Нема чим ставити';
+  const busy=!!G||sh.ui!=='idle',n=musselCount(S);
+  $('#shplay').hidden=busy;
+  $('#shplay').disabled=!canPlayShells(S);
+  $('#shplay').textContent=n?`Грати · перлівниця (у садку ${n})`:'Нема перлівниці';
   document.querySelectorAll('#slotmode button').forEach(b=>{b.disabled=sh.ui==='show'||sh.ui==='shuffle'||sh.ui==='reveal'});
   slotCv.classList.toggle('tap',sh.ui==='pick');
 }
@@ -7887,9 +7902,8 @@ function runRound(){
 }
 slotScene.onSwap=()=>SFX.clack();
 slotScene.onShuffled=()=>{if(sh.ui!=='shuffle')return;sh.ui='pick';renderShells();slotMsg('Де перлина? Торкнись мушлі.','gold')};
-$('#shbets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;sh.bet=+b.dataset.b;renderShells()});
 $('#shplay').addEventListener('click',()=>{
-  if(sh.ui!=='idle'||!startShells(S,sh.bet))return;
+  if(sh.ui!=='idle'||!startShells(S))return;
   save();renderHud();runRound();
 });
 slotCv.addEventListener('pointerdown',e=>{
@@ -7902,21 +7916,17 @@ slotCv.addEventListener('pointerdown',e=>{
   slotScene.shellsLiftSlot(slotN);
   if(res.won){
     SFX.pearl();slotScene.setEmotion('angry');
-    let text=`Перлина тут! ${fmt(res.before)} → ${fmt(res.pot)}`;
-    if(res.reward)text+=`. Три поспіль! Водяник скрипить зубами й віддає ще ${res.reward.n} · ${CONFIG.fishing.baits[res.reward.k].name.toLowerCase()}`;
-    slotMsg(text,'good');
-    if(res.taken!=null){flyCoins($('#slotcv'),Math.ceil(res.taken/20));toast(`+${fmt(res.taken)} монет`)}
+    slotMsg(res.taken!=null?`Перлина тут! Три поспіль — Водяник скрипить зубами й віддає ${res.taken} ${pearlsWord(res.taken)}.`:`Перлина тут! ${res.before?`${res.before} → `:''}${res.pot} ${pearlsWord(res.pot)} на кону`,'good');
   }else{
     SFX.bad();slotScene.setEmotion('pleased');
     setTimeout(()=>slotScene.shellsLiftPearl(true),350);
-    slotMsg(`Порожньо. Перлина була ${placeWord(res.pearl,G.n)}. ${fmt(res.before)} лишились Водяникові.`,'bad');
+    slotMsg(`Порожньо. Перлина була ${placeWord(res.pearl,G.n)}. ${res.before?`${res.before} ${pearlsWord(res.before)} і перлівниця лишились`:'Перлівниця лишилась'} Водяникові.`,'bad');
     closeShells(S);save();
   }
   setTimeout(()=>{sh.ui='idle';renderShells();renderHud()},SHC.revealTime*1000);
 });
-$('#shtake').addEventListener('click',()=>{if(sh.ui!=='idle')return;const w=takeShells(S);if(!w)return;flyCoins($('#shpot'),Math.ceil(w/20));toast(`+${fmt(w)} монет`);save();renderHud();slotMsg('Перлину назад, монети в кишеню. Ще?');enterShellsIdle();renderShells()});
+$('#shtake').addEventListener('click',()=>{if(sh.ui!=='idle')return;const w=takeShells(S);if(!w)return;toast(`+${w} ${pearlsWord(w)}`);SFX.coin();save();renderHud();slotMsg('Перли в торбі. Ще перлівниця?');enterShellsIdle();renderShells()});
 $('#shagain').addEventListener('click',()=>{if(sh.ui!=='idle'||!shellsAgain(S))return;save();runRound()});
-function enterShellsIdle(){const m=shellsMood(S);slotScene.shellsSetup(m.n,Math.floor((m.n-1)/2))}
 
 /* ui/sound.js */
 /* ---------- sound: tells the music what the game is doing. Called once a frame; the music changes only on its own bar lines ---------- */
