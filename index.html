@@ -284,6 +284,24 @@ main{flex:1;min-height:0;position:relative}
 .porder{display:grid;grid-template-columns:calc(var(--px)*24) 1fr auto auto;align-items:center;gap:calc(var(--px)*2);padding:var(--px);background:var(--night2)}
 .porder .pbuy{min-width:calc(var(--px)*20);font-size:16px}
 .porder.done{opacity:1;background:var(--night)}
+.porder{grid-template-columns:calc(var(--px)*24) 1fr auto}
+.porder .pord-main{display:flex;flex-direction:column;gap:var(--px);min-width:0}
+.porder .pord-cond{font-size:20px;line-height:1;color:var(--fog)}
+.porder .pord-rew{font-size:20px;line-height:1;color:var(--gold)}
+.pdem{display:grid;grid-template-columns:calc(var(--px)*24) 1fr auto;align-items:center;gap:calc(var(--px)*2);padding:var(--px);background:var(--night2)}
+.pdem b{font-family:var(--f-num);font-weight:400;font-size:16px}
+.pdem .up{color:var(--frogL)}
+.pdem .down{color:var(--red)}
+.pfish-price.hot{color:var(--frogL)}
+.pgoal{height:calc(var(--px)*6)}
+.ptrapbtn{position:absolute;right:calc(var(--px)*2);bottom:var(--px);z-index:1;display:flex;align-items:center;gap:var(--px);padding:0 var(--px);height:calc(var(--px)*9);background:var(--void);color:var(--bone)}
+.ptrapbtn b{font-family:var(--f-text);font-weight:400;font-size:20px;line-height:1}
+.ptrapbtn.ready b{color:var(--gold)}
+.ptrap{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:calc(var(--px)*2);padding:calc(var(--px)*2);background:var(--night2)}
+.ptrap .pord-cond{font-size:20px;line-height:1.05;color:var(--fog)}
+.paway{display:flex;flex-direction:column;gap:calc(var(--px)*2)}
+.paway p{margin:0;font-size:22px;line-height:1.1}
+.paway b{color:var(--gold);font-weight:400}
 .porder.done .pfish-name{color:var(--fog)}
 #pondbuy.armed{--face:var(--red);--shade:var(--redD)}
 
@@ -426,6 +444,7 @@ main{flex:1;min-height:0;position:relative}
         <canvas id="cv" class="pcanvas"></canvas>
         <div id="msg" class="msg pbubble"></div>
         <div class="pnight" id="nightinfo"></div>
+        <button class="ptrapbtn" id="trapbtn" aria-label="Верші"><i class="picon ic-trap"></i><b id="trapn"></b></button>
         <div id="meter" class="pmeter pframe deep" hidden>
           <span>Натяг</span><div class="pbar" id="tbar"><div class="pbar-danger"></div><div class="pbar-next" id="tnext" hidden></div><div class="pbar-zone" id="tzone"></div><div class="pbar-needle" id="tneedle"></div></div>
           <span>Риба</span><div class="pbar" id="pbar"><div class="pbar-fill" id="pfill"></div></div>
@@ -459,9 +478,13 @@ main{flex:1;min-height:0;position:relative}
 
     <section id="v-market" class="view scroll" hidden>
       <div class="pframe gold ppanel">
-        <h3>Скупник</h3>
-        <p class="psub">Замовлення на цю ніч. Платить більше за ринок.</p>
+        <h3>Дошка доручень</h3>
+        <p class="psub" id="boardsub"></p>
         <div class="pfishes" id="orders"></div>
+      </div>
+      <div class="pframe ppanel">
+        <h3>Попит дня</h3>
+        <div class="pfishes" id="demand"></div>
       </div>
       <div class="pframe ppanel">
         <h3>Садок</h3>
@@ -482,6 +505,7 @@ main{flex:1;min-height:0;position:relative}
       <div class="pframe gold ppanel">
         <h3>Викупити заводь</h3>
         <p class="psub" id="pondinfo"></p>
+        <div class="pbar pgoal"><div class="pbar-fill" id="pondfill"></div></div>
         <button class="pbtn" id="pondbuy">Викупити</button>
       </div>
       <div class="pframe curse ppanel">
@@ -509,6 +533,10 @@ main{flex:1;min-height:0;position:relative}
         <p class="psub">Один символ на барабан, задарма. Або нічого.</p>
         <div class="pstack" id="pickopts"></div>
         <button class="pbtn ghost" id="pickskip">Нічого не брати</button>
+      </div>
+      <div id="giftbox" class="pframe gold ppanel" hidden>
+        <p class="pdeal" id="gifttxt"></p>
+        <button class="pbtn" id="giftplace">Покласти на барабан</button>
       </div>
       <div id="placebox" class="pframe curse ppanel" hidden>
         <p class="pdeal" id="placetxt"></p>
@@ -593,6 +621,22 @@ main{flex:1;min-height:0;position:relative}
       </div>
     </div>
   </div>
+  <div id="traps" class="poverlay" hidden>
+    <div class="poverlay-head"><h3>Верші</h3><button class="pbtn ghost" id="trapclose">Закрити</button></div>
+    <div class="poverlay-body">
+      <p class="psub" id="trapsub"></p>
+      <div class="pfishes" id="traplist"></div>
+      <button class="pbtn" id="trapall">Забрати все</button>
+    </div>
+  </div>
+  <div id="away" class="poverlay" hidden>
+    <div class="poverlay-head"><h3>Поки тебе не було</h3></div>
+    <div class="poverlay-body">
+      <div class="pframe ppanel" id="awaybody"></div>
+      <button class="pbtn" id="awaytake">Забрати все</button>
+      <button class="pbtn ghost" id="awayclose">Просто подивитись</button>
+    </div>
+  </div>
   <div id="bestiary" class="poverlay" hidden>
     <div class="poverlay-head"><h3>Бестіарій</h3><button class="pbtn ghost" id="bestclose">Закрити</button></div>
     <div class="poverlay-body" id="bestlist"></div>
@@ -601,7 +645,7 @@ main{flex:1;min-height:0;position:relative}
     <h3 id="finaletitle"></h3>
     <div class="pfinale-stage" id="finalestage"><canvas id="finalecv" class="pcanvas"></canvas></div>
     <p class="pdeal" id="finaletext"></p>
-    <button class="pbtn" id="finalenext" style="visibility:hidden">Нова ніч+</button>
+    <button class="pbtn" id="finalenext" style="visibility:hidden">Далі</button>
   </div>
 </div>
 
@@ -661,24 +705,44 @@ const CONFIG = {
       fish: ['Кістка утопленика', 'Окунь', 'Щука', 'Судак', 'Минь', 'Сом', 'Стерлядь', 'Місячна рибка', 'Білуга'],
       tierMul: { junk: 0.5, common: 0.15, uncommon: 0.6, rare: 1.4, epic: 2.5, legend: 4 }, tensionMul: 1.3, surgeMul: 1.4, zoneMul: 0.85,
     },
+    // Відкривається лише викупом заводі: не купується, не скидається.
+    pleso: {
+      name: 'Чорне плесо', cost: 0, byBuyout: true, snags: [{ x: 0.2, y: 0.3 }, { x: 0.52, y: 0.55 }], shallow: 0.8, reeds: true,
+      fish: ['Кістка утопленика', 'Щука', 'Короп', 'Судак', 'Минь', 'Сом', 'Стерлядь', 'Місячна рибка', 'Білуга'],
+      tierMul: { junk: 0.4, common: 0.1, uncommon: 0.5, rare: 1.5, epic: 3, legend: 6 }, tensionMul: 1.4, surgeMul: 1.5, zoneMul: 0.82,
+    },
   },
 
-  // Ніч: N закидів, що дійшли до клювання. Фази місяця: 0 новий ... 4 повня ... 7 старий.
+  // Справжній місяць: фаза з дати. 0 новий ... 4 повня ... 7 старий. epoch — відомий новий місяць (6.01.2000, 18:14 UTC).
   night: {
-    castsPerNight: 12,
-    startPhase: 2,
+    synodic: 29.530588853,
+    epoch: Date.UTC(2000, 0, 6, 18, 14),
     phaseNames: ['Новий місяць', 'Молодик', 'Перша чверть', 'Прибуває', 'Повня', 'Спадає', 'Остання чверть', 'Старий місяць'],
     full: { phase: 4, legendWeight: 1.5, guests: ['Місячна рибка'], jackpotShareMul: 1.7, payMul: 0.9 },
-    newMoon: { phase: 0, fishPriceMul: 0.8 }, // злий настрій у новий місяць задається в slot.mood
+    // Новий місяць: Водяник похмурий (злий настрій), але угода вдвічі дешевша й дає більше мотилів.
+    newMoon: { phase: 0, dealCostMul: 0.5, dealBaitAdd: 3 },
   },
 
-  // Ринок: кожна продана рибина збиває ціну виду, вночі ціна відновлюється.
-  market: { dropPerSale: 0.04, floor: 0.5, recoverPerNight: 0.2 },
-  // Скупник: щоночі 1–2 замовлення на вид із відкритих місць.
-  orders: { perNight: [1, 2], bonus: 0.5, qty: { common: 2, uncommon: 2, rare: 1, epic: 1, legend: 1 }, tierWeight: { common: 4, uncommon: 4, rare: 3, epic: 1.5, legend: 0.3 } },
+  // Ринок: кожна продана рибина збиває ціну виду, ціна вертається з часом.
+  market: { dropPerSale: 0.04, floor: 0.5, recoverPerHour: 0.05 },
+  // Попит дня: раз на добу 1–2 види дорожчі, один дешевший.
+  demand: { up: [1, 2], upMul: [1.5, 2], downMul: 0.6 },
+  // Дошка доручень: завжди три — коротке, середнє, довге. Без дедлайнів; виконане одразу замінюється.
+  // bonus — надбавка до ринкової ціни кожної зданої рибини; reward — що дають за все доручення.
+  board: {
+    bonus: 0.5,
+    short: { tiers: ['common'], qty: [2, 3], rewards: { coins: 3, bait: 2 }, coins: [25, 50], bait: { worm: 10 } },
+    mid: { tiers: ['uncommon', 'common'], qty: [1, 2], stars: { 2: 0.5 }, rewards: { coins: 2, bait: 2, symbol: 1 }, coins: [80, 160], bait: { moth: 6, live: 5 } },
+    long: { tiers: ['rare', 'uncommon', 'epic'], qty: [1, 1], stars: { 3: 0.6 }, snag: 0.5, rewards: { symbol: 2, artifact: 1, coins: 1, bait: 1 }, coins: [300, 600], bait: { moon: 2 } },
+  },
+  // Верші: ловлять самі, по рибині раз на every хвилин, до cap риб; повна верша просто чекає.
+  // Ставиш із наживкою з торби (хліб теж можна). Риба переважно дрібна й середня.
+  traps: { slots: 3, cost: [0, 300, 1200], every: 50, cap: 10, tierMul: { junk: 1, common: 1.4, uncommon: 1, rare: 0.15, epic: 0, legend: 0 } },
+  // Екран «Поки тебе не було» — якщо гра була закрита хоча б стільки хвилин.
+  away: { minutes: 30 },
   // Нагорода за всіх риб місця, один раз.
-  collection: { rewards: { zavod: 300, ruslo: 1500, vyr: 5000 } },
-  // Мета забігу й складність кожної наступної Нової ночі+.
+  collection: { rewards: { zavod: 300, ruslo: 1500, vyr: 5000, pleso: 8000 } },
+  // Викуп заводі: монети витрачаються, прогрес лишається. Кожен наступний викуп дорожчий, а вода злішає (ngPlus).
   goal: { price: 40000, priceMulPerRun: 0.5 },
   ngPlus: { tensionPerRun: 0.08, surgePerRun: 0.1, zonePerRun: -0.04, slotPayPerRun: -0.02, angerPerRun: 0.2 },
 
@@ -1138,7 +1202,14 @@ function recordCatch(S, c) {
 
 /* ---------- market ---------- */
 const MK = CONFIG.market;
-const marketMul = (S, name, extra = 0) => Math.max(MK.floor, 1 - (S.market[name] || 0) - extra);
+// What the market pays now: the drop from recent sales, and the day's demand on top.
+const demandMul = (S, name) => {
+  const d = S.demand;
+  if (!d) return 1;
+  const up = d.up.find(e => e.n === name);
+  return up ? up.mul : d.down && d.down.n === name ? d.down.mul : 1;
+};
+const marketMul = (S, name, extra = 0) => Math.max(MK.floor, 1 - (S.market[name] || 0) - extra) * demandMul(S, name);
 const salePrice = (S, f) => Math.max(1, Math.round(f.price * marketMul(S, f.n)));
 
 // Every sale pushes the price down, and it is the next fish that feels it.
@@ -1155,61 +1226,115 @@ function sellFish(S, index) {
 
 // Orders the net can fill go first, at their bonus; the rest goes to the market.
 function sellAllValue(S) {
-  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, orders: S.orders.map(o => ({ ...o })), coins: 0, stats: { earned: 0 } };
-  return sellAll(T).coins;
+  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, demand: S.demand, board: S.board.map(o => ({ ...o, done: true })), coins: 0, stats: { earned: 0 } };
+  return sellAll(T, true).coins;
 }
 
-function sellAll(S) {
+// Fish an order wants go to the order first (a finished order is not replaced here: preview passes dry).
+function sellAll(S, dry = false, rng = Math.random) {
   let coins = 0, orders = 0;
-  S.orders.forEach((o, i) => { while (canFill(S, o)) { coins += fillOrder(S, i); orders++; } });
+  const done = [];
+  S.board.forEach((o, i) => {
+    while (canFill(S, o)) {
+      const r = fillOrder(S, i, dry, rng);
+      coins += r.coins;
+      orders++;
+      if (r.done) { done.push(r.done); break; }
+    }
+  });
   while (S.net.length) coins += sellFish(S, 0);
-  return { coins, orders };
+  return { coins, orders, done };
 }
 
-function recoverMarket(S) {
+// Prices come back with time, not with nights.
+function recoverMarket(S, hours) {
+  if (!(hours > 0)) return;
   for (const n of Object.keys(S.market)) {
-    S.market[n] -= MK.recoverPerNight;
+    S.market[n] -= MK.recoverPerHour * hours;
     if (S.market[n] <= 0) delete S.market[n];
   }
 }
 
-/* ---------- orders ---------- */
-function makeOrders(S, rng = Math.random) {
-  const OC = CONFIG.orders, names = new Set(S.unlocked.flatMap(k => LOC[k].fish));
-  const pool = {};
-  for (const n of names) if (!FISH[n].junk) pool[n] = OC.tierWeight[FISH[n].t];
-  const [lo, hi] = OC.perNight, want = lo + Math.floor(rng() * (hi - lo + 1));
-  const orders = [];
-  for (let i = 0; i < want; i++) {
-    const n = pickWeighted(pool, rng);
-    delete pool[n];
-    orders.push({ n, left: OC.qty[FISH[n].t], total: OC.qty[FISH[n].t] });
-    if (!Object.keys(pool).length) break;
+const dayKey = now => { const d = new Date(now); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const openFish = S => [...new Set(S.unlocked.flatMap(k => LOC[k].fish))].filter(n => !FISH[n].junk);
+
+function rollDemand(S, now, rng = Math.random) {
+  const D = CONFIG.demand, pool = openFish(S);
+  const n = Math.min(pool.length - 1, D.up[0] + Math.floor(rng() * (D.up[1] - D.up[0] + 1)));
+  const up = [];
+  for (let i = 0; i < n; i++) {
+    const name = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+    up.push({ n: name, mul: Math.round(rangeRnd(rng, D.upMul[0], D.upMul[1]) * 10) / 10 });
   }
-  S.orders = orders;
-  S.ordersNight = S.night.n;
+  const down = pool.length ? { n: pool[Math.floor(rng() * pool.length)], mul: D.downMul } : null;
+  S.demand = { day: dayKey(now), up, down };
 }
 
-function ensureOrders(S, rng = Math.random) {
-  if (S.ordersNight !== S.night.n) makeOrders(S, rng);
+/* ---------- the order board ---------- */
+const BOARD_LENS = ['short', 'mid', 'long'];
+
+// A new order of one length, from fish of the places already open.
+function makeOrder(S, len, rng = Math.random) {
+  const B = CONFIG.board[len], open = openFish(S);
+  let pool = [];
+  for (const t of B.tiers) { pool = open.filter(n => FISH[n].t === t); if (pool.length) break; }
+  if (!pool.length) pool = open;
+  const n = pool[Math.floor(rng() * pool.length)];
+  const qty = B.qty[0] + Math.floor(rng() * (B.qty[1] - B.qty[0] + 1));
+  let stars = 0;
+  for (const [k, ch] of Object.entries(B.stars || {})) if (rng() < ch) stars = +k;
+  const snag = !!B.snag && rng() < B.snag;
+  const kind = pickWeighted(B.rewards, rng);
+  let reward;
+  if (kind === 'coins') reward = { type: 'coins', v: Math.round(rangeRnd(rng, B.coins[0], B.coins[1]) / 5) * 5 };
+  else if (kind === 'bait') { const k = pickWeighted(Object.fromEntries(Object.keys(B.bait).map(x => [x, 1])), rng); reward = { type: 'bait', k, v: B.bait[k] }; }
+  else if (kind === 'symbol') {
+    // the symbol is the fish asked for, or a rarer one from the open places
+    const rarer = open.filter(x => SYM[x] && TIER_ORDER.indexOf(FISH[x].t) > TIER_ORDER.indexOf(FISH[n].t));
+    reward = { type: 'symbol', k: rarer.length && rng() < 0.5 ? rarer[Math.floor(rng() * rarer.length)] : n };
+  } else reward = { type: 'artifact' };
+  return { len, n, qty, left: qty, stars, snag, reward };
+}
+const TIER_ORDER = ['junk', 'common', 'uncommon', 'rare', 'epic', 'legend'];
+
+// Always three, one of each length.
+function ensureBoard(S, rng = Math.random) {
+  if (!Array.isArray(S.board)) S.board = [];
+  BOARD_LENS.forEach((len, i) => { if (!S.board[i] || S.board[i].len !== len) S.board[i] = makeOrder(S, len, rng); });
+  S.board.length = BOARD_LENS.length;
 }
 
-// The dearest matching fish goes first: the bonus multiplies its price.
-function canFill(S, order) {
-  return order.left > 0 && S.net.some(f => f.n === order.n);
+const fitsOrder = (o, f) => f.n === o.n && (!o.stars || (f.q || 0) >= o.stars) && (!o.snag || f.z === 'snag');
+const canFill = (S, o) => !!o && o.left > 0 && S.net.some(f => fitsOrder(o, f));
+
+function giveReward(S, r) {
+  if (r.type === 'coins') { S.coins += r.v; S.stats.earned += r.v; }
+  else if (r.type === 'bait') S.bait.have[r.k] = (S.bait.have[r.k] || 0) + r.v;
+  else if (r.type === 'symbol') S.gifts.push(r.k);
+  else if (r.type === 'artifact') {
+    const id = randomMissingArtifact(S);
+    if (id) { r.id = id; r.slotted = giveArtifact(S, id); }
+    else { r.type = 'coins'; r.v = 500; S.coins += 500; } // every cursed thing is already in your pockets
+  }
+  return r;
 }
 
-function fillOrder(S, index) {
-  const order = S.orders[index];
-  if (!order || !canFill(S, order)) return 0;
+// One fish to an order: the dearest that fits. A finished order pays its reward and a new one takes its place.
+function fillOrder(S, index, dry = false, rng = Math.random) {
+  const order = S.board[index];
+  if (!canFill(S, order)) return { coins: 0 };
   let best = -1;
-  S.net.forEach((f, i) => { if (f.n === order.n && (best < 0 || f.price > S.net[best].price)) best = i; });
+  S.net.forEach((f, i) => { if (fitsOrder(order, f) && (best < 0 || f.price > S.net[best].price)) best = i; });
   const f = S.net.splice(best, 1)[0];
-  const coins = Math.max(1, Math.round(f.price * marketMul(S, f.n) * (1 + CONFIG.orders.bonus)));
+  const coins = Math.max(1, Math.round(f.price * marketMul(S, f.n) * (1 + CONFIG.board.bonus)));
   S.coins += coins;
   S.stats.earned += coins;
   order.left--;
-  return coins;
+  if (order.left > 0 || dry) return { coins };
+  const reward = giveReward(S, { ...order.reward });
+  S.stats.orders = (S.stats.orders || 0) + 1;
+  S.board[index] = makeOrder(S, order.len, rng);
+  return { coins, done: { order, reward } };
 }
 
 /* ---------- the goal ---------- */
@@ -1223,6 +1348,13 @@ function buyPond(S) {
   S.ended = true;
   S.stats.ponds = (S.stats.ponds || 0) + 1;
   return true;
+}
+
+// After the ending: nothing is taken back. The water turns meaner, the next buyout costs more, the Black Pool opens.
+function afterBuyout(S) {
+  S.ended = false;
+  S.ng = (S.ng || 0) + 1;
+  for (const [k, l] of Object.entries(LOC)) if (l.byBuyout && !S.unlocked.includes(k)) S.unlocked.push(k);
 }
 
 /* core/fishing.js */
@@ -1381,18 +1513,14 @@ function landFish(S, fish, rng = Math.random, extra = {}) {
   if (stars === 3) notes.push('clean');
   if (stars === 1) notes.push('rough');
   if (extra.father) notes.push('father');
-  if (S.night.phase === CONFIG.night.newMoon.phase) {
-    price *= CONFIG.night.newMoon.fishPriceMul;
-    notes.push('newmoon');
-  }
   let golden = false;
-  if (S.buffs.golden > 0 && !fish.junk) {
+  if (!extra.noBuffs && S.buffs.golden > 0 && !fish.junk) {
     price *= FC.goldenMul;
     S.buffs.golden--;
     golden = true;
     notes.push('golden');
   }
-  if (S.buffs.curse > 0) {
+  if (!extra.noBuffs && S.buffs.curse > 0) {
     price *= FC.curseMul;
     S.buffs.curse--;
     notes.push('curse');
@@ -1626,26 +1754,38 @@ const NC = CONFIG.night;
 const isFullMoon = S => S.night.phase === NC.full.phase;
 const isNewMoon = S => S.night.phase === NC.newMoon.phase;
 const phaseName = S => NC.phaseNames[S.night.phase];
-const castsLeftTonight = S => Math.max(0, NC.castsPerNight - S.night.casts);
 
+// Where the real moon is: 0..1 through its month, and which of the eight faces it shows.
+const moonAge = now => ((((now - NC.epoch) / 86400000) / NC.synodic) % 1 + 1) % 1;
+const moonPhaseAt = now => Math.floor(moonAge(now) * 8 + 0.5) % 8;
+// Days until the full moon starts showing, or 0 while it is up.
+function daysToFull(now) {
+  if (moonPhaseAt(now) === NC.full.phase) return 0;
+  const start = (NC.full.phase - 0.5) / 8, a = moonAge(now);
+  return Math.ceil((((start - a) % 1 + 1) % 1) * NC.synodic);
+}
+
+// A cast that reached a bite. Vodianyk gets a little hungrier.
 function countCast(S) {
-  S.night.casts++;
+  S.stats.casts = (S.stats.casts || 0) + 1;
   moodAfterCast(S);
 }
 
-// Called when the rod is back in hand, so the sky never changes in the middle of a fight.
-function rollNight(S, rng = Math.random) {
-  if (S.night.casts < NC.castsPerNight) return false;
-  S.night.n++;
-  S.night.casts = 0;
-  S.night.phase = (S.night.phase + 1) % NC.phaseNames.length;
-  recoverMarket(S);
-  makeOrders(S, rng);
-  return true;
+// Real time moves the moon, the market and the day. Returns what changed, for the page to tell.
+function syncTime(S, now = Date.now(), rng = Math.random) {
+  const out = {};
+  const phase = moonPhaseAt(now);
+  if (phase !== S.night.phase) { out.phase = phase; S.night.phase = phase; }
+  const last = S.marketAt || now;
+  recoverMarket(S, (now - last) / 3600000);
+  S.marketAt = now;
+  if (!S.demand || S.demand.day !== dayKey(now)) { rollDemand(S, now, rng); out.demand = true; }
+  ensureBoard(S, rng);
+  return out;
 }
 
 const isUnlocked = (S, key) => S.unlocked.includes(key);
-const canBuyLocation = (S, key) => !isUnlocked(S, key) && S.coins >= CONFIG.locations[key].cost;
+const canBuyLocation = (S, key) => !isUnlocked(S, key) && !LOC[key].byBuyout && S.coins >= CONFIG.locations[key].cost;
 
 function buyLocation(S, key) {
   if (!canBuyLocation(S, key)) return false;
@@ -1660,6 +1800,69 @@ function goToLocation(S, key) {
   S.location = key;
   return true;
 }
+
+/* ---------- traps ---------- */
+const TC = CONFIG.traps;
+const trapFill = (t, now) => Math.min(TC.cap, Math.floor(Math.max(0, now - t.since) / (TC.every * 60000)));
+const trapReady = (t, now) => Math.max(0, trapFill(t, now) - (t.taken || 0));
+const trapFullAt = t => t.since + TC.cap * TC.every * 60000;
+const canBuyTrap = S => S.traps.length < TC.slots && S.coins >= TC.cost[S.traps.length];
+
+function buyTrap(S) {
+  if (!canBuyTrap(S)) return false;
+  S.coins -= TC.cost[S.traps.length];
+  S.traps.push(null);
+  return true;
+}
+
+// Uses one bait from the bag (bread is free). The trap fishes where you stand.
+function setTrap(S, i, now = Date.now()) {
+  if (i < 0 || i >= S.traps.length || S.traps[i]) return false;
+  const bait = baitCount(S, S.bait.on) > 0 ? S.bait.on : 'bread';
+  if (!baitDef(bait).free) {
+    S.bait.have[bait]--;
+    if (!S.bait.have[bait] && S.bait.on === bait) S.bait.on = 'bread';
+  }
+  S.traps[i] = { since: now, bait, loc: S.location, taken: 0, seed: Math.floor(now % 1e9) };
+  return true;
+}
+
+// The n-th fish of a trap is fixed by its seed, so a reload never rerolls what is inside.
+function trapFish(S, t, n) {
+  const r = seededRng(t.seed + n * 7919);
+  const list = fishTable({ location: t.loc, phase: S.night.phase, bait: t.bait, zone: 'shallow' })
+    .map(e => ({ ...e, w: e.w * (TC.tierMul[e.fish.t] ?? 1) })).filter(e => e.w > 0);
+  let x = r() * list.reduce((a, e) => a + e.w, 0);
+  for (const e of list) if ((x -= e.w) < 0) return { fish: e.fish, rng: r };
+  return { fish: list[list.length - 1].fish, rng: r };
+}
+
+// Takes what fits into the net. A trap emptied to the bottom is set again with the same bait if there is any.
+function collectTrap(S, i, now = Date.now()) {
+  const t = S.traps[i];
+  if (!t) return [];
+  const got = [];
+  let ready = trapReady(t, now);
+  while (ready > 0 && S.net.length < netCapacity(S)) {
+    const { fish, rng } = trapFish(S, t, t.taken);
+    got.push(landFish(S, fish, rng, { zone: 'trap', noBuffs: true }).fish);
+    t.taken++;
+    ready--;
+  }
+  if (ready === 0 && trapFill(t, now) === t.taken) {
+    S.traps[i] = null;
+    const again = t.bait === 'bread' || (S.bait.have[t.bait] || 0) > 0;
+    if (again) {
+      const keep = S.bait.on;
+      S.bait.on = t.bait;
+      setTrap(S, i, now);
+      if (S.bait.on === 'bread' && keep !== t.bait) S.bait.on = keep; else if (baitCount(S, keep) > 0) S.bait.on = keep;
+    }
+  }
+  return got;
+}
+const collectAll = (S, now = Date.now()) => S.traps.flatMap((_, i) => collectTrap(S, i, now));
+const trapsReady = (S, now = Date.now()) => S.traps.reduce((a, t) => a + (t ? trapReady(t, now) : 0), 0);
 
 /* core/slot.js */
 // Vodianyk's machine without DOM. Every outcome lands in S before the reels animate,
@@ -2057,14 +2260,16 @@ function dive(S, rng = Math.random) {
 }
 
 /* ---------- the deal ---------- */
-const dealCost = S => Math.max(SC.deal.minCost, Math.floor(S.coins * SC.deal.costShare));
+// In the new moon he is gloomy, and gloom makes him generous.
+const dealCost = S => Math.max(SC.deal.minCost, Math.floor(S.coins * SC.deal.costShare * (isNewMoon(S) ? NIGHT.newMoon.dealCostMul : 1)));
+const dealBait = S => SC.deal.moonBaitFish + (isNewMoon(S) ? NIGHT.newMoon.dealBaitAdd : 0);
 const canAcceptDeal = S => S.deal && S.coins >= dealCost(S);
 
 function acceptDeal(S) {
   if (!canAcceptDeal(S)) return null;
   const cost = dealCost(S);
   S.coins -= cost;
-  S.bait.have.moon = (S.bait.have.moon || 0) + SC.deal.moonBaitFish;
+  S.bait.have.moon = (S.bait.have.moon || 0) + dealBait(S);
   S.deal = false;
   feedMood(S, cost);
   return { cost };
@@ -2096,7 +2301,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2115,7 +2320,7 @@ const defaultState = () => ({
   deal: false,
   location: 'zavod',
   unlocked: ['zavod'],
-  night: { n: 1, casts: 0, phase: CONFIG.night.startPhase },
+  night: { phase: moonPhaseAt(Date.now()) },
   mood: { satiety: CONFIG.slot.mood.startSatiety, anger: 0 },
   artifacts: [],
   artifactOffer: null,
@@ -2128,8 +2333,12 @@ const defaultState = () => ({
   bestiary: {},
   rewarded: [],
   market: {},
-  orders: [],
-  ordersNight: 0,
+  board: [], // three orders; filled on load
+  demand: null,
+  marketAt: 0,
+  traps: [null], // one trap comes free; null is an empty one
+  gifts: [], // symbols the buyer gave, waiting to be put on a reel
+  seen: 0, // when the game was last open
   ng: 0,
   ended: false,
   buffs: { golden: 0, curse: 0 },
@@ -2196,13 +2405,13 @@ const MIGRATIONS = {
     const { loan, sacrifice, ...rest } = d;
     return { ...rest, v: 7, strips: startStrips(), pick: null, pickIn: CONFIG.slot.pick.every, removed: 0, lastSpin: null };
   },
+  // v8: the real moon and real time. Nights of twelve casts and the nightly orders go; the board, traps,
+  // the day's demand and gifts arrive. Нова ніч+ no longer resets anything, and the runs already made stay.
+  7: d => {
+    const { orders, ordersNight, ...rest } = d;
+    return { ...rest, v: 8, night: { phase: moonPhaseAt(Date.now()) }, board: [], demand: null, marketAt: 0, traps: [null], gifts: [], seen: 0 };
+  },
 };
-
-// Everything a new run starts from, plus what a player carries over: artifacts, the bestiary and the record.
-function startNewNightPlus(S) {
-  const fresh = defaultState();
-  return { ...fresh, ng: S.ng + 1, artifacts: S.artifacts, bestiary: S.bestiary, rewarded: S.rewarded, stats: S.stats, strips: S.strips, removed: S.removed };
-}
 
 function migrate(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return defaultState();
@@ -2220,13 +2429,15 @@ function migrate(data) {
     bait: { on: (d.bait && d.bait.on) || 'bread', have: { ...b.bait.have, ...((d.bait && d.bait.have) || {}) } },
     buffs: { ...b.buffs, ...(d.buffs || {}) },
     stats: { ...b.stats, ...(d.stats || {}) },
-    night: { ...b.night, ...(d.night || {}) },
+    night: { phase: moonPhaseAt(Date.now()) },
     mood: { ...b.mood, ...(d.mood || {}) },
     artifacts: Array.isArray(d.artifacts) ? d.artifacts : [],
     bestiary: d.bestiary && typeof d.bestiary === 'object' ? d.bestiary : {},
     market: d.market && typeof d.market === 'object' ? d.market : {},
     rewarded: Array.isArray(d.rewarded) ? d.rewarded : [],
-    orders: Array.isArray(d.orders) ? d.orders : [],
+    board: Array.isArray(d.board) ? d.board : [],
+    traps: Array.isArray(d.traps) && d.traps.length ? d.traps.slice(0, CONFIG.traps.slots) : [null],
+    gifts: Array.isArray(d.gifts) ? d.gifts : [],
     unlocked: Array.isArray(d.unlocked) ? d.unlocked : b.unlocked,
     net: Array.isArray(d.net) ? d.net : [],
     strips: Array.isArray(d.strips) && d.strips.length === 3 && d.strips.every(st => Array.isArray(st) && st.length >= CONFIG.slot.strip.min) ? d.strips : b.strips,
@@ -3360,6 +3571,16 @@ defineSprites({
     'hh..............',
     '................',
   ]] },
+  icon_trap: { fps: 1, frames: [[
+    '..hhhh..',
+    '.hbhbhh.',
+    'hhbhbhbh',
+    'hbhbhbhh',
+    '.hhbhbh.',
+    '..hbhh..',
+    '...hh...',
+    '........',
+  ]] },
   bait_bread: { fps: 1, frames: [[
     '........',
     '..hLLh..',
@@ -3689,6 +3910,19 @@ const LOCATION_ART = {
     dash: ['waterL', 'waterM'],
     glint: ['moonD', 'waterL'],
   },
+  pleso: {
+    sky: ['void', 'curseD', 'night'],
+    water: [['night2', 'curseD'], ['curseD', 'night'], ['night', 'void'], ['void', 'void']],
+    forest: ['tree_ruin', 'tree_willow', 'tree_ruin'],
+    props: [
+      { name: 'stone', x: 0.06, y: 0.62 },
+      { name: 'lily_pad', x: 0.38, y: 0.78 },
+    ],
+    reeds: true,
+    fog: 'magic',
+    dash: ['magic', 'waterD'],
+    glint: ['magicL', 'magic'],
+  },
 };
 const ROD_SEGMENTS = 6, ROD_THICK = 3;
 // Where the rod sits in each fisher frame, relative to the unmirrored sprite.
@@ -3992,6 +4226,14 @@ class PondScene {
       const p = waterPoint(g, c.x, c.y);
       S.drawSprite(snag, 0, p.x - (snag.w >> 1), p.y - (snag.h >> 1));
     }
+    // traps set here bob near the left bank
+    const trap = SPRITES.icon_trap;
+    (view.traps || []).forEach((on, i) => {
+      if (!on) return;
+      const p = waterPoint(g, 0.08 + i * 0.07, 0.86 - (i % 2) * 0.05);
+      S.drawSprite(trap, 0, p.x, p.y - 3 + (Math.sin(t * 1.3 + i) > 0.5 ? 1 : 0));
+      if (on === 'ready' && Math.floor(t * 2 + i) % 2) S.px(p.x + 3, p.y - 5, 'gold');
+    });
     if (art.wheel) {
       const wheel = SPRITES.mill_wheel;
       S.drawSprite(wheel, frameAt(wheel, t), w - wheel.w + 6, horizon - 20);
@@ -5806,7 +6048,7 @@ let S;
 let pxUnit=3; // one game pixel in CSS px, kept in JS so frames never have to ask the layout for it
 const REDUCED_MOTION=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STORE=(()=>{try{return window.localStorage}catch(e){return {getItem:()=>null,setItem(){}}}})();
-const save=()=>writeSave(STORE,S);
+const save=()=>{S.seen=Date.now();writeSave(STORE,S)};
 
 /* ---------- preferences: kept apart from the save, so a reset or import keeps your sound and tutorial choices ---------- */
 const PREFS_KEY='nichna-zavod-prefs';
@@ -5877,7 +6119,7 @@ function spriteDataUrl(sprite,silhouette=false){
 function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
-  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame'};
+  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap'};
   for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYM_SPRITE)names['sym-'+SYM_SPRITE[k]]=SYM_SPRITE[k];
@@ -5907,7 +6149,9 @@ function renderHud(){
   if(S.father)b.push(`<span class="pchip rare">Батько поруч${S.father.loc===S.location?'':` · ${CONFIG.locations[S.father.loc].name}`}</span>`);
   const chips=b.join('');
   if(chips!==hud.chips){hud.chips=chips;$('#buffs').innerHTML=chips}
-  $('#nightinfo').textContent=`Ніч ${S.night.n} · ${phaseName(S)} · ще ${castsLeftTonight(S)}`;
+  const toFull=daysToFull(Date.now());
+  $('#nightinfo').textContent=`${phaseName(S)}${toFull?` · повня за ${toFull} дн.`:''}`;
+  renderTrapBtn();
   const mb=$('#mbadge');
   if(S.net.length){mb.hidden=false;mb.textContent=S.net.length;mb.classList.toggle('warn',S.net.length>=cap)}else mb.hidden=true;
   renderPondSell();
@@ -6011,7 +6255,6 @@ const CARD_CHROME_H=260; // banner, stars, name, numbers, note and buttons aroun
 const CARD_NOTES={
   golden:`<span style="color:var(--gold)">Золота луска: ціна ×${CONFIG.fishing.goldenMul}</span>`,
   curse:'<span style="color:var(--red)">Прокляття: ціна вдвічі менша</span>',
-  newmoon:'<span style="color:var(--fog)">Новий місяць: риба дешевша</span>',
   clean:`<span style="color:var(--gold)">Чиста виводка! Ціна ×${String(CONFIG.fishing.quality.priceMul[2]).replace(".",",")}</span>`,
   rough:`<span style="color:var(--fog)">Пошарпана виводка: ціна ×${String(CONFIG.fishing.quality.priceMul[0]).replace(".",",")}</span>`,
   father:'<span style="color:var(--magicL)">Батько! Трофейний розмір</span>'
@@ -6055,7 +6298,9 @@ const FISHING_BUSY=['aim','cast','waiting','bite','reel','snag'];
 let cardOpen=false,lastActKey='';
 function renderLocations(){
   const box=$('#locs'),busy=F.state!=='idle'||cardOpen;
-  box.innerHTML=Object.entries(CONFIG.locations).map(([k,l])=>{
+  const places=Object.entries(CONFIG.locations).filter(([k,l])=>!l.byBuyout||isUnlocked(S,k));
+  box.style.gridTemplateColumns=`repeat(${places.length},1fr)`;
+  box.innerHTML=places.map(([k,l])=>{
     const open=isUnlocked(S,k),on=S.location===k,armed=locArm.key===k;
     const label=open?l.name:armed?`Купити? ${fmt(l.cost)}`:`${l.name} · ${fmt(l.cost)}`;
     return `<button data-loc="${k}" class="${on?'on':''}${open?'':' locked'}${armed?' armed':''}" ${busy&&!on?'disabled':''}>${label}</button>`;
@@ -6075,6 +6320,16 @@ $('#locs').addEventListener('click',e=>{
   buyLocation(S,k);locArm.key=null;signals.list=[];save();renderHud();renderLocations();updateAct(true);
   toast(`Відкрито: ${CONFIG.locations[k].name}`);SFX.win();
 });
+
+// Which traps show on this water: set here, and whether something waits inside. Cached per second.
+const trapCache={t:0,v:[]};
+function trapView(){
+  const now=Date.now();
+  if(now-trapCache.t<1000)return trapCache.v;
+  trapCache.t=now;
+  trapCache.v=S.traps.map(t=>t&&t.loc===S.location?(trapReady(t,now)?'ready':'on'):null);
+  return trapCache.v;
+}
 
 /* ---------- where the float goes ---------- */
 // The aim is kept in water fractions in the save and turned into scene pixels here.
@@ -6282,13 +6537,22 @@ $('#snagcut').addEventListener('click',e=>{
   resolveSnag(F.reel,false);
   lose('Перерізав. Наживка лишилась корчу, а риба — собі','lost');
 });
-function nextNightIfDue(){
-  if(!rollNight(S))return;
+// Real time: the moon, the market and the day's demand. Called on any quiet moment and once a minute.
+let lastTick=0;
+function nextNightIfDue(force){
+  const now=Date.now();
+  if(!force&&now-lastTick<15000)return;
+  lastTick=now;
+  const ch=syncTime(S,now);
+  if(!ch.phase&&!ch.demand)return;
   save();renderHud();
-  toast(`Ніч ${S.night.n}. ${phaseName(S)}`);
-  if(isFullMoon(S))say('Повня. Вода неспокійна, скарб росте.','gold',3200);
-  else if(isNewMoon(S))say('Новий місяць. Риба дешева, Водяник злий.','bad',3200);
-  SFX.night();
+  if(tab==='market')renderMarket();
+  if(ch.phase!==undefined){
+    toast(`Місяць змінився: ${phaseName(S)}`);
+    if(isFullMoon(S))say('Повня. Вода неспокійна, скарб росте, легенди близько.','gold',3200);
+    else if(isNewMoon(S))say('Новий місяць. Водяник похмурий, зате на угоди щедрий.','bad',3200);
+    SFX.night();
+  }else if(ch.demand)toast('Новий день: на ринку інший попит');
 }
 
 function land(){
@@ -6413,7 +6677,7 @@ function loop(now){
     scene.advance(dt);
     const fighting=F.state==='reel'||F.state==='snag';
     scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:S.lv.lamp,moonPhase:S.night.phase,location:S.location,
-      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list});
+      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView()});
     scene.surf.present(ctx);
   }
   if(tab==='slot')slotTick(dt);
@@ -6445,12 +6709,10 @@ function renderMarket(){
   $('#netsum').textContent=S.net.length?`${S.net.length}/${cap} · торкнись рибу, щоб продати одну. Чим більше одного виду, тим дешевше`:`0/${cap}`;
   $('#sellall').disabled=!S.net.length;
   $('#sellall').textContent=S.net.length?`Продати все · ${fmt(sellAllValue(S))}`:'Продати все';
-  const bonus=Math.round(CONFIG.orders.bonus*100);
-  $('#orders').innerHTML=S.orders.length?S.orders.map((o,i)=>{
-    const f=fishByName(o.n),known=isKnown(S,o.n),can=canFill(S,o),done=o.left<=0;
-    return `<div class="porder${done?' done':''}"><i class="picon ${known?fishIconClass(o.n):silhouetteClass(o.n)}"></i><span class="pfish-name">${known?o.n:TIERS[f.t].label+' риба'}</span><span class="pfish-kg">${done?'Виконано':`ще ${o.left}`}</span><button class="pbuy" data-o="${i}" ${can?'':'disabled'}>${done?'✓':`+${bonus}%`}</button></div>`}).join(''):'<div class="pempty">Скупник спить. Прийде наступної ночі.</div>';
+  renderBoard();renderDemand();
   const price=pondPrice(S),goal=$('#pondbuy');
-  $('#pondinfo').textContent=`Заплати ${fmt(price)} монет, і заводь твоя. У тебе ${fmt(S.coins)}.`;
+  $('#pondfill').style.width=Math.min(100,S.coins/price*100)+'%';
+  $('#pondinfo').textContent=`${S.ng?`Уже ${S.ng} раз викуплено. `:''}Без поспіху: заплати ${fmt(price)} монет, і заводь твоя. У тебе ${fmt(S.coins)}.`;
   goal.disabled=!canBuyPond(S);
   goal.textContent=pondArm.on?'Точно?':`Викупити · ${fmt(price)}`;
   goal.classList.toggle('armed',pondArm.on);
@@ -6480,13 +6742,15 @@ $('#fishlist').addEventListener('click',e=>{const r=e.target.closest('.pfish');i
   sellFish(S,+r.dataset.i);save();renderHud();renderMarket()});
 $('#sellall').addEventListener('click',()=>{if(!S.net.length)return;
   flyCoins($('#fishlist'),S.net.length);
-  const r=sellAll(S);toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);save();renderHud();renderMarket()});
+  const r=sellAll(S);toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);r.done.forEach(announceOrder);save();renderHud();renderMarket()});
 // Buying a pack also puts it on the hook: you bought it to fish with it.
 $('#baits').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;const k=b.dataset.bait;
   if(b.dataset.pick){selectBait(S,k);save();renderMarket();return}
   if(!buyBait(S,k))return;selectBait(S,k);SFX.coin();toast(`${FCU.baits[k].name} ×${FCU.baits[k].pack}. На гачку`);save();renderHud();renderMarket()});
 $('#orders').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
-  flyCoins(b,2);const paid=fillOrder(S,+b.dataset.o);toast(`Скупник задоволений: +${fmt(paid)}`);save();renderHud();renderMarket()});
+  flyCoins(b,2);const r=fillOrder(S,+b.dataset.o);
+  if(r.done)announceOrder(r.done);else toast(`Скупник задоволений: +${fmt(r.coins)}`);
+  save();renderHud();renderMarket()});
 $('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
   if(!pondArm.on){pondArm.on=true;pondArm.t=Date.now();renderMarket();setTimeout(()=>{if(Date.now()-pondArm.t>=2900){pondArm.on=false;if(tab==='market')renderMarket()}},3000);return}
   pondArm.on=false;buyPond(S);save();renderHud();openFinale()});
@@ -6495,6 +6759,102 @@ $('#upgs').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b)
 $('#artlist').addEventListener('click',e=>{const b=e.target.closest('.pthrow');if(!b)return;const id=b.dataset.a;
   if(artArm.id!==id){artArm.id=id;artArm.t=Date.now();renderMarket();setTimeout(()=>{if(Date.now()-artArm.t>=2900){artArm.id=null;if(tab==='market')renderMarket()}},3000);return}
   artArm.id=null;throwArtifact(S,id);SFX.plop();toast('Вода забрала своє');save();renderHud();renderMarket()});
+
+/* ui/board.js */
+/* ---------- the order board and the day's demand ---------- */
+function rewardText(r){
+  switch(r.type){
+    case 'coins':return `+${fmt(r.v)} монет`;
+    case 'bait':return `+${r.v} · ${FCU.baits[r.k].name.toLowerCase()}`;
+    case 'symbol':return `символ «${r.k}» на барабан`;
+    case 'artifact':return r.id?artifactById(r.id).name:'проклята річ з дна';
+  }
+  return '';
+}
+// A fish not yet caught is named only by its rarity.
+const fishLabel=n=>isKnown(S,n)?n:TIERS[fishByName(n).t].label+' риба';
+const condText=o=>[o.stars?`на ${o.stars} зірки`:'',o.snag?'з корча':''].filter(Boolean).join(', ');
+function renderBoard(){
+  $('#boardsub').textContent=`Без строку. Кожна рибина +${Math.round(CONFIG.board.bonus*100)}% до ринку, а за все доручення — нагорода.`;
+  $('#orders').innerHTML=S.board.map((o,i)=>{
+    const f=fishByName(o.n),known=isKnown(S,o.n),can=canFill(S,o),cond=condText(o);
+    return `<div class="porder"><i class="picon ${known?fishIconClass(o.n):silhouetteClass(o.n)}"></i><div class="pord-main"><span class="pfish-name">${fishLabel(o.n)} · ${o.qty-o.left}/${o.qty}</span>${cond?`<span class="pord-cond">${cond}</span>`:''}<span class="pord-rew">${rewardText(o.reward)}</span></div><button class="pbuy" data-o="${i}" ${can?'':'disabled'}>Здати</button></div>`}).join('');
+}
+function renderDemand(){
+  const d=S.demand;if(!d){$('#demand').innerHTML='';return}
+  const row=(n,mul,cls)=>`<div class="pdem"><i class="picon ${isKnown(S,n)?fishIconClass(n):silhouetteClass(n)}"></i><span class="pfish-name">${fishLabel(n)}</span><b class="${cls}">×${String(mul).replace('.',',')}</b></div>`;
+  $('#demand').innerHTML=d.up.map(e=>row(e.n,e.mul,'up')).join('')+(d.down?row(d.down.n,d.down.mul,'down'):'')+'<p class="psub">Завтра буде інший.</p>';
+}
+function announceOrder(done){
+  const r=done.reward;
+  toast(`Доручення виконано: ${rewardText(r)}`);SFX.win();
+  if(r.type==='artifact'&&r.id&&!r.slotted)setTimeout(()=>toast('Кишені повні: знахідка чекає у Водяника'),1900);
+  if(r.type==='symbol')setTimeout(()=>toast('Символ чекає у Водяника'),1900);
+}
+
+/* ---------- traps ---------- */
+function renderTrapBtn(){
+  const n=trapsReady(S),b=$('#trapbtn');
+  $('#trapn').textContent=String(n);
+  b.classList.toggle('ready',n>0);
+}
+function trapLine(t,now){
+  const ready=trapReady(t,now),full=trapFill(t,now)>=CONFIG.traps.cap;
+  const left=Math.max(0,Math.ceil((trapFullAt(t)-now)/3600000*10)/10);
+  return `${CONFIG.locations[t.loc].name} · ${FCU.baits[t.bait].name.toLowerCase()} · ${full?'повна, чекає':`повна за ~${String(left).replace('.',',')} год`}`+(ready?'':' · поки порожньо');
+}
+function renderTraps(){
+  const now=Date.now(),T=CONFIG.traps;
+  $('#trapsub').textContent=`Верша ловить сама: рибина приблизно раз на ${T.every} хв, до ${T.cap}. Повна просто чекає, нічого не пропадає. Ставиш із наживкою, що на гачку, там, де стоїш.`;
+  const rows=S.traps.map((t,i)=>{
+    if(!t)return `<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond">Порожня. Стане на ${CONFIG.locations[S.location].name}, наживка: ${FCU.baits[baitCount(S,S.bait.on)>0?S.bait.on:'bread'].name.toLowerCase()}</span><button class="pbuy" data-set="${i}">Поставити</button></div>`;
+    const ready=trapReady(t,now);
+    return `<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond"><b>${ready} риб</b> · ${trapLine(t,now)}</span><button class="pbuy" data-take="${i}" ${ready?'':'disabled'}>Забрати</button></div>`;
+  });
+  if(S.traps.length<T.slots){const c=T.cost[S.traps.length];rows.push(`<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond">Ще одна верша</span><button class="pbuy" data-buy="1" ${S.coins<c?'disabled':''}>${fmt(c)}</button></div>`)}
+  $('#traplist').innerHTML=rows.join('');
+  $('#trapall').disabled=!trapsReady(S,now);
+}
+function takeFromTraps(get){
+  const before=S.net.length,got=get();
+  const left=trapsReady(S);
+  if(got.length){toast(`У садок: ${got.length} риб${left?` · ${left} ще чекають, садок повний`:''}`);SFX.catch()}
+  else if(left)toast('Садок повний. Продай улов, а риба почекає у верші');
+  save();renderHud();updateAct(true);
+  return got;
+}
+$('#trapbtn').addEventListener('pointerdown',e=>e.stopPropagation());
+$('#trapbtn').addEventListener('click',e=>{e.stopPropagation();if(FISHING_BUSY.includes(F.state))return;renderTraps();$('#traps').hidden=false});
+$('#trapclose').addEventListener('click',()=>{$('#traps').hidden=true});
+$('#trapall').addEventListener('click',()=>{takeFromTraps(()=>collectAll(S));renderTraps()});
+$('#traplist').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
+  if(b.dataset.buy){if(buyTrap(S)){SFX.coin();toast('Нова верша. Постав її')}}
+  else if(b.dataset.set){if(setTrap(S,+b.dataset.set)){SFX.plop();toast('Верша у воді')}}
+  else if(b.dataset.take)takeFromTraps(()=>collectTrap(S,+b.dataset.take));
+  save();renderHud();renderTraps();renderBait()});
+
+/* ---------- while you were away ---------- */
+function showAway(since){
+  const now=Date.now(),ready=trapsReady(S,now),parts=[];
+  const hours=(now-since)/3600000;
+  parts.push(`<p>Тебе не було ${hours<1?`${Math.round(hours*60)} хв`:hours<48?`${Math.round(hours)} год`:`${Math.round(hours/24)} дн.`}.</p>`);
+  const set=S.traps.filter(Boolean).length;
+  if(set)parts.push(`<p>Верші: <b>${ready} риб</b>${ready>=CONFIG.traps.cap*set?' — повні, чекали на тебе':''}.</p>`);
+  else parts.push('<p>Верші стоять сухі. Постав, і наступного разу щось чекатиме.</p>');
+  const toFull=daysToFull(now);
+  parts.push(`<p>Місяць: <b>${phaseName(S)}</b>${toFull?`, повня за ${toFull} дн.`:'. Легенди близько.'}</p>`);
+  if(S.demand)parts.push(`<p>Попит дня: ${S.demand.up.map(e=>`<b>${fishLabel(e.n)} ×${String(e.mul).replace('.',',')}</b>`).join(', ')}${S.demand.down?`; дешевше: ${fishLabel(S.demand.down.n)}`:''}.</p>`);
+  parts.push(`<p>Дошка: ${S.board.map(o=>`${fishLabel(o.n)} ${o.qty-o.left}/${o.qty}`).join(' · ')}.</p>`);
+  if(S.gifts.length)parts.push(`<p>У Водяника чекає символ: <b>${S.gifts[0]}</b>.</p>`);
+  $('#awaybody').innerHTML=`<div class="paway">${parts.join('')}</div>`;
+  $('#awaytake').hidden=!ready;
+  $('#away').hidden=false;
+}
+$('#awaytake').addEventListener('click',()=>{takeFromTraps(()=>collectAll(S));$('#away').hidden=true});
+$('#awayclose').addEventListener('click',()=>{$('#away').hidden=true});
+function checkAway(since){
+  if(since&&Date.now()-since>=CONFIG.away.minutes*60000&&!S.ended)showAway(since);
+}
 
 /* ui/slot.js */
 /* ---------- slot ---------- */
@@ -6566,7 +6926,7 @@ function slotMsg(t,cls=''){const m=$('#slotmsg');m.textContent=t;m.className='sl
 function slotReset(){Object.assign(slot,{bet:SC.bets[0],busy:false,place:null,donateOpen:false,sel:null,removeArm:false});slotMsg('Водяник чекає ставку. Монети чи свіжий улов?');slotSceneReady&&restoreGrid()}
 function dealText(){
   const c=dealCost(S),can=canAcceptDeal(S);
-  const offer=can?`Віддай ${fmt(c)} монет, і я дам тобі ${SC.deal.moonBaitFish} місячних мотилів.`:`Хотів би взяти ${fmt(c)} монет за місячних мотилів, та в кишенях вітер.`;
+  const offer=can?`${isNewMoon(S)?'Темно сьогодні, і я добрий. ':''}Віддай ${fmt(c)} монет, і я дам тобі ${dealBait(S)} місячних мотилів.`:`Хотів би взяти ${fmt(c)} монет за місячних мотилів, та в кишенях вітер.`;
   return `Три черепи. З-під води простягається зелена рука.<br><b>«${offer} Відмовишся, візьму сам, що захочу, і прокляну на додачу.»</b>`;
 }
 // After a reload the bubble must speak of what is really waiting.
@@ -6637,6 +6997,7 @@ function finishPlace(reel,i){
   else i=-1;
   const old=replace>=0?st[replace]:null;
   if(p.from==='pick')ok=takePick(S,p.k,reel,replace);
+  else if(p.from==='gift'){ok=placeSymbol(S,reel,{k:p.k},replace);if(ok)S.gifts.shift()}
   else{const r=donate(S,p.net,reel,replace);ok=!!r}
   if(!ok){toast(capLeft(S,reel,p.k,replace)<=0?`Більше ${SC.strip.caps[p.k]} на барабан не можна`:'Сюди не можна');SFX.bad();return}
   slot.place=null;slot.donateOpen=false;slot.sel={reel,i:replace>=0?replace:S.strips[reel].length-1};
@@ -6644,6 +7005,7 @@ function finishPlace(reel,i){
   if(p.k==='wash')slotMsg(`Вода змила з ${reel+1}-го барабана: ${symName(old.k)}.`,'gold');
   else if(p.from==='fish')slotMsg(`Водяник прийняв жертву: ${p.k}. Тепер це символ ${reel+1}-го барабана, назавжди${old?`. Замість: ${symName(old.k)}`:''}.`,'gold');
   else slotMsg(`${symName(p.k)} лягає на ${reel+1}-й барабан${old?` замість: ${symName(old.k)}`:''}.`,'gold');
+  if(p.from==='gift')S.stats.donated=(S.stats.donated||0)+1;
   restoreGridSoft();renderSlot();
 }
 // The machine at rest should show the new strips, without pretending a spin happened.
@@ -6672,6 +7034,13 @@ $('#donatefish').addEventListener('click',e=>{const b=e.target.closest('.pfish')
 $('#placecancel').addEventListener('click',()=>{const p=slot.place;slot.place=null;if(p&&p.from==='pick')slotMsg('Водяник ще тримає символи. Обирай.','gold');renderSlot()});
 
 /* ---------- Vodianyk's offer ---------- */
+function renderGift(){
+  const on=!!S.gifts.length&&!S.pick&&!slot.busy&&!slot.place&&S.pending<=0&&!S.deal&&!S.artifactOffer;
+  $('#giftbox').hidden=!on;
+  if(on)$('#gifttxt').innerHTML=`${symIcon(S.gifts[0])} Скупник передав символ: <b>${symName(S.gifts[0])}</b>. ${symDesc(S.gifts[0])}${S.gifts.length>1?` (ще ${S.gifts.length-1})`:''}`;
+}
+$('#giftplace').addEventListener('click',()=>{if(!S.gifts.length)return;slot.place={from:'gift',k:S.gifts[0]};slot.sel=null;renderSlot();
+  $('#stripbox').scrollIntoView({block:'start',behavior:REDUCED_MOTION?'auto':'smooth'})});
 function renderPick(){
   const box=$('#pickbox'),on=!!S.pick&&!slot.busy&&!slot.place&&S.pending<=0&&!S.deal&&!S.artifactOffer;
   box.hidden=!on;
@@ -6709,7 +7078,7 @@ function renderSlot(){
   $('#divedepth').textContent=inDive?`Глибина ${S.dive}`:'Виграш на кону';
   $('#deal').hidden=!showDeal;
   if(showDeal){$('#dealtxt').innerHTML=dealText();$('#dealyes').disabled=!canAcceptDeal(S)}
-  renderOffer();renderPick();
+  renderOffer();renderPick();renderGift();
   $('#placebox').hidden=!slot.place;
   if(slot.place)$('#placetxt').innerHTML=`${symIcon(slot.place.k)} ${placeHint()}`;
   // an open win, deal, offer or placement is the only decision left: the bet and spin controls step aside
@@ -6791,7 +7160,7 @@ $('#offerno').addEventListener('click',()=>{declineOffer(S);SFX.plop();save();sl
 /* deal */
 $('#dealyes').addEventListener('click',()=>{if(!acceptDeal(S))return;
   slotScene.emit('deal-accepted');
-  slotMsg(`Угоду укладено. ${SC.deal.moonBaitFish} місячних мотилів ворушаться в торбі. На них клює те, що зазвичай ховається на дні.`,'gold');SFX.win();save();renderHud();renderSlot()});
+  slotMsg(`Угоду укладено. ${dealBait(S)} місячних мотилів ворушаться в торбі. На них клює те, що зазвичай ховається на дні.`,'gold');SFX.win();save();renderHud();renderSlot()});
 $('#dealno').addEventListener('click',()=>{const r=refuseDeal(S);
   slotScene.emit('deal-refused');
   const curse=`Прокляття ×${r.curse}.`;
@@ -6849,7 +7218,7 @@ const FINALE_LINES=[
   '«Ну, забирай», булькає Водяник. «Тільки не думай, що вона тебе полюбить».',
   'Він востаннє дивиться на тебе, зітхає бульбашками й іде на дно.',
   'Над заводдю вперше за всі ці ночі світає. Заводь твоя.',
-  'Та чи надовго? Під водою хтось уже рахує твої монети.',
+  'Та чи надовго? Під водою хтось уже рахує твої монети. А далі, за очеретом, чорніє плесо.',
 ];
 const finale={scene:null,ctx:null,on:false,line:-1,t:0};
 function openFinale(){
@@ -6860,7 +7229,7 @@ function openFinale(){
   finale.scene=new FinaleScene();finale.scene.resize(l.w,l.h);finale.ctx=c.getContext('2d');
   finale.on=true;finale.line=-1;finale.t=0;
   $('#finalenext').style.visibility='hidden'; // its place is kept, so the stage never changes size
-  $('#finaletitle').textContent=S.ng?`Заводь викуплено. Вже ${S.ng+1}-й раз.`:'Заводь викуплено';
+  $('#finaletitle').textContent=S.ng?`Заводь викуплено. Вже ${S.ng+1}-й раз`:'Заводь викуплено';
   SFX.night();
 }
 function finaleTick(dt){
@@ -6873,10 +7242,10 @@ function finaleTick(dt){
 }
 $('#finalenext').addEventListener('click',()=>{
   
-  S=startNewNightPlus(S);ensureOrders(S);
+  const first=!S.ng;afterBuyout(S);syncTime(S);
   finale.on=false;$('#finale').hidden=true;
   hud.shown=null;slotReset();save();renderHud();renderLocations();renderMarket();showTab('pond');updateAct(true);
-  say(`Нова ніч+ ${S.ng}. Вода стала злішою.`,'bad',3200);SFX.bad();
+  say(first?'Заводь твоя. А за нею — Чорне плесо: туди тепер можна. Вода ж стала злішою.':`Вода знову злішає. Наступний викуп дорожчий.`,'gold',4200);SFX.night();
 });
 
 /* ui/tutorial.js */
@@ -6959,7 +7328,7 @@ function openSettings(){
 }
 // A fresh game: progress goes, preferences stay.
 function applyNewState(next,message){
-  S=next;ensureOrders(S);hud.shown=null;slotReset();save();
+  S=next;syncTime(S);hud.shown=null;slotReset();save();
   F.state='idle';F.reel=null;F.father=false;cardOpen=false;$('#catch').hidden=true;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;signals.list=[];
   renderHud();renderLocations();renderMarket();updateAct(true);
   $('#settings').hidden=true;showTab('pond');toast(message);
@@ -7003,7 +7372,8 @@ $('#setreset').addEventListener('click',()=>askConfirm('Усе зникне: м�
 /* ui/main.js */
 /* ---------- boot ---------- */
 S=loadSave(STORE);
-ensureOrders(S);
+const lastSeen=S.seen;
+syncTime(S);
 save();
 installIcons();
 renderMixer();
@@ -7012,9 +7382,16 @@ resize();renderHud();renderLocations();updateAct(true);renderBait();
 say(S.stats.caught?'З поверненням на заводь':'Ніч тиха. Закидай.','',2600);
 slotRestoreMsg();
 if(S.pending>0||S.deal)toast('Водяник пам’ятає про незакінчену справу');
-document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+// Back from the home screen: real time has moved on. A long absence gets its summary.
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){save();hiddenAt=Date.now();return}
+  nextNightIfDue(true);renderHud();
+  if(hiddenAt&&$('#away').hidden)checkAway(hiddenAt);
+});
+setInterval(()=>{if(!document.hidden){nextNightIfDue();renderTrapBtn()}},60000);
 if(S.ended)openFinale(); // a reload never skips the ending
-else maybeStartTutorial();
+else{maybeStartTutorial();if(!tut.on)checkAway(lastSeen)}
 // Offline play needs a service worker, and browsers allow one only over https or on localhost.
 if('serviceWorker' in navigator&&window.isSecureContext)navigator.serviceWorker.register('sw.js').catch(()=>{});
 requestAnimationFrame(loop);
