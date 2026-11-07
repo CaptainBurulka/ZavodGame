@@ -341,6 +341,14 @@ main{flex:1;min-height:0;position:relative}
 .pslot-hud em.pmood.angry{color:var(--red)}
 .pslot-hud .center{text-align:center}
 #v-slot .pslot-hud .right b{color:var(--moon)}
+.pamu{display:grid;grid-template-columns:calc(var(--px)*16) 1fr auto;align-items:center;gap:calc(var(--px)*2);padding:var(--px) calc(var(--px)*2) var(--px) var(--px);background:var(--night2)}
+.pamu.on{box-shadow:inset var(--px) 0 0 var(--gold)}
+.pamu>.picon{width:calc(var(--px)*16)!important;height:calc(var(--px)*16)!important}
+.pamu .pbuy .picon{vertical-align:middle}
+.pamu b{display:block;font-weight:400;font-size:22px;line-height:1;color:var(--bone)}
+.pamu span em{font-style:normal;font-size:20px;line-height:1.05;color:var(--fog)}
+.pamu .pkind{color:var(--moonD);font-size:18px}
+.pamu .pbuy{min-width:calc(var(--px)*22)}
 .pmode{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
 .pmode button{height:calc(var(--px)*13);font-size:22px;line-height:1;color:var(--fog);background:var(--night)}
 .pmode button.on{color:var(--void);background:var(--moonS)}
@@ -611,6 +619,11 @@ main{flex:1;min-height:0;position:relative}
           <div class="pbtn-row"><button class="pbtn ghost" id="giveno">Назад</button><button class="pbtn" id="giveyes">Віддати</button></div>
         </div>
       </div>
+      <div class="pframe gold ppanel" id="amubox">
+        <h3>Обереги</h3>
+        <p class="psub" id="amusub"></p>
+        <div class="pfishes" id="amulist"></div>
+      </div>
       <div class="slot-only pframe ppanel">
         <h3>Правила</h3>
         <p class="psub" id="payrules"></p>
@@ -831,7 +844,7 @@ const CONFIG = {
     { id: 'dzvin', name: 'Мідний дзвіночок', plus: 'Скарб росте в 1,3 раза швидше', minus: 'Водяник злиться частіше, виграші на 5% менші', fx: { jackpotShareMul: 1.3, angerMul: 1.5, slotPayMul: 0.95 } },
     { id: 'shkira', name: 'Жаб’яча шкура', plus: 'Клює на 20% швидше', minus: 'Удвічі більше мотлоху', fx: { waitMul: 0.8, junkMul: 2 } },
     { id: 'hrebin', name: 'Гребінь мавки', plus: 'Безпечна зона ширша', minus: 'Риба виводиться повільніше', fx: { zoneMul: 1.15, progressMul: 0.85 } },
-        { id: 'pidkova', name: 'Підкова з дна', plus: 'Три гачки платять на третину більше', minus: 'Прокляття на 1 рибину довше', fx: { hookPayMul: 1.33, curseAdd: 1 } },
+    { id: 'pidkova', name: 'Підкова з дна', plus: 'Скарб наповнюється трохи швидше', minus: 'Прокляття на 1 рибину довше', fx: { jackpotShareMul: 1.1, curseAdd: 1 } },
     { id: 'zub', name: 'Зуб сома', plus: 'Риба виводиться на 20% швидше', minus: 'Садок менший на 2 місця', fx: { progressMul: 1.2, netCapAdd: -2 } },
     { id: 'svichka', name: 'Свічка потопельника', plus: 'Клює на 15% швидше', minus: 'Менше часу на підсічку', fx: { waitMul: 0.85, biteWindowAdd: -0.15 } },
     { id: 'moneta', name: 'Монета з ока мерця', plus: 'Пірнати трохи безпечніше', minus: 'Скарб наповнюється на п’яту частину повільніше', fx: { diveLoseMul: 0.95, jackpotShareMul: 0.8 } },
@@ -839,6 +852,25 @@ const CONFIG = {
     { id: 'hachok', name: 'Кістяний гачок', plus: 'Більше часу на підсічку', minus: 'Леска рветься раніше', fx: { biteWindowAdd: 0.3, snapMul: 0.93 } },
     { id: 'zhaba', name: 'Чорна жаба', plus: 'Три жаби платять на третину більше', minus: 'Усі виграші автомата на 9% менші', fx: { frogPayMul: 1.33, slotPayMul: 0.91 } },
   ],
+
+  // Обереги: купуються за перли у Водяника, активних — slots. Кожен міняє одне правило.
+  // kind: slot — автомат, fish — рибалка. icon — спрайт 16×16. fx збирається разом з артефактами.
+  amulets: {
+    slots: 3,
+    list: [
+      { id: 'frog', kind: 'slot', name: 'Жаб’яча лапка', price: 10, icon: 'am_frog', desc: 'Дві жаби справа теж платять — ×0,5 ставки.', fx: { frogRight: 0.5 } },
+      { id: 'hook', kind: 'slot', name: 'Іржавий гачок', price: 8, icon: 'am_hook', desc: 'Два гачки зліва платять ×0,75 замість ×0,5.', fx: { hookTwo: 0.75 } },
+      { id: 'candle', kind: 'slot', name: 'Свічка утоплениці', price: 6, icon: 'am_candle', desc: 'Два черепи більше не проклинають.', fx: { noCurse: true } },
+      { id: 'moon', kind: 'slot', name: 'Місячний камінь', price: 15, icon: 'am_moon', desc: 'Скарб наповнюється на чверть швидше.', fx: { jackpotShareMul: 1.25 } },
+      { id: 'scale', kind: 'slot', name: 'Срібна луска', price: 12, icon: 'am_scale', desc: 'Віддана риба дає на 15% більше безкоштовних обертань.', fx: { freeSpinMul: 1.15 } },
+      { id: 'star', kind: 'slot', name: 'Зоряний пил', price: 10, icon: 'am_star', desc: 'Три зорі дають удвічі більше перл.', fx: { starPearlMul: 2 } },
+      { id: 'eye', kind: 'fish', name: 'Око щуки', price: 10, icon: 'am_eye', desc: 'Поплавок спалахує за мить до справжнього клювання.', fx: { biteGlow: 0.45 } },
+      { id: 'pipe', kind: 'fish', name: 'Дідова люлька', price: 8, icon: 'am_pipe', desc: 'На підсічку на 0,3 с більше.', fx: { biteWindowAdd: 0.3 } },
+      { id: 'line', kind: 'fish', name: 'Чорна волосінь', price: 12, icon: 'am_line', desc: 'Леска витримує на 2% більший натяг — рідше рветься на самій межі.', fx: { snapMul: 1.02 } },
+      { id: 'feather', kind: 'fish', name: 'Совине перо', price: 6, icon: 'am_feather', desc: 'Сигнали на воді з’являються вдвічі частіше.', fx: { signalMul: 2 } },
+      { id: 'lure', kind: 'fish', name: 'Батькова блешня', price: 8, icon: 'am_lure', desc: 'Відпущена риба кличе батька вдвічі частіше.', fx: { fatherAdd: 0.2 } },
+    ],
+  },
 
   upgrades: {
     rod: { name: 'Вудка', levels: ['Ліщинова', 'Бамбукова', 'Склопластик', 'Карбон', 'Срібна'], cost: [40, 200, 1200, 4500] },
@@ -964,7 +996,8 @@ const CONFIG = {
       moon: { name: 'Місяць', plural: 'місяці', jackpot: true },
       skull: { name: 'Череп', plural: 'черепи', skull: true },
     },
-    jackpot: { base: 150, stakeShare: 0.18, stakeMul: 10 },
+    // maxShare — стеля, хоч скільки оберегів і артефактів пришвидшують скарб: інакше вони разом виводять автомат у плюс
+    jackpot: { base: 150, stakeShare: 0.18, maxShare: 0.22, stakeMul: 10 },
     netStakeRate: 1, // «Улов» приймають за ринковою ціною
     golden: { triple: 3, minStake: 100 },
     cursePair: 3,
@@ -1168,13 +1201,17 @@ const artifactById = id => ARTIFACT_BY_ID[id];
 const NO_FX = Object.freeze({
   priceMul: 1, tensionMul: 1, surgeMul: 1, zoneMul: 1, progressMul: 1, waitMul: 1, snapMul: 1, junkMul: 1, legendMul: 1,
   jackpotShareMul: 1, angerMul: 1, slotPayMul: 1, diveLoseMul: 1, hookPayMul: 1, frogPayMul: 1,
+  frogRight: 0, hookTwo: 0, noCurse: false, freeSpinMul: 1, starPearlMul: 1, biteGlow: 0, signalMul: 1, fatherAdd: 0,
   biteWindowAdd: 0, netCapAdd: 0,  curseAdd: 0, seeBite: false,
 });
 
 // Artifacts and the difficulty of Нова ніч+ reach the game through the same fx.
+// Artifacts, the meaner water after a buyout and the amulets worn all reach the game through one fx.
+const AMULET_BY_ID = Object.fromEntries(CONFIG.amulets.list.map(a => [a.id, a]));
+const amuletsOn = S => (S.amulets && S.amulets.on) || [];
 function artifactFx(S) {
   const runs = S.ng || 0;
-  if (!runs && (!S.artifacts || !S.artifacts.length)) return NO_FX;
+  if (!runs && (!S.artifacts || !S.artifacts.length) && !amuletsOn(S).length) return NO_FX;
   const N = CONFIG.ngPlus, fx = { ...NO_FX };
   fx.tensionMul += N.tensionPerRun * runs;
   fx.surgeMul += N.surgePerRun * runs;
@@ -1190,7 +1227,37 @@ function artifactFx(S) {
       else fx[k] = v;
     }
   }
+  for (const id of amuletsOn(S)) {
+    const a = AMULET_BY_ID[id];
+    if (!a) continue;
+    for (const [k, v] of Object.entries(a.fx)) {
+      if (k.endsWith('Mul')) fx[k] *= v;
+      else if (k.endsWith('Add')) fx[k] += v;
+      else fx[k] = v;
+    }
+  }
   return fx;
+}
+
+/* ---------- amulets ---------- */
+const AMU = CONFIG.amulets;
+const ownsAmulet = (S, id) => S.amulets.owned.includes(id);
+const canBuyAmulet = (S, id) => !!AMULET_BY_ID[id] && !ownsAmulet(S, id) && (S.pearls || 0) >= AMULET_BY_ID[id].price;
+function buyAmulet(S, id) {
+  if (!canBuyAmulet(S, id)) return false;
+  S.pearls -= AMULET_BY_ID[id].price;
+  S.amulets.owned.push(id);
+  if (S.amulets.on.length < AMU.slots) S.amulets.on.push(id);
+  return true;
+}
+// Put on or take off. Full slots: the caller says which to take off first.
+function toggleAmulet(S, id) {
+  if (!ownsAmulet(S, id)) return false;
+  const on = S.amulets.on, i = on.indexOf(id);
+  if (i >= 0) { on.splice(i, 1); return true; }
+  if (on.length >= AMU.slots) return false;
+  on.push(id);
+  return true;
 }
 
 // A found artifact goes into a free slot; otherwise it waits until the player decides what to drown.
@@ -1538,7 +1605,7 @@ function releaseFish(S, index, rng = Math.random) {
   S.net.splice(index, 1);
   S.stats.released = (S.stats.released || 0) + 1;
   let father = false;
-  if (!S.father && rng() < FC.release.father) {
+  if (!S.father && rng() < FC.release.father + artifactFx(S).fatherAdd) {
     const [a, b] = FC.release.within;
     S.father = { n: c.n, loc: S.location, in: a + Math.floor(rng() * (b - a + 1)) };
     father = true;
@@ -1736,7 +1803,8 @@ function reelStep(r, dt, holding, rng = Math.random) {
       r.surged = true;
     }
   }
-  r.tension = clampN(r.tension, 0, R.tensionCap);
+  // the cap sits just past the breaking point, wherever a black line has moved it
+  r.tension = clampN(r.tension, 0, Math.max(R.tensionCap, R.snapAt * fx.snapMul + 0.05));
   const rate = (R.progress.base + rod * R.progress.perRod) * (R.progress.fishBase + d * R.progress.fishPerDifficulty) * fx.progressMul * (r.fish.prog ?? 1) * (tiredNow ? T.progMul : 1);
   const inZone = r.tension >= lo && r.tension <= hi;
   if (r.diving > 0) r.prog -= (P.diveProgLoss ?? 0) * dt;
@@ -2092,7 +2160,7 @@ const netStake = S => Math.round(netValue(S) * SC.netStakeRate);
 const artMul = S => artifactFx(S).slotPayMul;
 function jackpotShare(S) {
   const moon = S.night.phase === NIGHT.full.phase ? NIGHT.full.jackpotShareMul : 1;
-  return SC.jackpot.stakeShare * moon * artifactFx(S).jackpotShareMul;
+  return Math.min(SC.jackpot.maxShare, SC.jackpot.stakeShare * moon * artifactFx(S).jackpotShareMul);
 }
 
 /* ---------- the reels: fixed, the same make-up on all three ---------- */
@@ -2119,7 +2187,8 @@ function payTable(S, fish = null) {
     if (k === 'hook' && fish) continue;
     if (d.jackpot) { out[k] = { three: 'jackpot', two: 0 }; continue; }
     const m = k === 'hook' ? fx.hookPayMul : k === 'frog' ? fx.frogPayMul : 1;
-    out[k] = { three: Math.round(d.three * m * 10) / 10, two: d.two || 0, pearls: d.pearls || 0 };
+    const two = k === 'hook' && fx.hookTwo ? fx.hookTwo : d.two || 0;
+    out[k] = { three: Math.round(d.three * m * 10) / 10, two, right: k === 'frog' ? fx.frogRight : 0, pearls: (d.pearls || 0) * fx.starPearlMul };
   }
   if (fish) {
     out[fish] = { three: isWild(fish) ? FREE.pays.legend : FREE.pays[fishTierOf(fish)], two: 0 };
@@ -2129,7 +2198,7 @@ function payTable(S, fish = null) {
 }
 
 // The middle row and nothing else. Returns every number the page needs to explain the result.
-function evaluateRow(row, stake, pays, art) {
+function evaluateRow(row, stake, pays, art, noCurse = false) {
   const skulls = row.filter(k => k === 'skull').length;
   const out = { kind: 'none', win: 0, sym: null, count: 0, cells: [false, false, false], skulls, art, pearls: 0 };
   if (skulls === 3) { out.kind = 'deal'; out.cells = [true, true, true]; return out; }
@@ -2139,15 +2208,20 @@ function evaluateRow(row, stake, pays, art) {
     out.sym = lead; out.count = 3; out.cells = [true, true, true];
     if (pays[lead].three === 'jackpot') { out.kind = 'jackpot'; return out; }
     out.mult = pays[lead].three;
-    out.pearls = pays[lead].pearls ? Math.min(BASE[lead].pearlsMax, Math.max(1, Math.round(pays[lead].pearls * stake / 10))) : 0;
+    out.pearls = pays[lead].pearls ? Math.min(BASE[lead].pearlsMax * (pays[lead].pearls / BASE[lead].pearls), Math.max(1, Math.round(pays[lead].pearls * stake / 10))) : 0;
   } else {
     // two alike on the left pay a little, for the symbols that have it
     const [a, b] = row, k = isWild(a) ? b : a;
     if (k !== 'skull' && fits(a, k) && fits(b, k) && pays[k] && pays[k].two) { out.sym = k; out.count = 2; out.mult = pays[k].two; out.cells = [true, true, false]; }
+    // some symbols also pay as a pair on the right
+    else {
+      const [, c, d] = row, k2 = isWild(c) ? d : c;
+      if (k2 !== 'skull' && fits(c, k2) && fits(d, k2) && pays[k2] && pays[k2].right) { out.sym = k2; out.count = 2; out.mult = pays[k2].right; out.cells = [false, true, true]; out.right = true; }
+    }
   }
   if (out.mult > 0) { out.win = Math.round(stake * out.mult * art); out.kind = 'win'; }
   if (out.pearls) out.kind = 'win';
-  if (skulls === 2) out.curse = true;
+  if (skulls === 2 && !noCurse) out.curse = true;
   if (out.kind === 'none' && out.curse) out.kind = 'curse';
   return out;
 }
@@ -2162,7 +2236,7 @@ function applyEffects(S, out, stake) {
 /* ---------- a fish for free spins ---------- */
 // How many free spins a fish is worth, on average. The page shows this before you give.
 const spinCost = k => FREE.coinsPerSpin[isWild(k) ? 'wild' : fishTierOf(k)];
-const freeSpinsFor = (S, f) => Math.max(1, salePrice(S, f) / spinCost(f.n));
+const freeSpinsFor = (S, f) => Math.max(1, (salePrice(S, f) / spinCost(f.n)) * artifactFx(S).freeSpinMul);
 // The fraction is a fair draw: 2.4 spins are 2, or 3 four times in ten.
 const drawSpins = (x, rng) => Math.max(1, Math.floor(x) + (rng() < x - Math.floor(x) ? 1 : 0));
 const canGiveFish = (S, f) => !!f && !f.junk && isFishSym(f.n) && !S.free && !S.pending && !S.deal;
@@ -2183,7 +2257,7 @@ function openGift(S, rng = Math.random) {
   S.gifts.shift();
   if (!isFishSym(k)) return null;
   const f = FISH_BY_NAME[k], price = f.p * (CONFIG.fishing.price.min + CONFIG.fishing.price.range * 0.5);
-  const n = drawSpins(price / spinCost(k), rng);
+  const n = drawSpins((price / spinCost(k)) * artifactFx(S).freeSpinMul, rng);
   S.free = { fish: k, left: n, total: n, won: 0 };
   return S.free;
 }
@@ -2201,7 +2275,7 @@ function spin(S, bet, rng = Math.random) {
   const offsets = strips.map(st => Math.floor(rng() * st.length));
   const grid = [0, 1, 2].map(r => strips.map((st, i) => st[(offsets[i] + r) % st.length]));
   const pays = payTable(S, F ? F.fish : null);
-  const out = evaluateRow(grid[1], stake, pays, artMul(S));
+  const out = evaluateRow(grid[1], stake, pays, artMul(S), artifactFx(S).noCurse);
   if (out.kind === 'jackpot') {
     const moonFish = grid[1].some(isWild) && S.night.phase === NIGHT.full.phase;
     out.jackpotWin = Math.round(S.jackpot * (moonFish ? 2 : 1));
@@ -2385,7 +2459,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2400,6 +2474,7 @@ const defaultState = () => ({
   aim: null, // last chosen spot on the water, { u, v }
   jackpot: CONFIG.slot.jackpot.base,
   pearls: 0, // Vodianyk's own money: won only from him, spent only with him
+  amulets: { owned: [], on: [] },
   free: null, // free spins for a fish: { fish, left, total, won }
   pending: 0,
   deal: false,
@@ -2526,6 +2601,8 @@ const MIGRATIONS = {
     const pearls = coins ? Math.max(1, Math.round(coins / CONFIG.slot.pearlFromFish)) : 0;
     return { ...rest, v: 12, pearls: (d.pearls || 0) + pearls, free: null, lastSpin: null, migratedPearls: pearls || 0 };
   },
+  // v13: amulets.
+  12: d => ({ ...d, v: 13, amulets: { owned: [], on: [] } }),
 };
 
 function migrate(data) {
@@ -2553,6 +2630,7 @@ function migrate(data) {
     board: Array.isArray(d.board) ? d.board : [],
     traps: Array.isArray(d.traps) && d.traps.length ? d.traps.slice(0, CONFIG.traps.slots) : [null],
     gifts: Array.isArray(d.gifts) ? d.gifts : [],
+    amulets: { owned: (d.amulets && Array.isArray(d.amulets.owned) ? d.amulets.owned : []).filter(id => AMULET_BY_ID[id]), on: (d.amulets && Array.isArray(d.amulets.on) ? d.amulets.on : []).filter(id => AMULET_BY_ID[id]).slice(0, CONFIG.amulets.slots) },
     unlocked: Array.isArray(d.unlocked) ? d.unlocked : b.unlocked,
     net: Array.isArray(d.net) ? d.net : [],
   };
@@ -3767,6 +3845,222 @@ defineSprites({
     'MMMMm',
     '.mmm.',
   ]] },
+  am_frog: { fps: 1, frames: [[
+    '................',
+    '..ff.....ff.....',
+    '.fFFf...fFFf....',
+    '.fFFf...fFFf....',
+    '..ff.ff..ff.....',
+    '....fFFf.f......',
+    '....fFFf.f......',
+    '.....ffffff.....',
+    '....fFFFFFFf....',
+    '...fFFFFFFFFf...',
+    '...fFFfFFfFFf...',
+    '...fFFFFFFFFf...',
+    '....fFFFFFFf....',
+    '.....ffffff.....',
+    '................',
+    '................',
+  ]] },
+  am_hook: { fps: 1, frames: [[
+    '................',
+    '.........RRR....',
+    '........RL.LR...',
+    '........RL.LR...',
+    '.........RLR....',
+    '.........RLR....',
+    '.........RLR....',
+    '.........RLR....',
+    '..R......RLR....',
+    '.RLR.....RLR....',
+    '.RLR.....RLR....',
+    '.RLLR...RLLR....',
+    '..RLLRRRLLR.....',
+    '...RRLLLLR......',
+    '.....RRRR.......',
+    '................',
+  ]] },
+  am_candle: { fps: 1, frames: [[
+    '................',
+    '.......l........',
+    '......lsl.......',
+    '......sMs.......',
+    '.......s........',
+    '.......h........',
+    '......bbb.......',
+    '......bMb.......',
+    '......bbb.......',
+    '......bMb.......',
+    '......bbb.......',
+    '......bbb.......',
+    '.....dbbbd......',
+    '....dddddddd....',
+    '................',
+    '................',
+  ]] },
+  am_moon: { fps: 1, frames: [[
+    '................',
+    '.....dddddd.....',
+    '....dmmmmmmd....',
+    '...dmMMMmmmmd...',
+    '..dmMMm..mmmmd..',
+    '..dmMm....mmmd..',
+    '..dmM.....mmmd..',
+    '..dmM.....mmmd..',
+    '..dmMm....mmmd..',
+    '..dmMMm..mmmmd..',
+    '...dmMMMmmmmd...',
+    '....dmmmmmmd....',
+    '.....dddddd.....',
+    '................',
+    '................',
+    '................',
+  ]] },
+  am_scale: { fps: 1, frames: [[
+    '................',
+    '.......dd.......',
+    '......dMMd......',
+    '.....dMMMMd.....',
+    '....dMMmMMMd....',
+    '...dMMmmmMMMd...',
+    '...dMmmmmmMMd...',
+    '..dMMmmdmmmMMd..',
+    '..dMmmdddmmmMd..',
+    '..dMmmdddmmmMd..',
+    '...dmmmdmmmmd...',
+    '....dmmmmmmd....',
+    '.....dmmmmd.....',
+    '......dddd......',
+    '................',
+    '................',
+  ]] },
+  am_star: { fps: 1, frames: [[
+    '................',
+    '...g.......M....',
+    '..gMg.....MgM...',
+    '...g.......M....',
+    '.......g........',
+    '......gMg.......',
+    '.....gMMMg......',
+    '....gMMMMMg.....',
+    '.....gMMMg......',
+    '......gMg.......',
+    '.......g........',
+    '..M.........g...',
+    '.MgM.......gMg..',
+    '..M.........g...',
+    '................',
+    '................',
+  ]] },
+  am_eye: { fps: 1, frames: [[
+    '................',
+    '................',
+    '.....dddddd.....',
+    '...ddeEEEEedd...',
+    '..deEEggggEEed..',
+    '.deEEgLLLLgEEed.',
+    'deEEgLLvvLLgEEed',
+    'deEEgLLvvLLgEEed',
+    '.deEEgLLLLgEEed.',
+    '..deEEggggEEed..',
+    '...ddeEEEEedd...',
+    '.....dddddd.....',
+    '................',
+    '................',
+    '................',
+    '................',
+  ]] },
+  am_pipe: { fps: 1, frames: [[
+    '..........o.....',
+    '.........o.o....',
+    '..........o.....',
+    '.........o......',
+    '..hhhh..........',
+    '.hLggLh.........',
+    '.hhhhhh.........',
+    '.hhhhhh.........',
+    '.hhhhhhhhhhhhhd.',
+    '..hhhhhhhhhhhd..',
+    '...hhhh.........',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ]] },
+  am_line: { fps: 1, frames: [[
+    '................',
+    '.....vvvvvv.....',
+    '...vvnnnnnnvv...',
+    '..vnn......nnv..',
+    '..vn..vvvv..nv..',
+    '.vn..vnnnnv..nv.',
+    '.vn.vn....nv.nv.',
+    '.vn.vn.dd.nv.nv.',
+    '.vn.vn.dd.nv.nv.',
+    '.vn..vn..nv..nv.',
+    '..vn..vvvv..nv..',
+    '..vnn......nnv..',
+    '...vvnnnnnnvv...',
+    '.....vvvvvv.....',
+    '................',
+    '................',
+  ]] },
+  am_feather: { fps: 1, frames: [[
+    '................',
+    '..........ddo...',
+    '.........dmmo...',
+    '........dmbmo...',
+    '.......dmbmo....',
+    '......dmbmmo....',
+    '.....dmbmmo.....',
+    '....dmbmmo......',
+    '...dmbmmo.......',
+    '...dbmmo........',
+    '..dbmmo.........',
+    '..dmo...........',
+    '.dh.............',
+    'dh..............',
+    '................',
+    '................',
+  ]] },
+  am_lure: { fps: 1, frames: [[
+    '................',
+    '......dd........',
+    '.....dMMd.......',
+    '....dMMMmd......',
+    '....dMMmmd......',
+    '....dMmmmd......',
+    '....dmmmmd......',
+    '.....dmmd.......',
+    '......dd........',
+    '......d.........',
+    '.....rrr........',
+    '....r.d.r.......',
+    '......d.........',
+    '.....d.d........',
+    '....d...d.......',
+    '................',
+  ]] },
+  am_bell: { fps: 1, frames: [[
+    '................',
+    '.......hh.......',
+    '......hLLh......',
+    '.....hLggLh.....',
+    '.....hLggLh.....',
+    '....hLggggLh....',
+    '....hLggggLh....',
+    '...hLggggggLh...',
+    '...hLggggggLh...',
+    '..hLLLLLLLLLLh..',
+    '..hhhhhhhhhhhh..',
+    '.......hh.......',
+    '.......LL.......',
+    '................',
+    '................',
+    '................',
+  ]] },
   icon_trap: { fps: 1, frames: [[
     '..hhhh..',
     '.hbhbhh.',
@@ -4613,9 +4907,9 @@ class PondScene {
     const bob = view.state === 'waiting' && Math.floor(t * 1.5) % 2 === 1 ? 1 : 0;
     this.lastFloat = { x: fl.x, y: fl.y };
     if (view.ghost) return; // the moon fish has taken the float out of sight
-    if (view.event && view.event.k === 'fog' && view.state !== 'reel') return; // fog swallows the float
-    // a dark edge: red and bone alone are too close to the water to spot quickly
-    S.drawOutline(SPRITES.float, frame, fl.x, fl.y + bob, 'void');
+    if (view.event && view.event.k === 'fog' && view.state !== 'reel' && !view.glow) return; // fog swallows the float
+    // a dark edge: red and bone alone are too close to the water to spot quickly; the pike's eye lights it gold
+    S.drawOutline(SPRITES.float, frame, fl.x, fl.y + bob, view.glow ? 'gold' : 'void');
     S.drawSprite(SPRITES.float, frame, fl.x, fl.y + bob);
   }
 
@@ -6402,6 +6696,7 @@ function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
   const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka',shell:'shell',pearl:'pearl'};
+  for(const a of CONFIG.amulets.list)names['am-'+a.id]=a.icon;
   for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYM_SPRITE)names['sym-'+SYM_SPRITE[k]]=SYM_SPRITE[k];
@@ -6653,7 +6948,7 @@ function spawnSignal(){
 }
 function signalsTick(dt){
   signals.next-=dt;
-  const ch=eventFx(S),mul=ch.signalMul||1;
+  const ch=eventFx(S),mul=(ch.signalMul||1)*artifactFx(S).signalMul;
   if(signals.next<=0){signals.next=rnd(SIG.every[0],SIG.every[1])/mul;if(signals.list.length<(ch.signalMax||SIG.max))spawnSignal()}
   for(const s of signals.list)s.t+=dt;
   signals.list=signals.list.filter(s=>s.t<s.life);
@@ -6998,7 +7293,8 @@ function loop(now){
     scene.advance(dt);
     const fighting=F.state==='reel'||F.state==='snag';
     scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:S.lv.lamp,moonPhase:S.night.phase,location:S.location,
-      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView(),event:eventOn(S)});
+      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView(),event:eventOn(S),
+      glow:F.state==='waiting'&&artifactFx(S).biteGlow>0&&F.t>=F.wait-artifactFx(S).biteGlow});
     scene.surf.present(ctx);
   }
   if(tab==='slot')slotTick(dt);
@@ -7313,13 +7609,13 @@ $('#bets').innerHTML=SC.bets.map(b=>`<button data-b="${b}">${b}</button>`).join(
 function payCell(k,p){
   const three=p.three==='jackpot'?`скарб ${fmt(S.jackpot)} + ставка ×${SC.jackpot.stakeMul}`:`×${num(p.three)}${p.pearls?` + ${p.pearls} перли за кожні 10 ставки`:''}`;
   const extra=BASE[k]&&BASE[k].golden?`<em>на ставці ${SC.golden.minStake}: ще й золоті рибини</em>`:isWild(k)?'<em>вайлд: замінює будь-що, крім черепа</em>':S.free&&k===S.free.fish?'<em>замість гачків, поки йдуть безкоштовні</em>':'';
-  return `<div class="ppaycell${p.three==='jackpot'?' wide':''}"><span class="pcell">${symIcon(k)}</span><span>3 = ${three}${p.two?` · 2 зліва = ×${num(p.two)}`:''}${extra?'<br>'+extra:''}</span></div>`;
+  return `<div class="ppaycell${p.three==='jackpot'?' wide':''}"><span class="pcell">${symIcon(k)}</span><span>3 = ${three}${p.two?` · 2 зліва = ×${num(p.two)}`:''}${p.right?` · 2 справа = ×${num(p.right)}`:''}${extra?'<br>'+extra:''}</span></div>`;
 }
 function renderPayTable(){
   const fish=S.free?S.free.fish:null,pays=payTable(S,fish);
   const order=[fish,'moon','star','frog','hook'].filter(k=>k&&pays[k]);
   const cells=order.map(k=>payCell(k,pays[k]));
-  cells.push(`<div class="ppaycell wide"><span class="pcell">${symIcon('skull')}</span><span>2 = прокляття (наступні рибини дешевші) · 3 = угода Водяника</span></div>`);
+  cells.push(`<div class="ppaycell wide"><span class="pcell">${symIcon('skull')}</span><span>2 = ${artifactFx(S).noCurse?'нічого (Свічка утоплениці)':'прокляття (наступні рибини дешевші)'} · 3 = угода Водяника</span></div>`);
   $('#paytable').innerHTML=cells.join('');
   $('#paysub').textContent=fish?`Безкоштовні обертання по ${SC.free.stake}: гачки зараз — ${fish}. Три місяці платять ×${SC.free.moonThree}.`:'Платить лише середній ряд: три однакові, або два зліва — для гачка й жаби. Множники від ставки.';
   const c=SC.strip.counts;
@@ -7423,7 +7719,7 @@ function renderSlot(){
   else if(S.free)sp.textContent=`Безкоштовне · лишилось ${S.free.left}`;
   else if(!ok)sp.textContent='Нема чим ставити';
   else sp.textContent=`Крутити · ${fmt(currentStake())}`;
-  renderPayTable();renderGive();
+  renderPayTable();renderGive();renderAmulets();
 }
 $('#bets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||slot.busy)return;slot.bet=b.dataset.b==='net'?'net':+b.dataset.b;renderSlot()});
 
@@ -7497,6 +7793,32 @@ $('#dealno').addEventListener('click',()=>{const r=refuseDeal(S);
   else slotMsg(`Брати нема чого. Водяник плюнув у воду й наслав прокляття ×${r.curse}.`,'bad');
   SFX.bad();save();renderHud();renderSlot()});
 
+/* ui/amulets.js */
+/* ---------- amulets: bought with pearls, three worn at a time ---------- */
+const amu={swap:null};
+const amuBusy=()=>slot.busy||sh.ui==='show'||sh.ui==='shuffle'||sh.ui==='reveal';
+function renderAmulets(){
+  const on=amuletsOn(S),busy=amuBusy();
+  $('#amusub').textContent=`Купуються за перли. Носиш ${on.length} з ${AMU.slots}; зняти чи надіти можна будь-коли поза грою. ${amu.swap?'Слоти повні: торкнись того, кого зняти.':''}`;
+  const kindName={slot:'автомат',fish:'рибалка'};
+  $('#amulist').innerHTML=AMU.list.map(a=>{
+    const own=ownsAmulet(S,a.id),worn=on.includes(a.id);
+    const btn=!own?`<button class="pbuy" data-buy="${a.id}" ${canBuyAmulet(S,a.id)?'':'disabled'}>${a.price} <i class="picon ic-pearl"></i></button>`
+      :`<button class="pbuy" data-wear="${a.id}" ${busy?'disabled':''}>${worn?'Зняти':amu.swap===a.id?'Куди?':'Надіти'}</button>`;
+    return `<div class="pamu${worn?' on':''}"><i class="picon ic-am-${a.id}"></i><span><b>${a.name} <span class="pkind">· ${kindName[a.kind]}</span></b><em>${a.desc}</em></span>${btn}</div>`;
+  }).join('');
+}
+$('#amulist').addEventListener('click',e=>{
+  const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
+  if(b.dataset.buy){const a=AMULET_BY_ID[b.dataset.buy];if(!buyAmulet(S,a.id))return;SFX.pearl();
+    toast(amuletsOn(S).includes(a.id)?`${a.name}: надіто`:`${a.name}: у колекції`);save();renderSlot();renderAmulets();return}
+  const id=b.dataset.wear,on=amuletsOn(S);
+  if(amu.swap&&on.includes(id)){toggleAmulet(S,id);toggleAmulet(S,amu.swap);toast(`${AMULET_BY_ID[amu.swap].name}: надіто`);amu.swap=null}
+  else if(!on.includes(id)&&on.length>=AMU.slots){amu.swap=id}
+  else{toggleAmulet(S,id);amu.swap=null}
+  SFX.tick();save();renderSlot();renderAmulets();
+});
+
 /* ui/shells.js */
 /* ---------- Vodianyk's shells: watch the pearl, tap the shell ---------- */
 // ui: idle | show | shuffle | pick | reveal. Taps count only in pick.
@@ -7525,6 +7847,8 @@ function enterShells(){
   slotMsg('Водяник розклав мушлі на камені. Ставиш?');
 }
 function renderShells(){
+  renderAmulets();
+  $('#pearlv').textContent=fmt(S.pearls||0);
   const G=S.shells,m=G?{n:G.n,reason:''}:shellsMood(S);
   $('#shmood').textContent=G?(G.n>SHC.n?`Водяник злий — ${G.n} мушлі, перлина ×${String(G.pay).replace('.',',')}`:G.durMul>1?'Водяник ситий — мішає повільніше':''):m.reason;
   $('#shmood').hidden=!$('#shmood').textContent;
