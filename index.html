@@ -340,17 +340,13 @@ main{flex:1;min-height:0;position:relative}
 .pslot-hud em.pmood.hungry{color:var(--gold)}
 .pslot-hud em.pmood.angry{color:var(--red)}
 .pslot-hud .center{text-align:center}
-#heatlbl{font-family:var(--f-text);font-size:22px;line-height:1}
-/* the heat gets a line of its own: it never fits beside the treasure and the mood on a narrow phone */
-#v-slot .pslot-hud{flex-wrap:wrap;row-gap:var(--px)}
-#v-slot .pslot-hud .right{flex-basis:100%;justify-content:center;min-width:0}
+#v-slot .pslot-hud .right b{color:var(--moon)}
 .pmode{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
 .pmode button{height:calc(var(--px)*13);font-size:22px;line-height:1;color:var(--fog);background:var(--night)}
 .pmode button.on{color:var(--void);background:var(--moonS)}
 .pmode button:disabled{color:var(--waterD)}
 #v-slot.shells .slot-only{display:none!important}
 #v-slot:not(.shells) .shells-only{display:none!important}
-#v-slot.shells .pslot-hud .right{display:none}
 #slotcv.tap{cursor:pointer}
 .ppaygrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
 .ppaycell{display:grid;grid-template-columns:calc(var(--px)*12) 1fr;align-items:center;gap:calc(var(--px)*2);padding:var(--px);background:var(--night2)}
@@ -558,14 +554,16 @@ main{flex:1;min-height:0;position:relative}
       <div class="pslot-hud">
         <div aria-label="Скарб"><i class="picon ic-coin"></i><b id="jp">0</b></div>
         <div class="center" aria-label="Настрій"><em id="moodlbl" class="pmood"></em></div>
-        <div class="right" aria-label="Азарт"><i class="picon ic-flame"></i><em id="heatlbl"></em></div>
+        <div class="right" aria-label="Перли"><i class="picon ic-pearl"></i><b id="pearlv">0</b></div>
       </div>
       <canvas id="slotcv" class="pcanvas"></canvas>
       <div id="slotmsg" class="slotmsg pbubble">Водяник чекає ставку. Монети чи свіжий улов?</div>
+      <div id="freebox" class="slot-only pframe gold ppanel" hidden>
+        <p class="pdeal" id="freetxt"></p>
+      </div>
       <div id="giftbox" class="slot-only pframe gold ppanel" hidden>
         <p class="pdeal" id="gifttxt"></p>
-        <div class="pstack" id="giftswap"></div>
-        <button class="pbtn" id="giftplace">Додати на барабани</button>
+        <button class="pbtn" id="giftplace">Відкрити подарунок</button>
       </div>
       <div id="pending" class="slot-only pframe gold ppanel pwin" hidden>
         <div class="pwin-sum"><span id="divedepth">Виграш на кону</span><b id="winv">0</b><span id="diveinfo"></span></div>
@@ -605,19 +603,13 @@ main{flex:1;min-height:0;position:relative}
         <p class="psub" id="reelmix"></p>
       </div>
       <div class="slot-only pframe ppanel">
-        <h3>Пожертва</h3>
-        <p class="psub" id="donatesub"></p>
-        <div class="pfishes" id="donatefish"></div>
-        <div class="pstack" id="donateask" hidden>
-          <p class="pdeal" id="donatetxt"></p>
-          <div class="pstack" id="donateswap"></div>
-          <div class="pbtn-row"><button class="pbtn ghost" id="donateno">Назад</button><button class="pbtn" id="donateyes">Віддати</button></div>
+        <h3>Віддати рибу</h3>
+        <p class="psub" id="givesub"></p>
+        <div class="pfishes" id="givefish"></div>
+        <div class="pstack" id="giveask" hidden>
+          <p class="pdeal" id="givetxt"></p>
+          <div class="pbtn-row"><button class="pbtn ghost" id="giveno">Назад</button><button class="pbtn" id="giveyes">Віддати</button></div>
         </div>
-      </div>
-      <div class="slot-only pframe curse ppanel">
-        <h3>Черепи</h3>
-        <p class="psub" id="skulltxt"></p>
-        <button class="pbtn ghost" id="skullbtn">Прибрати череп</button>
       </div>
       <div class="slot-only pframe ppanel">
         <h3>Правила</h3>
@@ -839,13 +831,13 @@ const CONFIG = {
     { id: 'dzvin', name: 'Мідний дзвіночок', plus: 'Скарб росте в 1,3 раза швидше', minus: 'Водяник злиться частіше, виграші на 5% менші', fx: { jackpotShareMul: 1.3, angerMul: 1.5, slotPayMul: 0.95 } },
     { id: 'shkira', name: 'Жаб’яча шкура', plus: 'Клює на 20% швидше', minus: 'Удвічі більше мотлоху', fx: { waitMul: 0.8, junkMul: 2 } },
     { id: 'hrebin', name: 'Гребінь мавки', plus: 'Безпечна зона ширша', minus: 'Риба виводиться повільніше', fx: { zoneMul: 1.15, progressMul: 0.85 } },
-        { id: 'pidkova', name: 'Підкова з дна', plus: 'Азарт розгоряється на чверть швидше', minus: 'Прокляття на 1 рибину довше', fx: { heatStepAdd: 0.05, curseAdd: 1 } },
+        { id: 'pidkova', name: 'Підкова з дна', plus: 'Три гачки платять на третину більше', minus: 'Прокляття на 1 рибину довше', fx: { hookPayMul: 1.33, curseAdd: 1 } },
     { id: 'zub', name: 'Зуб сома', plus: 'Риба виводиться на 20% швидше', minus: 'Садок менший на 2 місця', fx: { progressMul: 1.2, netCapAdd: -2 } },
     { id: 'svichka', name: 'Свічка потопельника', plus: 'Клює на 15% швидше', minus: 'Менше часу на підсічку', fx: { waitMul: 0.85, biteWindowAdd: -0.15 } },
-    { id: 'moneta', name: 'Монета з ока мерця', plus: 'Пірнати трохи безпечніше', minus: 'Видалення символу в 1,5 раза дорожче', fx: { diveLoseMul: 0.95, removeCostMul: 1.5 } },
+    { id: 'moneta', name: 'Монета з ока мерця', plus: 'Пірнати трохи безпечніше', minus: 'Скарб наповнюється на п’яту частину повільніше', fx: { diveLoseMul: 0.95, jackpotShareMul: 0.8 } },
     { id: 'vinok', name: 'Вінок русалки', plus: 'Легенди клюють удвічі частіше', minus: 'Риба на 10% дешевша', fx: { legendMul: 2, priceMul: 0.9 } },
     { id: 'hachok', name: 'Кістяний гачок', plus: 'Більше часу на підсічку', minus: 'Леска рветься раніше', fx: { biteWindowAdd: 0.3, snapMul: 0.93 } },
-    { id: 'zhaba', name: 'Чорна жаба', plus: 'Прибрати череп у Водяника вдвічі дешевше', minus: 'Усі виграші автомата на 9% менші', fx: { removeCostMul: 0.5, slotPayMul: 0.91 } },
+    { id: 'zhaba', name: 'Чорна жаба', plus: 'Три жаби платять на третину більше', minus: 'Усі виграші автомата на 9% менші', fx: { frogPayMul: 1.33, slotPayMul: 0.91 } },
   ],
 
   upgrades: {
@@ -960,35 +952,35 @@ const CONFIG = {
 
   slot: {
     bets: [10, 25, 50, 100],
-    // Три барабани однакового складу, порядок на кожному свій. Виграш рахується лише по середньому ряду.
-    // start — склад на старті; max — найбільше символів на барабані; fishCap — копій одного виду риби.
-    strip: { start: { hook: 6, frog: 4, star: 1, moon: 1, skull: 2 }, max: 20, fishCap: 3, seed: 4242 },
-    // Гачок, жаба, зоря: ev3 і ev2 — скільки ставки трійка й пара дають у середньому за обертання.
-    // Виплата = ev / шанс, тож що рідше символ на барабанах, то більше він платить: пожертви не здешевлюють виграш.
-    // Округлена виплата з таблиці — це саме те, що платиться.
+    // Три барабани фіксованого складу, порядок на кожному свій. Рахується лише середній ряд.
+    strip: { counts: { hook: 5, frog: 3, star: 2, skull: 1, moon: 1 }, seed: 4242 },
+    // Виплати ×ставки: three — три однакові в ряду, two — два однакові зліва (лише гачок і жаба).
+    // Зоря ще й дає перли; місяць — увесь скарб; черепи: 2 — прокляття, 3 — угода.
     base: {
-      hook: { name: 'Гачок', plural: 'гачки', ev3: 0.31, ev2: 0.14 },
-      frog: { name: 'Жаба', plural: 'жаби', ev3: 0.175, ev2: 0.12 },
-      star: { name: 'Зоря', plural: 'зорі', ev3: 0.02, ev2: 0.02, golden: true },
-      moon: { name: 'Місяць', plural: 'місяці', jackpot: true, pay2: 1 },
+      hook: { name: 'Гачок', plural: 'гачки', three: 5, two: 0.5 },
+      frog: { name: 'Жаба', plural: 'жаби', three: 12, two: 1 },
+      // перли за три зорі: pearls за кожні 10 монет ставки, не більше pearlsMax — перла коштує однаково на будь-якій ставці
+      star: { name: 'Зоря', plural: 'зорі', three: 10, pearls: 2, pearlsMax: 20, golden: true },
+      moon: { name: 'Місяць', plural: 'місяці', jackpot: true },
       skull: { name: 'Череп', plural: 'черепи', skull: true },
     },
-    payCap: { three: 200, two: 20 },
-    // Риба платить за рідкістю, сталі виплати ×ставки: [трійка, пара]. Місячна рибка ще й вайлд.
-    fishPays: { common: [2, 0], uncommon: [6, 0.4], rare: [9, 0.7], epic: [11, 1], legend: [13, 1.2], named: [15, 1.4] },
-    wild: 'Місячна рибка',
-    // Азарт: кожна програна поспіль ставка додає step × (програно / ця ставка) до множника наступного виграшу, до max.
-    // Прив'язка до суми, а не до кількості обертань: інакше вигідно крутити по 10, а вигравати на 100.
-    heat: { step: 0.2, max: 3 },
-    // Прибрати один череп з усіх барабанів; щоразу дорожче. Останній череп Водяник не віддає:
-    // без черепів азарт не гасне ніколи, і сильна збірка вилітала б за 130%.
-    remove: { base: 40, mul: 1.5, keep: 1 },
-    jackpot: { base: 150, stakeShare: 0.05, stakeMul: 10 },
-    // «Улов» приймають за ринковою ціною
-    netStakeRate: 1,
-    golden: { pair: 1, triple: 3, minStake: 100 },
+    jackpot: { base: 150, stakeShare: 0.18, stakeMul: 10 },
+    netStakeRate: 1, // «Улов» приймають за ринковою ціною
+    golden: { triple: 3, minStake: 100 },
     cursePair: 3,
     cursePairSmall: 1, // при ставці менше golden.minStake
+    // Риба → безкоштовні обертання зі ставкою stake. Обертань у середньому = ціна / coinsPerSpin[рідкість], щонайменше 1;
+    // дробова частина — чесний жереб (2,4 → 2 або 3 з шансом 40%). На цей час гачки стають цією рибою,
+    // три такі в ряд платять pays[рідкість]. Місячна рибка — вайлд, тому її обертання «дорожчі» (wild).
+    // Баланс: у середньому віддати рибу ≈ 0,95–1,1 її ціни монетами.
+    free: {
+      stake: 10,
+      coinsPerSpin: { common: 5.2, uncommon: 6.9, rare: 10.4, epic: 20.6, legend: 35, named: 45, wild: 90 },
+      moonThree: 30, // у безкоштовних обертаннях три місяці платять ×30 ставки, а не скарб: віддача риби не залежить від скарбу
+      pays: { common: 2.5, uncommon: 5, rare: 10, epic: 24, legend: 44, named: 58 },
+    },
+    wild: 'Місячна рибка',
+    pearlFromFish: 30, // міграція: монет ціни риби, що лежала на барабанах, за 1 перлу
     // Пірнання: кожен рівень множить виграш, шанс утратити все зростає. Кожен крок трохи збитковий.
     dive: {
       levels: [
@@ -1175,8 +1167,8 @@ const artifactById = id => ARTIFACT_BY_ID[id];
 
 const NO_FX = Object.freeze({
   priceMul: 1, tensionMul: 1, surgeMul: 1, zoneMul: 1, progressMul: 1, waitMul: 1, snapMul: 1, junkMul: 1, legendMul: 1,
-  jackpotShareMul: 1, angerMul: 1, slotPayMul: 1, diveLoseMul: 1, removeCostMul: 1,
-  biteWindowAdd: 0, netCapAdd: 0, heatStepAdd: 0, curseAdd: 0, seeBite: false,
+  jackpotShareMul: 1, angerMul: 1, slotPayMul: 1, diveLoseMul: 1, hookPayMul: 1, frogPayMul: 1,
+  biteWindowAdd: 0, netCapAdd: 0,  curseAdd: 0, seeBite: false,
 });
 
 // Artifacts and the difficulty of Нова ніч+ reach the game through the same fx.
@@ -2094,10 +2086,7 @@ const NIGHT = CONFIG.night;
 // What the fish would fetch right now: a stake of fish from a crashed market is worth a crashed price.
 const netValue = S => S.net.reduce((a, f) => a + salePrice(S, f), 0);
 const netStake = S => Math.round(netValue(S) * SC.netStakeRate);
-function canSpin(S, bet) {
-  if (S.pending > 0 || S.deal || S.artifactOffer) return false;
-  return bet === 'net' ? S.net.length > 0 : S.coins >= bet;
-}
+
 
 // Only what the table shows bends a payout: the cursed things and the meaner water after a buyout.
 const artMul = S => artifactFx(S).slotPayMul;
@@ -2106,186 +2095,129 @@ function jackpotShare(S) {
   return SC.jackpot.stakeShare * moon * artifactFx(S).jackpotShareMul;
 }
 
-/* ---------- the reels ---------- */
-const BASE = SC.base;
+/* ---------- the reels: fixed, the same make-up on all three ---------- */
+const BASE = SC.base, FREE = SC.free;
 const isFishSym = k => !!FISH_BY_NAME[k];
 const isWild = k => k === SC.wild;
 const symName = k => (BASE[k] ? BASE[k].name : k);
 const fishTierOf = k => (FISH_BY_NAME[k].named ? 'named' : FISH_BY_NAME[k].t);
-
-// Three reels of one make-up, each shuffled its own way, so the spin looks like three machines.
 function shuffledStrip(counts, seed) {
   const r = seededRng(seed), out = [];
-  for (const [k, n] of Object.entries(counts)) for (let i = 0; i < n; i++) out.push({ k });
+  for (const [k, n] of Object.entries(counts)) for (let i = 0; i < n; i++) out.push(k);
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
   return out;
 }
-const startStrips = () => [0, 1, 2].map(i => shuffledStrip(SC.strip.start, SC.strip.seed + i * 977));
-// What is on every reel: symbol → how many.
-function reelCounts(S) {
-  const c = {};
-  for (const x of S.strips[0]) c[x.k] = (c[x.k] || 0) + 1;
-  return c;
-}
-const reelSize = S => S.strips[0].length;
-const donatedCount = S => S.strips[0].filter(x => isFishSym(x.k)).length;
+const STRIPS = [0, 1, 2].map(i => shuffledStrip(SC.strip.counts, SC.strip.seed + i * 977));
+// During free spins the hooks are this fish.
+const reelStrips = fish => (fish ? STRIPS.map(st => st.map(k => (k === 'hook' ? fish : k))) : STRIPS);
 
-// The pay table as it stands now: [three, two] in stakes for every symbol on the reels.
-const round1 = v => Math.round(v * 10) / 10;
-function payTable(S) {
-  const c = reelCounts(S), n = reelSize(S), out = {}, wilds = c[SC.wild] || 0;
-  for (const [k, cnt] of Object.entries(c)) {
-    // a wild fish stands in for these too, so it counts toward their odds
-    const d = BASE[k], p = (cnt + (d && !d.skull && !d.jackpot ? wilds : 0)) / n;
-    if (d && d.skull) continue;
-    if (d && d.jackpot) { out[k] = { three: 'jackpot', two: d.pay2 }; continue; }
-    if (d) {
-      out[k] = { three: Math.min(SC.payCap.three, round1(d.ev3 / p ** 3)), two: Math.min(SC.payCap.two, round1(d.ev2 / (2 * p * p * (1 - p)))) };
-      continue;
-    }
-    const [three, two] = SC.fishPays[fishTierOf(k)];
-    out[k] = { three, two };
+// The pay table now, in stakes. The cursed things that change a pay are folded in, so the table never lies.
+function payTable(S, fish = null) {
+  const fx = artifactFx(S), out = {};
+  for (const [k, d] of Object.entries(BASE)) {
+    if (d.skull) continue;
+    if (k === 'hook' && fish) continue;
+    if (d.jackpot) { out[k] = { three: 'jackpot', two: 0 }; continue; }
+    const m = k === 'hook' ? fx.hookPayMul : k === 'frog' ? fx.frogPayMul : 1;
+    out[k] = { three: Math.round(d.three * m * 10) / 10, two: d.two || 0, pearls: d.pearls || 0 };
+  }
+  if (fish) {
+    out[fish] = { three: isWild(fish) ? FREE.pays.legend : FREE.pays[fishTierOf(fish)], two: 0 };
+    out.moon = { three: FREE.moonThree, two: 0 };
   }
   return out;
 }
-// What a fish would pay if it were on the reels.
-const fishPay = k => { const [three, two] = SC.fishPays[fishTierOf(k)]; return { three, two }; };
-
-// The heat: lost stakes in a row turn into a multiplier for the next win at this stake.
-const heatMul = (S, stake) => (stake > 0 ? Math.min(SC.heat.max, round1(1 + (SC.heat.step + artifactFx(S).heatStepAdd) * (S.heat || 0) / stake)) : 1);
 
 // The middle row and nothing else. Returns every number the page needs to explain the result.
-function evaluateRow(row, stake, pays, ctx) {
+function evaluateRow(row, stake, pays, art) {
   const skulls = row.filter(k => k === 'skull').length;
-  const out = { kind: 'none', win: 0, sym: null, count: 0, cells: [false, false, false], skulls, heat: ctx.heat, art: ctx.art };
+  const out = { kind: 'none', win: 0, sym: null, count: 0, cells: [false, false, false], skulls, art, pearls: 0 };
   if (skulls === 3) { out.kind = 'deal'; out.cells = [true, true, true]; return out; }
   const fits = (a, k) => a === k || (isWild(a) && k !== 'skull');
-  // three in a row: the symbol is the first that isn't wild (three wild fish pay as themselves)
   const lead = row.find(k => !isWild(k)) || row[0];
-  if (lead !== 'skull' && row.every(a => fits(a, lead))) {
+  if (lead !== 'skull' && pays[lead] && row.every(a => fits(a, lead))) {
     out.sym = lead; out.count = 3; out.cells = [true, true, true];
-    if (pays[lead] && pays[lead].three === 'jackpot') { out.kind = 'jackpot'; out.mult = null; return out; }
-    out.mult = pays[lead] ? pays[lead].three : 0;
+    if (pays[lead].three === 'jackpot') { out.kind = 'jackpot'; return out; }
+    out.mult = pays[lead].three;
+    out.pearls = pays[lead].pearls ? Math.min(BASE[lead].pearlsMax, Math.max(1, Math.round(pays[lead].pearls * stake / 10))) : 0;
   } else {
-    // two side by side, left or right; the better one pays
-    for (const [i, j] of [[0, 1], [1, 2]]) {
-      const a = row[i], b = row[j];
-      if (a === 'skull' || b === 'skull') continue;
-      const k = isWild(a) ? b : a;
-      if (!fits(a, k) || !fits(b, k)) continue;
-      const m = pays[k] ? pays[k].two : 0;
-      if (m > (out.mult || 0)) { out.sym = k; out.count = 2; out.mult = m; out.cells = [i === 0 || j === 0, true, i === 2 || j === 2]; }
-    }
+    // two alike on the left pay a little, for the symbols that have it
+    const [a, b] = row, k = isWild(a) ? b : a;
+    if (k !== 'skull' && fits(a, k) && fits(b, k) && pays[k] && pays[k].two) { out.sym = k; out.count = 2; out.mult = pays[k].two; out.cells = [true, true, false]; }
   }
-  if (out.mult > 0) {
-    // a skull in the row puts the heat out before it can pay
-    const heat = skulls ? 1 : ctx.heat;
-    out.heat = heat;
-    out.win = Math.round(stake * out.mult * heat * ctx.art);
-    out.kind = 'win';
-  }
+  if (out.mult > 0) { out.win = Math.round(stake * out.mult * art); out.kind = 'win'; }
+  if (out.pearls) out.kind = 'win';
   if (skulls === 2) out.curse = true;
   if (out.kind === 'none' && out.curse) out.kind = 'curse';
   return out;
 }
 
 function applyEffects(S, out, stake) {
-  // A small bet draws a small curse: three cheap fish would cost far more than the stake.
   if (out.curse) S.buffs.curse += (stake >= SC.golden.minStake ? SC.cursePair : SC.cursePairSmall) + artifactFx(S).curseAdd;
-  if (out.kind === 'win' && BASE[out.sym] && BASE[out.sym].golden && stake >= SC.golden.minStake) {
-    out.golden = out.count === 3 ? SC.golden.triple : SC.golden.pair;
-    S.buffs.golden += out.golden;
-  }
+  if (out.kind === 'win' && BASE[out.sym] && BASE[out.sym].golden && stake >= SC.golden.minStake) { out.golden = SC.golden.triple; S.buffs.golden += out.golden; }
+  if (out.pearls) S.pearls = (S.pearls || 0) + out.pearls;
   if (out.kind === 'deal') S.deal = true;
 }
 
-/* ---------- building the reels ---------- */
-// A fish goes onto every reel at once, at a spot of its own on each.
-const canDonateFish = (S, f) => !!f && !f.junk && isFishSym(f.n) && !S.pending && !S.deal;
-const fishCopies = (S, k) => reelCounts(S)[k] || 0;
-// Why a donation can't happen: 'cap' (three of this fish already) or 'full' (the reels are full: pick one to replace).
-function donateBlock(S, k) {
-  if (fishCopies(S, k) >= SC.strip.fishCap) return 'cap';
-  if (reelSize(S) >= SC.strip.max) return 'full';
-  return null;
-}
-function addSymbol(S, k, replace = null, rng = Math.random) {
-  S.strips.forEach(st => {
-    if (replace) { const i = st.findIndex(x => x.k === replace); if (i >= 0) { st[i] = { k }; return; } }
-    st.splice(Math.floor(rng() * (st.length + 1)), 0, { k });
-  });
-}
-// replace: a donated fish to swap out when the reels are full.
-function donate(S, netIndex, replace = null, rng = Math.random) {
+/* ---------- a fish for free spins ---------- */
+// How many free spins a fish is worth, on average. The page shows this before you give.
+const spinCost = k => FREE.coinsPerSpin[isWild(k) ? 'wild' : fishTierOf(k)];
+const freeSpinsFor = (S, f) => Math.max(1, salePrice(S, f) / spinCost(f.n));
+// The fraction is a fair draw: 2.4 spins are 2, or 3 four times in ten.
+const drawSpins = (x, rng) => Math.max(1, Math.floor(x) + (rng() < x - Math.floor(x) ? 1 : 0));
+const canGiveFish = (S, f) => !!f && !f.junk && isFishSym(f.n) && !S.free && !S.pending && !S.deal;
+function giveFish(S, netIndex, rng = Math.random) {
   const f = S.net[netIndex];
-  if (!canDonateFish(S, f)) return null;
-  const block = donateBlock(S, f.n);
-  if (block === 'cap') return null;
-  if (block === 'full' && !(replace && isFishSym(replace) && fishCopies(S, replace) > 0)) return null;
-  addSymbol(S, f.n, block === 'full' ? replace : null, rng);
+  if (!canGiveFish(S, f)) return null;
+  const n = drawSpins(freeSpinsFor(S, f), rng);
   feedMood(S, salePrice(S, f), true);
   S.net.splice(netIndex, 1);
+  S.free = { fish: f.n, left: n, total: n, won: 0 };
   S.stats.donated = (S.stats.donated || 0) + 1;
-  return { fish: f };
+  return S.free;
 }
-// A symbol the buyer gave goes on like a donation, without a fish.
-function placeGift(S, replace = null, rng = Math.random) {
+// A gift from the buyer or a legend is a fish's worth of free spins, without the fish.
+function openGift(S, rng = Math.random) {
   const k = S.gifts[0];
-  if (!k || !isFishSym(k)) { S.gifts.shift(); return null; }
-  const block = donateBlock(S, k);
-  if (block === 'cap') { S.gifts.shift(); return { k, wasted: true }; }
-  if (block === 'full' && !(replace && fishCopies(S, replace) > 0)) return null;
-  addSymbol(S, k, block === 'full' ? replace : null, rng);
+  if (!k || S.free || S.pending || S.deal) return null;
   S.gifts.shift();
-  return { k };
-}
-
-const skullCount = S => reelCounts(S).skull || 0;
-const removeCost = S => Math.round(SC.remove.base * SC.remove.mul ** (S.removed || 0) * artifactFx(S).removeCostMul);
-const canRemoveSkull = S => skullCount(S) > SC.remove.keep && S.coins >= removeCost(S) && !S.pending && !S.deal;
-function removeSkull(S) {
-  if (!canRemoveSkull(S)) return null;
-  const cost = removeCost(S);
-  S.coins -= cost;
-  S.removed = (S.removed || 0) + 1;
-  S.strips.forEach(st => st.splice(st.findIndex(x => x.k === 'skull'), 1));
-  return { cost };
+  if (!isFishSym(k)) return null;
+  const f = FISH_BY_NAME[k], price = f.p * (CONFIG.fishing.price.min + CONFIG.fishing.price.range * 0.5);
+  const n = drawSpins(price / spinCost(k), rng);
+  S.free = { fish: k, left: n, total: n, won: 0 };
+  return S.free;
 }
 
 /* ---------- the spin ---------- */
+const canSpin = (S, bet) => !S.pending && !S.deal && !S.artifactOffer && (S.free ? S.free.left > 0 : bet === 'net' ? S.net.length > 0 : S.coins >= bet);
 function spin(S, bet, rng = Math.random) {
+  const F = S.free && S.free.left > 0 ? S.free : null;
   let stake, fresh = false;
-  if (bet === 'net') {
-    stake = netStake(S);
-    S.net = [];
-    fresh = true;
-  } else {
-    stake = bet;
-    S.coins -= bet;
-  }
-  S.jackpot += stake * jackpotShare(S); // fractional on purpose: rounding 0.5 per spin doubled the share at the minimum bet
-  const offsets = S.strips.map(st => Math.floor(rng() * st.length));
-  const grid = [0, 1, 2].map(r => S.strips.map((st, i) => st[(offsets[i] + r) % st.length].k));
-  const pays = payTable(S);
-  const out = evaluateRow(grid[1], stake, pays, { heat: heatMul(S, stake), art: artMul(S) });
+  if (F) { stake = FREE.stake; F.left--; }
+  else if (bet === 'net') { stake = netStake(S); S.net = []; fresh = true; }
+  else { stake = bet; S.coins -= bet; }
+  if (!F) S.jackpot += stake * jackpotShare(S); // only paid stakes fill the treasure
+  const strips = reelStrips(F ? F.fish : null);
+  const offsets = strips.map(st => Math.floor(rng() * st.length));
+  const grid = [0, 1, 2].map(r => strips.map((st, i) => st[(offsets[i] + r) % st.length]));
+  const pays = payTable(S, F ? F.fish : null);
+  const out = evaluateRow(grid[1], stake, pays, artMul(S));
   if (out.kind === 'jackpot') {
     const moonFish = grid[1].some(isWild) && S.night.phase === NIGHT.full.phase;
     out.jackpotWin = Math.round(S.jackpot * (moonFish ? 2 : 1));
-    out.win = out.jackpotWin + Math.round(stake * SC.jackpot.stakeMul * out.heat * out.art);
+    out.win = out.jackpotWin + Math.round(stake * SC.jackpot.stakeMul * out.art);
     S.jackpot = SC.jackpot.base;
   }
   applyEffects(S, out, stake);
-  // the heat: a win spends it, a skull in the row puts it out, a plain loss adds the stake
-  if (out.win > 0 || out.skulls) S.heat = 0;
-  else S.heat = (S.heat || 0) + stake;
-  out.heatOut = out.skulls > 0 && out.kind !== 'deal';
-  S.pending = out.win;
-  feedMood(S, Math.max(0, stake - out.win), fresh);
+  if (!F) feedMood(S, Math.max(0, stake - out.win), fresh);
   moodAfterSpin(S);
   if (out.win >= stake * SC.mood.bigWinMult || out.kind === 'jackpot') angerMood(S, SC.mood.angerBigWin);
   S.stats.spins = (S.stats.spins || 0) + 1;
-  const res = { ...out, stake, grid, offsets };
-  S.lastSpin = { grid, cells: out.cells, kind: out.kind, win: out.win, stake };
+  // free spins pay straight into the pocket and keep rolling; a paid win waits on the table for the dive
+  if (F) { S.coins += out.win; F.won += out.win; if (F.left <= 0) out.freeDone = { ...F }; if (F.left <= 0) S.free = null; }
+  else S.pending = out.win;
+  const res = { ...out, stake, grid, offsets, free: F ? { fish: F.fish, left: F.left, total: F.total } : null, strips };
+  S.lastSpin = { grid, cells: out.cells, kind: out.kind, win: out.win, stake, fish: F ? F.fish : null };
   return res;
 }
 
@@ -2453,7 +2385,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2467,7 +2399,8 @@ const defaultState = () => ({
   father: null,
   aim: null, // last chosen spot on the water, { u, v }
   jackpot: CONFIG.slot.jackpot.base,
-  heat: 0, // stakes lost in a row: the multiplier for the next win
+  pearls: 0, // Vodianyk's own money: won only from him, spent only with him
+  free: null, // free spins for a fish: { fish, left, total, won }
   pending: 0,
   deal: false,
   location: 'zavod',
@@ -2478,8 +2411,7 @@ const defaultState = () => ({
   artifactOffer: null,
   lastSpin: null,
   dive: 0,
-  strips: startStrips(),
-  removed: 0, // skulls bought off the reels: each next one costs more
+
   shells: null, // a shell game in play: { stake, pot, round, n, pay, start, swaps, pearl, phase }
   bestiary: {},
   rewarded: [],
@@ -2557,7 +2489,7 @@ const MIGRATIONS = {
   // A temporary wild from the old sacrifice ends; the last spin was drawn with the old symbols.
   6: d => {
     const { loan, sacrifice, ...rest } = d;
-    return { ...rest, v: 7, strips: startStrips(), pick: null, pickIn: 15, removed: 0, lastSpin: null }; // numbers of that version, not CONFIG: it has moved on
+    return { ...rest, v: 7, strips: [[]], pick: null, pickIn: 15, removed: 0, lastSpin: null }; // later steps only need the fish on the reels
   },
   // v8: the real moon and real time. Nights of twelve casts and the nightly orders go; the board, traps,
   // the day's demand and gifts arrive. Нова ніч+ no longer resets anything, and the runs already made stay.
@@ -2571,27 +2503,29 @@ const MIGRATIONS = {
   // goes onto all three as a plain symbol (pike growth and the like are gone), up to the caps, the dearest first.
   // Skulls already bought off stay off. The old heat scale, the offers and the old spin go.
   9: d => {
+    // Old steps must not lean on CONFIG or code that has since changed: they only gather the fish on the reels,
+    // a fish counted once per placement, up to three of a kind as the v10 reels allowed. v12 turns them into pearls.
     const { heatPool, pick, pickIn, lastSpin, ...rest } = d;
-    const fish = [];
-    for (const st of Array.isArray(d.strips) ? d.strips : []) for (const x of st || []) if (x && FISH_BY_NAME[x.k] && !FISH_BY_NAME[x.k].junk) fish.push(x.k);
-    fish.sort((a, b) => FISH_BY_NAME[b].p - FISH_BY_NAME[a].p);
-    const strips = startStrips(), counts = {};
-    let skullsOff = Math.min(d.removed || 0, CONFIG.slot.strip.start.skull);
-    let i = 0;
-    for (const k of fish) {
-      if ((counts[k] || 0) >= CONFIG.slot.strip.fishCap || strips[0].length >= CONFIG.slot.strip.max) continue;
-      counts[k] = (counts[k] || 0) + 1;
-      strips.forEach((st, r) => st.splice((i * 7 + r * 3) % (st.length + 1), 0, { k }));
-      i++;
+    const fish = [], counts = {};
+    for (const st of Array.isArray(d.strips) ? d.strips : []) for (const x of st || []) {
+      if (!x || !FISH_BY_NAME[x.k] || FISH_BY_NAME[x.k].junk || (counts[x.k] || 0) >= 3 || fish.length >= 6) continue;
+      counts[x.k] = (counts[x.k] || 0) + 1;
+      fish.push({ k: x.k });
     }
-    // a skull bought off before stays off: the new reels start with fewer
-    const hadSkulls = (Array.isArray(d.strips) && d.strips[0] ? d.strips.map(st => (st || []).filter(x => x && x.k === 'skull').length) : []);
-    if (hadSkulls.length && Math.max(...hadSkulls) < CONFIG.slot.strip.start.skull) skullsOff = Math.max(skullsOff, CONFIG.slot.strip.start.skull - Math.max(...hadSkulls));
-    for (let n = 0; n < skullsOff; n++) strips.forEach(st => { const j = st.findIndex(x => x.k === 'skull'); if (j >= 0) st.splice(j, 1); });
-    return { ...rest, v: 10, heat: 0, strips, removed: d.removed || 0, lastSpin: null };
+    return { ...rest, v: 10, heat: 0, strips: [fish], removed: d.removed || 0, lastSpin: null };
   },
   // v11: the shells. Nothing to carry over.
   10: d => ({ ...d, v: 11, shells: null }),
+  // v12: the reels are fixed again, the heat is gone, pearls arrive. Fish that lay on the reels come back
+  // as pearls at their market price; skulls bought off and the reels' make-up are forgotten.
+  11: d => {
+    const { heat, strips, removed, ...rest } = d;
+    let coins = 0;
+    const st = Array.isArray(strips) && strips[0] ? strips[0] : [];
+    for (const x of st) if (x && FISH_BY_NAME[x.k] && !FISH_BY_NAME[x.k].junk) coins += FISH_BY_NAME[x.k].p * (CONFIG.fishing.price.min + CONFIG.fishing.price.range * 0.5);
+    const pearls = coins ? Math.max(1, Math.round(coins / CONFIG.slot.pearlFromFish)) : 0;
+    return { ...rest, v: 12, pearls: (d.pearls || 0) + pearls, free: null, lastSpin: null, migratedPearls: pearls || 0 };
+  },
 };
 
 function migrate(data) {
@@ -2621,7 +2555,6 @@ function migrate(data) {
     gifts: Array.isArray(d.gifts) ? d.gifts : [],
     unlocked: Array.isArray(d.unlocked) ? d.unlocked : b.unlocked,
     net: Array.isArray(d.net) ? d.net : [],
-    strips: Array.isArray(d.strips) && d.strips.length === 3 && d.strips.every(st => Array.isArray(st) && st.length >= 3) ? d.strips : b.strips,
   };
 }
 
@@ -2954,7 +2887,8 @@ function defineSprites(table) {
   for (const name in table) defineSprite(name, table[name]);
 }
 
-const frameAt = (sprite, seconds) => Math.floor(seconds * sprite.fps) % sprite.frames.length;
+// Wrapped both ways: a time a hair below zero must still name a real frame.
+const frameAt = (sprite, seconds) => { const n = sprite.frames.length; return ((Math.floor(seconds * sprite.fps) % n) + n) % n; };
 
 const RGB = Object.entries(PALETTE).map(([key, hex]) => {
   const n = parseInt(hex.slice(1), 16);
@@ -6467,7 +6401,7 @@ function spriteDataUrl(sprite,silhouette=false){
 function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
-  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka',shell:'shell'};
+  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka',shell:'shell',pearl:'pearl'};
   for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYM_SPRITE)names['sym-'+SYM_SPRITE[k]]=SYM_SPRITE[k];
@@ -6931,7 +6865,7 @@ function land(){
   useBait();
   const {fish:c,notes,isNew,rewards}=landFish(S,F.fish,Math.random,{stars,zone:F.zone,father:F.father,priceMul:eventFx(S).priceMul||1});
   // a named legend leaves its own symbol for the reels, the first time
-  if(F.fish.named&&isNew){S.gifts.push(F.fish.n);setTimeout(()=>toast('Символ легенди чекає у Водяника'),2200)}
+  if(F.fish.named&&isNew){S.gifts.push(F.fish.n);setTimeout(()=>toast('Водяник чекає з подарунком: обертання з легендою'),2200)}
   afterCast(c,red);
   F.cardIndex=S.net.length-1;F.reel=null;F.father=false;
   save();
@@ -7056,7 +6990,8 @@ function update(dt){
 }
 let last=performance.now();
 function loop(now){
-  const dt=Math.min(.05,(now-last)/1000);last=now;
+  // the first frame's timestamp can come a hair before the script's own clock: time never runs backwards here
+  const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
   update(dt);
   if(tab==='pond'&&sceneReady){
     signalsTick(dt);
@@ -7138,7 +7073,7 @@ function maybePanas(){
 $('#askyes').addEventListener('click',e=>{e.stopPropagation();
   if(ask.kind==='mavka'){
     const r=mavkaTrade(S);closeAsk();
-    if(r){const what=r.kind==='golden'?`${CONFIG.events.mavka.golden} золоті луски на наступні рибини`:r.kind==='moon'?`${CONFIG.events.mavka.moon} місячних мотилі`:'символ «Місячна рибка» — чекає у Водяника';
+    if(r){const what=r.kind==='golden'?`${CONFIG.events.mavka.golden} золоті луски на наступні рибини`:r.kind==='moon'?`${CONFIG.events.mavka.moon} місячних мотилі`:'безкоштовні обертання з місячною рибкою — чекають у Водяника';
       say(`Мавка забрала ${r.fish.n} і засміялась. Тобі: ${what}.`,'gold',3600);SFX.ghost()}
   }else if(ask.kind==='panas'){
     if(acceptBet(S,ask.offer)){say('Дід плює в долоню. Парі!','gold',1800);SFX.coin()}closeAsk();
@@ -7239,7 +7174,7 @@ function rewardText(r){
   switch(r.type){
     case 'coins':return `+${fmt(r.v)} монет`;
     case 'bait':return `+${r.v} · ${FCU.baits[r.k].name.toLowerCase()}`;
-    case 'symbol':return `символ «${r.k}» на барабан`;
+    case 'symbol':return `обертання з «${r.k}» у Водяника`;
     case 'artifact':return r.id?artifactById(r.id).name:'проклята річ з дна';
   }
   return '';
@@ -7262,7 +7197,7 @@ function announceOrder(done){
   const r=done.reward;
   toast(`Доручення виконано: ${rewardText(r)}`);SFX.win();
   if(r.type==='artifact'&&r.id&&!r.slotted)setTimeout(()=>toast('Кишені повні: знахідка чекає у Водяника'),1900);
-  if(r.type==='symbol')setTimeout(()=>toast('Символ чекає у Водяника'),1900);
+  if(r.type==='symbol')setTimeout(()=>toast('Подарунок чекає у Водяника'),1900);
 }
 
 /* ---------- traps ---------- */
@@ -7355,62 +7290,56 @@ function slotResize(){
   if(!slotSceneReady)restoreGrid();
   slotSceneReady=true;
 }
+// The reels as the scene wants them: objects, with hooks turned to the fish during free spins.
+const sceneStrips=()=>reelStrips(S.free?S.free.fish:null).map(st=>st.map(k=>({k})));
 // After a reload the machine shows the last grid, or the strips' first rows.
 function restoreGrid(){
-  const L=S.lastSpin;
-  if(L&&Array.isArray(L.grid)&&typeof L.grid[0][0]==='string')slotScene.show(L.grid,S.strips,S.pending>0?L.cells:null);
-  else slotScene.show([0,1,2].map(r=>S.strips.map(st=>st[r%st.length].k)),S.strips);
+  const L=S.lastSpin,st=sceneStrips();
+  if(L&&Array.isArray(L.grid)&&typeof L.grid[0][0]==='string')slotScene.show(L.grid,st,S.pending>0?L.cells:null);
+  else slotScene.show([0,1,2].map(r=>st.map(x=>x[r].k)),st);
 }
 new ResizeObserver(slotResize).observe($('#v-slot'));
 function slotTick(dt){
   if(!slotSceneReady)return;
   slotScene.advance(dt);
-  const h=heatMul(S,currentStake());
-  slotScene.draw({heat:(h-1)/(SC.heat.max-1),deal:S.deal&&!slot.busy,moonPhase:S.night.phase,mood:moodOf(S),diveLevel:sh.mode==='shells'?0:S.dive,mode:sh.mode});
+  slotScene.draw({heat:0,deal:S.deal&&!slot.busy,moonPhase:S.night.phase,mood:moodOf(S),diveLevel:sh.mode==='shells'?0:S.dive,mode:sh.mode});
   slotScene.surf.present(slotCtx);
 }
 const currentStake=()=>slot.bet==='net'?netStake(S):slot.bet;
 
 $('#bets').innerHTML=SC.bets.map(b=>`<button data-b="${b}">${b}</button>`).join('')+'<button data-b="net">Улов</button>';
 
-/* ---------- what pays: the table, the reels' make-up ---------- */
-function payCell(k,on,p){
-  const three=p.three==='jackpot'?`скарб ${fmt(S.jackpot)} + ставка ×${SC.jackpot.stakeMul}`:`×${num(p.three)}`;
-  const two=p.two?`×${num(p.two)}`:'—';
-  const extra=!on?'<em>віддай рибу, щоб додати</em>':BASE[k]&&BASE[k].golden?`<em>на ставці ${SC.golden.minStake}: золоті рибини</em>`:isWild(k)?'<em>вайлд: замінює будь-що, крім черепа</em>':'';
-  return `<div class="ppaycell${on?'':' off'}${p.three==='jackpot'?' wide':''}"><span class="pcell">${symIcon(k)}</span><span>3 = ${three} · 2 = ${two}${extra?'<br>'+extra:''}</span></div>`;
+/* ---------- what pays: always on screen ---------- */
+function payCell(k,p){
+  const three=p.three==='jackpot'?`скарб ${fmt(S.jackpot)} + ставка ×${SC.jackpot.stakeMul}`:`×${num(p.three)}${p.pearls?` + ${p.pearls} перли за кожні 10 ставки`:''}`;
+  const extra=BASE[k]&&BASE[k].golden?`<em>на ставці ${SC.golden.minStake}: ще й золоті рибини</em>`:isWild(k)?'<em>вайлд: замінює будь-що, крім черепа</em>':S.free&&k===S.free.fish?'<em>замість гачків, поки йдуть безкоштовні</em>':'';
+  return `<div class="ppaycell${p.three==='jackpot'?' wide':''}"><span class="pcell">${symIcon(k)}</span><span>3 = ${three}${p.two?` · 2 зліва = ×${num(p.two)}`:''}${extra?'<br>'+extra:''}</span></div>`;
 }
 function renderPayTable(){
-  const pays=payTable(S),c=reelCounts(S);
-  const order=['moon','star','frog','hook'];
-  const cells=order.filter(k=>pays[k]).map(k=>payCell(k,true,pays[k]));
-  const fishOn=Object.keys(c).filter(isFishSym).sort((a,b)=>FISH_BY_NAME[b].p-FISH_BY_NAME[a].p);
-  for(const k of fishOn)cells.push(payCell(k,true,pays[k]));
-  // fish the player knows but has not given yet, shown grey with their pay
-  const known=CONFIG.fish.filter(f=>!f.junk&&isKnown(S,f.n)&&!c[f.n]).sort((a,b)=>b.p-a.p);
-  for(const f of known)cells.push(payCell(f.n,false,fishPay(f.n)));
-  cells.push(`<div class="ppaycell wide"><span class="pcell">${symIcon('skull')}</span><span>2 = прокляття · 3 = угода Водяника. Череп у ряду гасить азарт</span></div>`);
+  const fish=S.free?S.free.fish:null,pays=payTable(S,fish);
+  const order=[fish,'moon','star','frog','hook'].filter(k=>k&&pays[k]);
+  const cells=order.map(k=>payCell(k,pays[k]));
+  cells.push(`<div class="ppaycell wide"><span class="pcell">${symIcon('skull')}</span><span>2 = прокляття (наступні рибини дешевші) · 3 = угода Водяника</span></div>`);
   $('#paytable').innerHTML=cells.join('');
-  $('#paysub').textContent='Платить лише середній ряд. Три однакові — більший виграш, дві поруч зліва чи справа — менший. Множники від ставки.';
-  const order2=['hook','frog','star','moon','skull'];
-  const parts=[...order2.filter(k=>c[k]),...fishOn].map(k=>`${symName(k)} ${c[k]}`);
-  $('#reelmix').textContent=`На кожному барабані (${reelSize(S)}): ${parts.join(' · ')}. Гачки, жаби й зорі платять тим більше, чим рідше вони на барабанах.`;
+  $('#paysub').textContent=fish?`Безкоштовні обертання по ${SC.free.stake}: гачки зараз — ${fish}. Три місяці платять ×${SC.free.moonThree}.`:'Платить лише середній ряд: три однакові, або два зліва — для гачка й жаби. Множники від ставки.';
+  const c=SC.strip.counts;
+  $('#reelmix').textContent=`На кожному барабані ${Object.values(c).reduce((a,b)=>a+b,0)} символів: ${Object.entries(c).map(([k,n])=>`${k==='hook'&&fish?fish:symName(k)} ${n}`).join(' · ')}.`;
 }
-$('#payrules').textContent=`Середній ряд, три барабани. Три однакові або дві поруч — виплата з таблиці, більше нічого. Місячна рибка — вайлд. Азарт: кожен програш поспіль додає ×${num(SC.heat.step)} за кожну таку ж ставку до наступного виграшу, до ×${SC.heat.max}; виграш його витрачає, череп у середньому ряду гасить. Сам азарт нічого не повертає. Пожертвувана риба лягає на всі три барабани, до ${SC.strip.fishCap} однакових, до ${SC.strip.max} символів на барабані. ${pct(SC.jackpot.stakeShare)} кожної ставки йде у скарб; у повню він росте швидше. Пірнути можна після будь-якого виграшу.`;
+$('#payrules').textContent=`Середній ряд, три барабани однакового складу. Три однакові або два зліва (гачок, жаба) — виплата з таблиці, більше нічого. ${pct(SC.jackpot.stakeShare)} кожної платної ставки йде у скарб; три місяці забирають його весь. Три зорі дають ще й перли. Перли — гроші Водяника: їх не купиш і не продаси. Віддана риба дає безкоштовні обертання по ${SC.free.stake}: що дорожча риба, то більше обертань, а гачки на цей час стають нею. Пірнути можна після платного виграшу.`;
 
 function slotMsg(t,cls=''){const m=$('#slotmsg');m.innerHTML=t;m.className='slotmsg pbubble '+cls}
-function slotReset(){Object.assign(slot,{bet:SC.bets[0],busy:false,ask:null,swapPick:null,skullArm:false});slotMsg('Водяник чекає ставку. Монети чи свіжий улов?');slotSceneReady&&restoreGrid()}
+function slotReset(){Object.assign(slot,{bet:SC.bets[0],busy:false,ask:null});slotMsg('Водяник чекає ставку. Монети чи свіжий улов?');slotSceneReady&&restoreGrid()}
 function dealText(){
   const c=dealCost(S),can=canAcceptDeal(S);
   const offer=can?`${isNewMoon(S)?'Темно сьогодні, і я добрий. ':''}Віддай ${fmt(c)} монет, і я дам тобі ${dealBait(S)} місячних мотилів.`:`Хотів би взяти ${fmt(c)} монет за місячних мотилів, та в кишенях вітер.`;
   return `Три черепи. З-під води простягається зелена рука.<br><b>«${offer} Відмовишся, візьму сам, що захочу, і прокляну на додачу.»</b>`;
 }
-// After a reload the bubble must speak of what is really waiting.
 function slotRestoreMsg(){
   if(S.artifactOffer)slotMsg('Ти знайшов щось на дні. Вирішуй.','gold');
   else if(S.deal)slotMsg('Водяник чекає на відповідь.','gold');
   else if(S.dive>0)slotMsg('Ти досі під водою. Виринай або пірнай далі.','gold');
   else if(S.pending>0)slotMsg('Твій виграш досі на кону. Вирішуй.','gold');
+  else if(S.free)slotMsg(`Безкоштовні обертання чекають: ${S.free.left} (${S.free.fish}).`,'gold');
 }
 function renderOffer(){
   const id=S.artifactOffer,box=$('#artoffer');box.hidden=!id||slot.busy;
@@ -7420,89 +7349,59 @@ function renderOffer(){
   $('#offerswap').innerHTML=S.artifacts.map(x=>`<button class="pbtn ghost" data-a="${x}">Замість: ${artifactById(x).name}</button>`).join('');
 }
 
-/* ---------- giving fish: one tap to pick, one to confirm ---------- */
-const donatedKinds=()=>Object.keys(reelCounts(S)).filter(isFishSym);
-const swapButtons=(sel)=>donatedKinds().map(k=>`<button class="pbtn ghost${sel===k?' armed':''}" data-swap="${k}">Замість: ${k} (${reelCounts(S)[k]})</button>`).join('');
-function askText(k){
-  const p=fishPay(k),have=reelCounts(S)[k]||0;
-  return `<b>${k}</b> з’явиться на всіх трьох барабанах. 3 × ${k} у ряду платять ×${num(p.three)}${p.two?`, 2 поруч — ×${num(p.two)}`:''}. Зараз на кожному барабані: ${have} з ${SC.strip.fishCap}.`;
+/* ---------- a fish for free spins: pick, read what it gives, give ---------- */
+const spinsWord=x=>{const r=Math.round(x*10)/10;return Number.isInteger(r)?String(r):String(r).replace('.',',')};
+function giveText(f){
+  const x=freeSpinsFor(S,f),k=f.n,pay=isWild(k)?SC.free.pays.legend:SC.free.pays[fishTierOf(k)];
+  const spins=x%1?`${Math.floor(x)} або ${Math.floor(x)+1} (у середньому ${spinsWord(x)})`:String(x);
+  return `За <b>${k}</b> (ціна ${salePrice(S,f)}) Водяник дасть ${spins} безкоштовних обертань по ${SC.free.stake}. Поки вони йдуть, гачки на барабанах — це ${k}: 3 в ряд платять ×${num(pay)}${isWild(k)?', і вона ще й вайлд':''}.`;
 }
-function renderDonate(){
-  const busy=slot.busy||S.pending>0||S.deal;
+function renderGive(){
+  const busy=slot.busy||S.pending>0||S.deal||!!S.free;
   const list=S.net.map((f,i)=>({f,i})).filter(o=>!o.f.junk&&isFishSym(o.f.n));
-  $('#donatesub').textContent=`Рибу з садка можна віддати Водяникові: її символ ляже на всі три барабани. Чим рідкісніша риба, тим більше платить; кілька однакових — трапляється частіше. На барабанах ${reelSize(S)} з ${SC.strip.max}.`;
+  $('#givesub').textContent=S.free?'Спершу докрути безкоштовні обертання.':'Риба замість монет: що дорожча, то більше безкоштовних обертань. У середньому вийде приблизно її ціна — але азартно.';
   const a=slot.ask;
-  $('#donateask').hidden=!a;
-  $('#donatefish').hidden=!!a;
-  if(a){
-    const f=S.net[a.i];if(!f){slot.ask=null;return renderDonate()}
-    const block=donateBlock(S,f.n);
-    $('#donatetxt').innerHTML=block==='cap'?`Більше ${SC.strip.fishCap} однакових Водяник не бере: ${f.n} вже на всіх барабанах тричі.`:block==='full'?`${askText(f.n)}<br>Барабани повні (${SC.strip.max}). Кого прибрати замість?`:askText(f.n);
-    $('#donateswap').innerHTML=block==='full'?swapButtons(slot.swapPick):'';
-    $('#donateyes').disabled=busy||block==='cap'||(block==='full'&&!slot.swapPick);
-    return;
-  }
-  $('#donatefish').innerHTML=list.length?list.map(({f,i})=>{const p=fishPay(f.n);return `<button class="pfish" data-i="${i}" ${busy?'disabled':''}><i class="pfish-tier ${f.t}"></i><i class="picon ${fishIconClass(f.n)}"></i><span class="pfish-name">${f.n}</span><span class="pfish-kg">3 = ×${num(p.three)}</span><span class="pfish-price">${salePrice(S,f)}</span></button>`}).join('')
+  $('#giveask').hidden=!a;$('#givefish').hidden=!!a;
+  if(a){const f=S.net[a.i];if(!f){slot.ask=null;return renderGive()}$('#givetxt').innerHTML=giveText(f);$('#giveyes').disabled=busy;return}
+  $('#givefish').innerHTML=list.length?list.map(({f,i})=>`<button class="pfish" data-i="${i}" ${busy?'disabled':''}><i class="pfish-tier ${f.t}"></i><i class="picon ${fishIconClass(f.n)}"></i><span class="pfish-name">${f.n}</span><span class="pfish-kg">≈${spinsWord(freeSpinsFor(S,f))} об.</span><span class="pfish-price">${salePrice(S,f)}</span></button>`).join('')
     :'<div class="pempty">У садку нема що дати. Мотлох Водяник не бере.</div>';
 }
-$('#donatefish').addEventListener('click',e=>{const b=e.target.closest('.pfish');if(!b||b.disabled)return;slot.ask={i:+b.dataset.i};slot.swapPick=null;renderDonate()});
-$('#donateno').addEventListener('click',()=>{slot.ask=null;slot.swapPick=null;renderDonate()});
-$('#donateswap').addEventListener('click',e=>{const b=e.target.closest('[data-swap]');if(!b)return;slot.swapPick=b.dataset.swap;renderDonate()});
-$('#donateyes').addEventListener('click',()=>{
+$('#givefish').addEventListener('click',e=>{const b=e.target.closest('.pfish');if(!b||b.disabled)return;slot.ask={i:+b.dataset.i};renderGive()});
+$('#giveno').addEventListener('click',()=>{slot.ask=null;renderGive()});
+$('#giveyes').addEventListener('click',()=>{
   const a=slot.ask;if(!a)return;
-  const f=S.net[a.i],r=donate(S,a.i,slot.swapPick);if(!r)return;
-  const swapped=slot.swapPick;slot.ask=null;slot.swapPick=null;
-  save();renderHud();SFX.dive();
-  slotMsg(`Водяник прийняв жертву: <b>${f.n}</b>. Тепер цей символ на всіх барабанах${swapped?`, замість одного: ${swapped}`:''}.`,'gold');
-  restoreGridSoft();renderSlot();
+  const f=S.net[a.i],F=giveFish(S,a.i);if(!F)return;
+  slot.ask=null;save();renderHud();SFX.dive();
+  slotMsg(`Водяник прийняв ${f.n} і дав <b>${F.total}</b> безкоштовних обертань. Гачки стали рибою.`,'gold');
+  restoreGrid();renderSlot();
+  $('#spin').scrollIntoView({block:'nearest',behavior:REDUCED_MOTION?'auto':'smooth'});
 });
-// The machine at rest shows the new strips without pretending a spin happened.
-function restoreGridSoft(){if(!slot.busy)slotScene.show([0,1,2].map(r=>slotScene.reels.map(re=>re.cells[r].k)),S.strips,S.pending>0?slotScene.lit:null)}
+function renderFree(){
+  const F=S.free;$('#freebox').hidden=!F||slot.busy&&!F;
+  if(F)$('#freetxt').innerHTML=`${symIcon(F.fish)} Безкоштовних обертань: <b>${F.left}</b> (${F.fish})${F.won?` · виграно ${fmt(F.won)}`:''}`;
+}
 
-/* ---------- a gift from the buyer goes on like a donation ---------- */
+/* ---------- a gift: a fish's worth of free spins, without the fish ---------- */
 function renderGift(){
-  const k=S.gifts[0],on=!!k&&!slot.busy&&S.pending<=0&&!S.deal&&!S.artifactOffer;
+  const k=S.gifts[0],on=!!k&&!S.free&&!slot.busy&&S.pending<=0&&!S.deal&&!S.artifactOffer;
   $('#giftbox').hidden=!on;
-  if(!on)return;
-  if(!isFishSym(k)){S.gifts.shift();save();return renderGift()}
-  const block=donateBlock(S,k);
-  $('#gifttxt').innerHTML=`${symIcon(k)} Скупник передав символ. ${block==='cap'?`Та ${k} вже тричі на барабанах — більше не влізе.`:askText(k)}${block==='full'?' Барабани повні — кого прибрати?':''}`;
-  $('#giftswap').innerHTML=block==='full'?swapButtons(slot.swapPick):'';
-  $('#giftplace').textContent=block==='cap'?'Відпустити символ':'Додати на барабани';
-  $('#giftplace').disabled=block==='full'&&!slot.swapPick;
+  if(on)$('#gifttxt').innerHTML=`${symIcon(k)} Подарунок: безкоштовні обертання з рибою «${k}» — як за віддану рибу, тільки задарма.`;
 }
-$('#giftswap').addEventListener('click',e=>{const b=e.target.closest('[data-swap]');if(!b)return;slot.swapPick=b.dataset.swap;renderGift()});
-$('#giftplace').addEventListener('click',()=>{const r=placeGift(S,slot.swapPick);slot.swapPick=null;if(!r)return;save();
-  slotMsg(r.wasted?'Символ розчинився у воді: таких уже досить.':`${r.k} лягає на всі барабани.`,'gold');SFX.dive();restoreGridSoft();renderSlot()});
-
-/* ---------- buying a skull off ---------- */
-function renderSkulls(){
-  const n=skullCount(S),cost=removeCost(S),b=$('#skullbtn');
-  $('#skulltxt').textContent=`На кожному барабані черепів: ${n}. За монети Водяник прибере один з усіх трьох, щоразу дорожче. Останній не віддає.`;
-  b.disabled=!canRemoveSkull(S)||slot.busy;
-  b.textContent=n<=SC.remove.keep?'Останній череп лишається':slot.skullArm?`Точно? ${fmt(cost)}`:`Прибрати череп · ${fmt(cost)}`;
-  b.classList.toggle('armed',slot.skullArm);
-}
-$('#skullbtn').addEventListener('click',()=>{
-  if(!slot.skullArm){slot.skullArm=true;renderSkulls();setTimeout(()=>{if(slot.skullArm){slot.skullArm=false;renderSkulls()}},3000);return}
-  slot.skullArm=false;const r=removeSkull(S);if(!r)return;
-  save();renderHud();SFX.coin();slotMsg(`Водяник забрав ${fmt(r.cost)} монет і по черепу з кожного барабана. Наступний буде дорожчий.`,'gold');restoreGridSoft();renderSlot();
-});
+$('#giftplace').addEventListener('click',()=>{const F=openGift(S);if(!F)return;save();
+  slotMsg(`Подарунок відкрито: ${F.total} безкоштовних обертань з «${F.fish}».`,'gold');SFX.dive();restoreGrid();renderSlot()});
 
 function renderSlot(){
   slotResize();
   if(sh.mode==='shells'){renderShells();return}
   $('#jp').textContent=fmt(S.jackpot);
+  $('#pearlv').textContent=fmt(S.pearls||0);
   if(slot.bet!=='net'&&S.coins<slot.bet){const ok=[...SC.bets].reverse().find(v=>v<=S.coins);if(ok)slot.bet=ok}
   if(slot.bet==='net'&&!S.net.length)slot.bet=SC.bets[0];
-  const h=heatMul(S,currentStake());
-  $('#heatlbl').textContent=`Наступний виграш ×${num(h)}`;
   const mood=moodOf(S);
   $('#moodlbl').textContent=SC.mood.effects[mood].name;
   $('#moodlbl').className='pmood '+mood;
   document.querySelectorAll('#bets button').forEach(b=>{const v=b.dataset.b;b.classList.toggle('on',String(slot.bet)===v);
-    b.disabled=v==='net'?!S.net.length:S.coins<+v});
-  // the panels follow the saved state, so a reload brings back an unfinished win, deal or dive
+    b.disabled=!!S.free||(v==='net'?!S.net.length:S.coins<+v)});
   const showPending=!slot.busy&&S.pending>0,showDeal=!slot.busy&&S.deal;
   const offer=!slot.busy&&!!S.artifactOffer;
   $('#pending').hidden=!showPending||offer;
@@ -7515,26 +7414,26 @@ function renderSlot(){
   $('#divedepth').textContent=inDive?`Глибина ${S.dive}`:'Виграш на кону';
   $('#deal').hidden=!showDeal;
   if(showDeal){$('#dealtxt').innerHTML=dealText();$('#dealyes').disabled=!canAcceptDeal(S)}
-  renderOffer();renderGift();
+  renderOffer();renderGift();renderFree();
   const blocked=showPending||showDeal||offer;
-  $('#bets').hidden=blocked;$('#spin').hidden=blocked;
+  $('#bets').hidden=blocked||!!S.free;$('#spin').hidden=blocked;
   const sp=$('#spin'),ok=canSpin(S,slot.bet);
   sp.disabled=slot.busy||!ok;
   if(slot.busy)sp.textContent='Крутиться…';
+  else if(S.free)sp.textContent=`Безкоштовне · лишилось ${S.free.left}`;
   else if(!ok)sp.textContent='Нема чим ставити';
   else sp.textContent=`Крутити · ${fmt(currentStake())}`;
-  renderPayTable();renderDonate();renderSkulls();
+  renderPayTable();renderGive();
 }
 $('#bets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||slot.busy)return;slot.bet=b.dataset.b==='net'?'net':+b.dataset.b;renderSlot()});
 
 $('#spin').addEventListener('click',()=>{
   if(slot.busy||!canSpin(S,slot.bet))return;
-  const heatBefore=heatMul(S,currentStake());
-  const out=spin(S,slot.bet);out.heatBefore=heatBefore;
+  const out=spin(S,slot.bet);
   slot.busy=true;slot.ask=null;save();renderHud();
   slotMsg('…');renderSlot();
   const durs=REDUCED_MOTION?[300,400,500]:[900,1250,1650];
-  slotScene.emit('spin',{grid:out.grid,strips:S.strips,offsets:out.offsets,durations:durs.map(d=>d/1000)});MUSIC.setSpinning(true);
+  slotScene.emit('spin',{grid:out.grid,strips:out.strips.map(st=>st.map(k=>({k}))),offsets:out.offsets,durations:durs.map(d=>d/1000)});MUSIC.setSpinning(true);
   durs.forEach(d=>setTimeout(SFX.stop,d-40));
   let ticks=0;const tk=setInterval(()=>{SFX.tick();if(++ticks>durs[2]/90)clearInterval(tk)},90);
   setTimeout(()=>{clearInterval(tk);showResult(out)},durs[2]+120);
@@ -7543,14 +7442,17 @@ $('#spin').addEventListener('click',()=>{
 // The verdict in one line, every factor that made it.
 function resultText(out){
   const tail=[];
-  if(out.heatOut&&out.heatBefore>1)tail.push('Череп загасив азарт');
+  if(out.pearls)tail.push(`+${out.pearls} перли`);
   if(out.golden)tail.push(`${out.golden} золоті рибини`);
+  if(out.free&&out.win)tail.push('у кишеню');
+  if(out.freeDone)tail.push(`безкоштовні скінчились: разом ${fmt(out.freeDone.won)}`);
   const t=tail.length?' · '+tail.join(' · '):'';
   const art=out.art<1?` × артефакти ${num(out.art)}`:'';
+  const who=(k,n)=>BASE[k]?`${n} ${BASE[k].plural}`:`${n} × ${k}`;
   switch(out.kind){
-    case 'jackpot':return [`3 ${BASE.moon.plural} → скарб ${fmt(out.jackpotWin)} + ставка ×${SC.jackpot.stakeMul}${out.heat>1?` × азарт ${num(out.heat)}`:''}${art} = <b>${fmt(out.win)}</b>${t}`,'gold'];
+    case 'jackpot':return [`3 ${BASE.moon.plural} → скарб ${fmt(out.jackpotWin)} + ставка ×${SC.jackpot.stakeMul}${art} = <b>${fmt(out.win)}</b>${t}`,'gold'];
     case 'deal':return ['3 черепи → Водяник накрив ряд рукою й чекає на відповідь','gold'];
-    case 'win':return [`${symPlural(out.sym,out.count)} → ×${num(out.mult)}${out.heat>1?` × азарт ${num(out.heat)}`:''}${art} = <b>${fmt(out.win)}</b> ${coinWord(out.win)}${out.curse?' · і 2 черепи: прокляття':''}${t}`,out.win>out.stake?'good':''];
+    case 'win':return [`${who(out.sym,out.count)} → ×${num(out.mult||0)}${art} = <b>${fmt(out.win)}</b> ${coinWord(out.win)}${out.curse?' · і 2 черепи: прокляття':''}${t}`,out.win>out.stake||out.pearls?'good':''];
     case 'curse':return [`2 черепи → прокляття: наступні рибини дешевші${t}`,'bad'];
     default:return [`Нічого.${t}`,'bad'];
   }
@@ -7560,7 +7462,9 @@ function showResult(out){
   slotScene.emit('result',out);
   const [text,cls]=resultText(out);
   soundSlotResult(out);
-  slotMsg(text,cls);renderHud();renderSlot();
+  slotMsg(text,cls);renderHud();
+  if(out.freeDone)restoreGrid();
+  renderSlot();
 }
 
 /* take or dive */
@@ -7733,7 +7637,7 @@ function renderBestiary(){
     const known=isKnown(S,n),e=S.bestiary[n];
     return `<div class="pbest${known?'':' unknown'}"><i class="picon ${known?fishIconClass(n):silhouetteClass(n)}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}${bestStars(e)}</span><span class="pbest-kg">${e.best.toFixed(1).replace('.',',')} кг</span>`:`<span class="pbest-tier">${CONFIG.locations[L.loc].name}</span>`}<span class="pbest-hint">${L.hint}</span></div>`;
   }).join('');
-  $('#bestlist').innerHTML=places+`<div class="pframe gold ppanel"><h3>Іменні легенди</h3><p class="psub">По одній на кожну воду. Виходять, лише коли все збіглося. Перша зловлена дає свій символ на барабан.</p><div class="pbests">${legends}</div></div>`;
+  $('#bestlist').innerHTML=places+`<div class="pframe gold ppanel"><h3>Іменні легенди</h3><p class="psub">По одній на кожну воду. Виходять, лише коли все збіглося. Перша зловлена — ще й подарунок у Водяника.</p><div class="pbests">${legends}</div></div>`;
   $('#bestcount').textContent=`${knownCount(S)}/${CONFIG.fish.length}`;
 }
 $('#bestopen').addEventListener('click',()=>{renderBestiary();$('#bestiary').hidden=false});
@@ -7785,7 +7689,7 @@ const TIPS={
   bait:'Наживка — зліва від кнопки, торкнись, щоб змінити. Мотиль — для мирної риби, живець — для хижаків.',
   traps:'Кошик унизу сцени — верші. Постав їх, і вони ловитимуть, поки тебе нема.',
   board:'Дошка доручень без строків: нагорода за все доручення. Попит дня міняється щодня.',
-  slot:'Платить лише середній ряд. Таблиця виплат і склад барабанів — під кнопкою. Віддай рибу, і вона ляже на всі барабани.',
+  slot:'Платить лише середній ряд — таблиця під кнопкою. Рибу можна віддати за безкоштовні обертання, а три зорі дають перли.',
   moon:'Місяць тут справжній, як за вікном. У повню виходять легенди — скільки днів до неї, видно внизу сцени.',
 };
 // Each hint belongs to one screen; leaving it drops the queue, and the hint waits for the next time.
@@ -7943,6 +7847,7 @@ if(EMBEDDED_ATLAS)loadAtlas(EMBEDDED_ATLAS).then(()=>{installIcons();sceneReady=
 resize();renderHud();renderLocations();updateAct(true);renderBait();
 say(S.stats.caught?'З поверненням на заводь':'Ніч тиха. Закидай.','',2600);
 slotRestoreMsg();
+if(S.migratedPearls){const n=S.migratedPearls;delete S.migratedPearls;save();setTimeout(()=>toast(`Водяник повернув твою рибу перлами: ${n}`),1200)}
 if(S.pending>0||S.deal)toast('Водяник пам’ятає про незакінчену справу');
 // Back from the home screen: real time has moved on. A long absence gets its summary.
 let hiddenAt=0;
