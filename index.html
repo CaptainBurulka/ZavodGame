@@ -280,6 +280,8 @@ main{flex:1;min-height:0;position:relative}
 .pcoach.high{top:max(calc(var(--px)*30),calc(env(safe-area-inset-top,0px)*2 + var(--px)*26))}
 .pcoach::after{display:none}
 .pcoach-row{display:flex;justify-content:flex-end;gap:var(--px);margin-top:var(--px)}
+.ptip{z-index:14}
+.ptip p{margin:0}
 .pcoach .pthrow{min-height:calc(var(--px)*10)}
 .pcoach-ring{position:absolute;z-index:14;pointer-events:none;box-shadow:0 0 0 var(--px) var(--gold),0 0 0 calc(var(--px)*2) var(--void);animation:pring .6s steps(1) infinite}
 @keyframes pring{50%{box-shadow:0 0 0 var(--px) var(--lamp),0 0 0 calc(var(--px)*2) var(--void)}}
@@ -595,6 +597,7 @@ main{flex:1;min-height:0;position:relative}
     <button data-tab="slot"><i class="picon ic-tab-slot"></i>Водяник</button>
   </nav>
   <div id="toast" class="ptoast pbubble"></div>
+  <div id="tip" class="pcoach low ptip pbubble" hidden><p id="tiptext"></p><div class="pcoach-row"><button class="pthrow" id="tipok">Ясно</button></div></div>
   <div id="coachring" class="pcoach-ring" hidden></div>
   <div id="coach" class="pcoach pbubble low" hidden>
     <p id="coachtext"></p>
@@ -695,10 +698,10 @@ const CONFIG = {
     { n: 'Місячна рибка', t: 'legend', w: [0.3, 0.9], p: 420, d: 0.93, glow: true, pattern: 'ghost' },
     { n: 'Білуга', t: 'legend', w: [40, 120], p: 520, d: 0.95, pattern: ['dive', 'jerk'] },
     // Іменні легенди: не клюють звичайно, лише коли збіглися умови з legends. stages — бій у кілька етапів.
-    { n: 'Баба Килина', t: 'legend', named: true, w: [14, 22], p: 700, d: 0.9, pattern: 'heavy', stages: ['heavy', 'nervous', 'trick'], prog: 0.8 },
-    { n: 'Сивий Остап', t: 'legend', named: true, w: [9, 14], p: 800, d: 0.92, pattern: 'trick', stages: ['trick', 'jerk', 'trick'] },
-    { n: 'Старий Митрофан', t: 'legend', named: true, w: [90, 160], p: 1200, d: 0.95, pattern: 'dive', stages: ['heavy', 'dive', 'jerk'], prog: 0.85 },
-    { n: 'Чорна Бранка', t: 'legend', named: true, w: [150, 260], p: 1600, d: 0.97, pattern: 'ghost', stages: ['dive', 'ghost', 'jerk'], prog: 0.8 },
+    { n: 'Баба Килина', t: 'legend', named: true, w: [14, 22], p: 700, d: 0.86, pattern: 'heavy', stages: ['heavy', 'nervous', 'trick'] },
+    { n: 'Сивий Остап', t: 'legend', named: true, w: [9, 14], p: 800, d: 0.86, pattern: 'trick', stages: ['trick', 'jerk', 'trick'] },
+    { n: 'Старий Митрофан', t: 'legend', named: true, w: [90, 160], p: 1200, d: 0.86, pattern: 'dive', stages: ['nervous', 'dive', 'jerk'] },
+    { n: 'Чорна Бранка', t: 'legend', named: true, w: [150, 260], p: 1600, d: 0.86, pattern: 'ghost', stages: ['dive', 'ghost', 'jerk'] },
   ],
   // Де й коли виходить кожна іменна легенда. phases — фази місяця, bait — наживка, zone — зона води.
   // chance — шанс на клюванні, коли все збіглося; again — шанс, якщо її вже ловили.
@@ -721,18 +724,18 @@ const CONFIG = {
     ruslo: {
       name: 'Старе русло', cost: 800, snags: [{ x: 0.13, y: 0.47 }, { x: 0.62, y: 0.25 }], shallow: 0.72, reeds: true,
       fish: ['Іржавий чайник', 'Плітка', 'Окунь', 'Лящ', 'Щука', 'Короп', 'Судак', 'Минь', 'Стерлядь'],
-      tierMul: { common: 0.6, uncommon: 1.3, rare: 1.6, epic: 1.2 }, tensionMul: 1.1, surgeMul: 1.2, zoneMul: 0.95,
+      tierMul: { common: 0.6, uncommon: 1.3, rare: 1.6, epic: 1.2 }, tensionMul: 1.06, surgeMul: 1.15, zoneMul: 0.95,
     },
     vyr: {
       name: 'Вир під млином', cost: 4000, snags: [{ x: 0.17, y: 0.33 }, { x: 0.66, y: 0.7 }], shallow: 0.8, reeds: false,
       fish: ['Кістка утопленика', 'Окунь', 'Щука', 'Судак', 'Минь', 'Сом', 'Стерлядь', 'Місячна рибка', 'Білуга'],
-      tierMul: { junk: 0.5, common: 0.15, uncommon: 0.6, rare: 1.4, epic: 2.5, legend: 4 }, tensionMul: 1.3, surgeMul: 1.4, zoneMul: 0.85,
+      tierMul: { junk: 0.5, common: 0.15, uncommon: 0.6, rare: 1.4, epic: 2.5, legend: 4 }, tensionMul: 1.18, surgeMul: 1.3, zoneMul: 0.88,
     },
     // Відкривається лише викупом заводі: не купується, не скидається.
     pleso: {
       name: 'Чорне плесо', cost: 0, byBuyout: true, snags: [{ x: 0.2, y: 0.3 }, { x: 0.52, y: 0.55 }], shallow: 0.8, reeds: true,
       fish: ['Кістка утопленика', 'Щука', 'Короп', 'Судак', 'Минь', 'Сом', 'Стерлядь', 'Місячна рибка', 'Білуга'],
-      tierMul: { junk: 0.4, common: 0.1, uncommon: 0.5, rare: 1.5, epic: 3, legend: 6 }, tensionMul: 1.4, surgeMul: 1.5, zoneMul: 0.82,
+      tierMul: { junk: 0.4, common: 0.1, uncommon: 0.5, rare: 1.5, epic: 3, legend: 6 }, tensionMul: 1.25, surgeMul: 1.35, zoneMul: 0.86,
     },
   },
 
@@ -760,7 +763,8 @@ const CONFIG = {
   },
   // Верші: ловлять самі, по рибині раз на every хвилин, до cap риб; повна верша просто чекає.
   // Ставиш із наживкою з торби (хліб теж можна). Риба переважно дрібна й середня.
-  traps: { slots: 3, cost: [0, 300, 1200], every: 50, cap: 10, tierMul: { junk: 1, common: 1.4, uncommon: 1, rare: 0.15, epic: 0, legend: 0 } },
+  // Баланс (Фаза 5): при звичайній грі (≈20 хв рибалки на добу) верші дають ≤25% доходу.
+  traps: { slots: 3, cost: [0, 300, 1200], every: 60, cap: 8, tierMul: { junk: 1, common: 1.4, uncommon: 0.75, rare: 0.1, epic: 0, legend: 0 } },
   // Події: з шансом chance після закиду, що дійшов до клювання, не частіше ніж раз на cooldown закидів.
   // casts — скільки закидів триває, seconds — скільки секунд. weight — як часто випадає серед інших.
   events: {
@@ -810,9 +814,9 @@ const CONFIG = {
   ],
 
   upgrades: {
-    rod: { name: 'Вудка', levels: ['Ліщинова', 'Бамбукова', 'Склопластик', 'Карбон', 'Срібна'], cost: [40, 180, 650, 2100] },
-    net: { name: 'Садок', levels: ['Відро', 'Сітка', 'Садок', 'Великий садок', 'Бездонний'], cost: [30, 120, 450, 1200] },
-    lamp: { name: 'Ліхтар', levels: ['Без світла', 'Свічка', 'Гасова лампа', 'Ліхтарик', 'Світляки'], cost: [35, 150, 550, 1500] },
+    rod: { name: 'Вудка', levels: ['Ліщинова', 'Бамбукова', 'Склопластик', 'Карбон', 'Срібна'], cost: [40, 200, 1200, 4500] },
+    net: { name: 'Садок', levels: ['Відро', 'Сітка', 'Садок', 'Великий садок', 'Бездонний'], cost: [30, 140, 800, 2800] },
+    lamp: { name: 'Ліхтар', levels: ['Без світла', 'Свічка', 'Гасова лампа', 'Ліхтарик', 'Світляки'], cost: [35, 170, 1000, 3500] },
   },
   netCapacity: { base: 5, perLevel: 3 },
 
@@ -893,7 +897,7 @@ const CONFIG = {
       zoneCenter: 0.52,
       zoneSwing: 0.18,
       zoneSpeed: { base: 0.8, perDifficulty: 1.6 },
-      tensionUp: { base: 0.5, perDifficulty: 0.45 },
+      tensionUp: { base: 0.5, perDifficulty: 0.36 }, // Фаза 5: людина з реакцією 0,3 с і найкращою вудкою виводить сома ~60%, білугу ~40%
       tensionDown: 0.65,
       tensionCap: 1.05,
       snapAt: 1,
@@ -6415,11 +6419,12 @@ let tab='pond';
 function showTab(t){
   // leaving the bridge winds the rod in; a fight that never ended costs no bait
   if(t!=='pond'&&FISHING_BUSY.includes(F.state)){F.state='idle';F.holding=false;F.reel=null;F.father=false;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;say('Вудку змотано')}
+  if(t!==tab)dropTips();
   tab=t;
   document.querySelectorAll('.ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('#v-pond').hidden=t!=='pond';$('#v-market').hidden=t!=='market';$('#v-slot').hidden=t!=='slot';
   if(t==='market')renderMarket();
-  if(t==='slot')renderSlot();
+  if(t==='slot'){renderSlot();tip('slot')}
   if(t==='pond'){resize();updateAct(true)}
 }
 document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
@@ -6703,6 +6708,7 @@ function spawnSignal(){
     if(signals.list.some(o=>{const p=waterPoint(g,o.u,o.v);return Math.hypot(p.x-x,p.y-y)<SIG.hitRadius*2.5}))continue;
     signals.list.push({type,u,v,t:0,life:rnd(T.life[0],T.life[1])});
     scene.emit('signal',{x,y,type});SFX[SIGNAL_SFX[type]]();
+    if((S.stats.casts||0)>=1)tip('signal');
     return;
   }
 }
@@ -6721,6 +6727,8 @@ function renderBait(){
   $('#baitn').textContent=n===Infinity?FCU.baits[k].short:String(n);
   b.setAttribute('aria-label',`Наживка: ${FCU.baits[k].name}`);
   b.disabled=FISHING_BUSY.includes(F.state)||baitOwned(S).length<2;
+  if(!b.disabled)tip('bait');
+  if(F.state==='idle'&&(S.stats.caught||0)>=4)tip('traps');
 }
 $('#baitbtn').addEventListener('click',()=>{
   if(FISHING_BUSY.includes(F.state))return;
@@ -6934,6 +6942,8 @@ function openCard(c,notes,isNew){
   cardOpen=true;
   fillCard(c,notes,isNew);
   $('#crel').hidden=!canRelease(c);
+  if(c.q)setTimeout(()=>tip('stars'),600);
+  if(canRelease(c)&&(S.stats.caught||0)>=3)setTimeout(()=>tip('release'),700);
   $('#cbtns').classList.toggle('one',!canRelease(c));
   $('#catch').hidden=false;updateAct(true);
 }
@@ -7003,6 +7013,7 @@ function update(dt){
         F.fakeT=rnd(.8,1.6);
         F.nibT=rnd(FC.nibbleFirstRange[0],FC.nibbleFirstRange[1]);
         scene.emit('cast-land',F.spot);SFX.plop();
+        if((S.stats.casts||0)>=2)tip('zones');if((S.stats.casts||0)>=6)tip('moon');
         say(`${F.castNote} · ${FC.zones[F.zone].name}`,F.signal?'gold':'',1500);
         updateAct();
       }
@@ -7157,6 +7168,7 @@ const UPG_DESC={
 const artArm={id:null,t:0};
 const pondArm={on:false,t:0};
 function renderMarket(){
+  tip('board');
   const list=$('#fishlist'),cap=netCapacity(S);
   if(!S.net.length)list.innerHTML='<div class="pempty">Порожньо. Риба сама себе не зловить.</div>';
   else list.innerHTML=S.net.map((f,i)=>{
@@ -7500,6 +7512,7 @@ $('#giftplace').addEventListener('click',()=>{if(!S.gifts.length)return;slot.pla
 function renderPick(){
   const box=$('#pickbox'),on=!!S.pick&&!slot.busy&&!slot.place&&S.pending<=0&&!S.deal&&!S.artifactOffer;
   box.hidden=!on;
+  if(on)tip('pick');
   if(!on)return;
   $('#pickopts').innerHTML=S.pick.map(k=>`<button class="pbtn ghost ppick" data-k="${k}">${symIcon(k)}<span><b>${symName(k)}</b><span class="pdesc">${symDesc(k)}</span></span></button>`).join('');
 }
@@ -7709,6 +7722,42 @@ $('#finalenext').addEventListener('click',()=>{
   hud.shown=null;slotReset();save();renderHud();renderLocations();renderMarket();showTab('pond');updateAct(true);
   say(first?'Заводь твоя. А за нею — Чорне плесо: туди тепер можна. Вода ж стала злішою.':`Вода знову злішає. Наступний викуп дорожчий.`,'gold',4200);SFX.night();
 });
+
+/* ui/tips.js */
+/* ---------- one-time hints: a mechanic explains itself the first time it shows up ---------- */
+const TIPS={
+  signal:'Кола, бульбашки, сплеск і мерехтіння на воді — це риба. Влучиш закидом, і її тип клюне швидше.',
+  zones:'Мілина біля берега — дрібнота, клює швидко. Глибина — більша риба. Корч (коряга) — рідкісна, але може зачепитись.',
+  stars:'Зірки — якість виводки: що менше червоної зони й метань, то дорожча риба.',
+  release:'Малу рибу можна відпустити. Іноді по неї приходить батько — трофейний.',
+  bait:'Наживка — зліва від кнопки, торкнись, щоб змінити. Мотиль — для мирної риби, живець — для хижаків.',
+  traps:'Кошик унизу сцени — верші. Постав їх, і вони ловитимуть, поки тебе нема.',
+  board:'Дошка доручень без строків: нагорода за все доручення. Попит дня міняється щодня.',
+  slot:'Барабани — це стрічки символів. Пожертвуй рибу, і вона стане символом назавжди. Усі стрічки видно нижче.',
+  pick:'Раз на 15 обертань Водяник пропонує символ задарма. Можна й відмовитись.',
+  moon:'Місяць тут справжній, як за вікном. У повню виходять легенди — скільки днів до неї, видно внизу сцени.',
+};
+// Each hint belongs to one screen; leaving it drops the queue, and the hint waits for the next time.
+const TIP_TAB={board:'market',slot:'slot',pick:'slot'};
+if(!prefs.hints)prefs.hints={};
+const tipQueue=[];let tipT=0;
+function tip(key){
+  if(prefs.hints[key]||tut.on||!TIPS[key]||tipQueue.includes(key)||(TIP_TAB[key]||'pond')!==tab)return;
+  tipQueue.push(key);
+  if($('#tip').hidden)nextTip();
+}
+function dropTips(){tipQueue.length=0;clearTimeout(tipT);$('#tip').hidden=true}
+function nextTip(){
+  clearTimeout(tipT);
+  let key=tipQueue.shift();
+  while(key&&(TIP_TAB[key]||'pond')!==tab)key=tipQueue.shift();
+  if(!key){$('#tip').hidden=true;return}
+  prefs.hints[key]=1;savePrefs();
+  $('#tiptext').textContent=TIPS[key];$('#tip').hidden=false;
+  tipT=setTimeout(nextTip,9000);
+}
+$('#tipok').addEventListener('click',e=>{e.stopPropagation();nextTip()});
+$('#tip').addEventListener('pointerdown',e=>e.stopPropagation());
 
 /* ui/tutorial.js */
 /* ---------- first-night tutorial: each step waits for the player to really do it ---------- */
