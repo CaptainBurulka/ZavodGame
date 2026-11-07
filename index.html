@@ -353,6 +353,78 @@ main{flex:1;min-height:0;position:relative}
 .pmode button{height:calc(var(--px)*13);font-size:22px;line-height:1;color:var(--fog);background:var(--night)}
 .pmode button.on{color:var(--void);background:var(--moonS)}
 .pmode button:disabled{color:var(--waterD)}
+/* the landing: scene, three tabs, the stall grid, the sell bar */
+.mkscene{position:relative;flex:none;touch-action:manipulation;cursor:pointer}
+.mkmsg{position:absolute;top:calc(var(--px)*2);left:calc(var(--px)*2);right:calc(var(--px)*2);width:fit-content;max-width:calc(100% - var(--px)*4);font-size:20px;line-height:1.05;z-index:2;pointer-events:none}
+.mkmsg.right{left:auto;right:calc(var(--px)*2)}
+.mklbl{position:absolute;transform:translateX(-50%);padding:0 var(--px);font-size:16px;line-height:1.1;color:var(--bone);background:var(--void);white-space:nowrap;pointer-events:none}
+.mklbl.on{color:var(--void);background:var(--gold)}
+.mksign{position:absolute;transform:translateX(-50%);width:max-content;max-width:calc(var(--px)*40);padding:0 var(--px);font-size:16px;line-height:1.05;text-align:center;color:var(--void);background:var(--bone);pointer-events:none}
+.mkanchor{position:absolute;width:1px;height:1px;pointer-events:none}
+.mktabs{grid-template-columns:repeat(3,1fr)}
+.mkpane{display:flex;flex-direction:column;gap:calc(var(--px)*2)}
+.mkhead{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--px)*2)}
+.mkhead b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--bone)}
+.mkhead em{font-style:normal;font-size:20px;color:var(--moonS)}
+.mkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--px)*2)}
+.mkfish{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:var(--px);min-width:0;min-height:calc(var(--px)*33);padding:calc(var(--px)*2) var(--px) var(--px);
+  background:var(--night2);box-shadow:inset 0 0 0 var(--px) var(--edge,transparent),0 var(--px) 0 var(--void);color:var(--bone)}
+.mkfish:active{transform:translateY(var(--px));box-shadow:inset 0 0 0 var(--px) var(--edge,transparent)}
+.mkfish.rare{--edge:var(--waterL)}.mkfish.epic{--edge:var(--magic)}.mkfish.legend{--edge:var(--gold)}
+.mkfish.golden{background:var(--curseD)}
+.mkfish.sel{background:var(--waterD);--edge:var(--gold)}
+.mkfish .mkicon{height:calc(var(--px)*10);display:flex;align-items:center}
+.mkfish .mkname{max-width:100%;font-size:18px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkstars{display:flex;gap:1px;height:calc(var(--px)*4)}
+.mkstars .picon{width:calc(var(--px)*4);height:calc(var(--px)*4)}
+.mkfish .mkw{font-size:16px;line-height:1;color:var(--fog)}
+.mkfish .mkp{font-family:var(--f-num);font-size:14px;line-height:1.3;color:var(--gold)}
+.mkfish .mkp s{color:var(--fog);text-decoration:none}
+.mktag{position:absolute;top:0;right:0;padding:0 2px;font-size:14px;line-height:1.1;color:var(--void);background:var(--lamp)}
+.mktag.coll{background:var(--magicL);left:0;right:auto}
+.mkfish.gone{visibility:hidden}
+.mksellbar{position:sticky;bottom:calc(var(--px)*-4);z-index:3;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:calc(var(--px)*2);margin-top:calc(var(--px)*-1);padding:calc(var(--px)*2) 0 calc(var(--px)*4);background:var(--void);box-shadow:0 calc(var(--px)*-1) 0 var(--night2)}
+.mksellbar .pbtn{margin-top:var(--px);margin-bottom:calc(var(--px)*3)}
+.mkkeep{display:flex;align-items:center;gap:calc(var(--px)*2);max-width:calc(var(--px)*34);padding:0 var(--px);font-size:18px;line-height:1;text-align:left;color:var(--fog);background:none}
+.mkkeep i{flex:none;width:calc(var(--px)*7);height:calc(var(--px)*7);background:var(--night2);box-shadow:inset 0 0 0 var(--px) var(--moonD)}
+.mkkeep[aria-checked="true"]{color:var(--magicL)}
+.mkkeep[aria-checked="true"] i{background:var(--magicL);box-shadow:inset 0 0 0 var(--px) var(--void),0 0 0 var(--px) var(--magicL)}
+.mkorders,.mkupgs,.mkbaits{display:flex;flex-direction:column;gap:calc(var(--px)*2)}
+.mkcard{display:flex;flex-direction:column;gap:calc(var(--px)*2);padding:calc(var(--px)*2);background:var(--night2);box-shadow:0 var(--px) 0 var(--void)}
+.mkcard.flash{animation:mkflash .5s steps(2) 2}
+@keyframes mkflash{50%{background:var(--waterD);box-shadow:inset 0 0 0 var(--px) var(--gold)}}
+.mkcard-top{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--px)*2)}
+.mkcard-top b{font-size:22px;font-weight:400;line-height:1;color:var(--bone)}
+.mkcard-top em{font-style:normal;font-family:var(--f-num);font-size:14px;color:var(--frogL)}
+.mkitem{display:grid;grid-template-columns:calc(var(--px)*24) 1fr auto;align-items:center;gap:calc(var(--px)*2)}
+.mkitem .mkicon{display:flex;justify-content:center}
+.mkitem span{min-width:0;font-size:20px;line-height:1;color:var(--bone)}
+.mkitem span small{display:block;font-size:16px;color:var(--fog)}
+.mkitem b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--moonS)}
+.mkitem b.ok{color:var(--frogL)}
+.mkitem.done span,.mkitem.done b{color:var(--fog)}
+.mkrew{font-size:18px;line-height:1;color:var(--gold)}
+.mkacts{display:grid;grid-template-columns:1fr auto;gap:calc(var(--px)*2);align-items:center}
+.mkacts .pbuy{min-height:calc(var(--px)*13);font-family:var(--f-text);font-size:20px}
+.mkrefuse{min-height:calc(var(--px)*13);padding:0 calc(var(--px)*2);font-size:18px;line-height:1;color:var(--bone);background:var(--night);box-shadow:0 var(--px) 0 var(--void)}
+.mkrefuse:disabled{color:var(--moonD)}
+.mkrefuse.armed{color:var(--void);background:var(--red)}
+.mkup{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--px)*2);align-items:start}
+.mkup-main{display:flex;flex-direction:column;gap:var(--px);min-width:0}
+.mkup-main b{font-size:22px;font-weight:400;line-height:1;color:var(--bone)}
+.mkup-main b span{color:var(--gold)}
+.mkdelta{font-size:18px;line-height:1.1;color:var(--fog)}
+.mkdelta em{font-style:normal;color:var(--bone)}
+.mkdelta i{font-style:normal;color:var(--frogL)}
+.mklevels{display:flex;flex-wrap:wrap;gap:var(--px)}
+.mklevels span{padding:0 var(--px);font-size:14px;line-height:1.2;color:var(--moonD);background:var(--night)}
+.mklevels span.have{color:var(--void);background:var(--moonD)}
+.mklevels span.now{color:var(--void);background:var(--gold)}
+.mkcard .pbuy{width:100%;min-height:calc(var(--px)*13);font-family:var(--f-text);font-size:20px}
+.mkbait-row{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--px)*2)}
+.mkdeal{display:flex;flex-direction:column;gap:calc(var(--px)*2);padding:calc(var(--px)*2);background:var(--night)}
+.mkdeal p{margin:0;font-size:20px;line-height:1.1}
+.mkdeal .pbtn{margin-bottom:var(--px)}
 #v-slot.shells .slot-only{display:none!important}
 #v-slot:not(.shells) .shells-only{display:none!important}
 #slotcv.tap{cursor:pointer}
@@ -515,46 +587,71 @@ main{flex:1;min-height:0;position:relative}
     </section>
 
     <section id="v-market" class="view scroll" hidden>
-      <div class="pframe gold ppanel">
-        <h3>Дошка доручень</h3>
-        <p class="psub" id="boardsub"></p>
-        <div class="pfishes" id="orders"></div>
+      <div class="mkscene" id="mkscene">
+        <canvas id="mkcv" class="pcanvas"></canvas>
+        <div id="mkmsg" class="mkmsg pbubble" hidden></div>
+        <i id="mkscalept" class="mkanchor"></i>
+        <span class="mklbl" data-who="galia">Галя</span><span class="mklbl" data-who="korchmar">Корчмар</span><span class="mklbl" data-who="collector">Колекціонер</span>
+        <span class="mksign" id="mksign" hidden></span>
       </div>
-      <div class="pframe ppanel">
-        <h3>Попит дня</h3>
-        <div class="pfishes" id="demand"></div>
+      <div class="pmode mktabs" id="mktabs"><button data-m="stall" class="on">Прилавок</button><button data-m="orders">Замовлення</button><button data-m="gear">Снасті</button></div>
+
+      <div class="mkpane" data-pane="stall">
+        <div class="pframe ppanel">
+          <div class="mkhead"><h3>Садок</h3><b id="netsum"></b></div>
+          <p class="psub" id="stallsub"></p>
+          <div class="mkgrid" id="fishlist"></div>
+        </div>
+        <div class="mksellbar">
+          <button class="mkkeep" id="keeptrophies" role="switch" aria-checked="false"><i></i><span>Лишати рідкісних</span></button>
+          <button class="pbtn" id="sellall">Продати все</button>
+        </div>
+        <div class="pframe gold ppanel">
+          <h3>Викупити заводь</h3>
+          <p class="psub" id="pondinfo"></p>
+          <div class="pbar pgoal"><div class="pbar-fill" id="pondfill"></div></div>
+          <button class="pbtn" id="pondbuy">Викупити</button>
+        </div>
+        <div class="pframe ppanel">
+          <h3>Журнал</h3>
+          <div class="pstats" id="stats"></div>
+          <button class="pbtn ghost" id="bestopen">Бестіарій · <span id="bestcount">0</span></button>
+        </div>
       </div>
-      <div class="pframe ppanel">
-        <h3>Садок</h3>
-        <p class="psub" id="netsum"></p>
-        <div class="pfishes" id="fishlist"></div>
-        <button class="pbtn" id="sellall">Продати все</button>
+
+      <div class="mkpane" data-pane="orders" hidden>
+        <div class="pframe gold ppanel">
+          <h3>Корчмар</h3>
+          <p class="psub" id="boardsub"></p>
+          <div class="mkorders" id="orders"></div>
+        </div>
       </div>
-      <div class="pframe ppanel">
-        <h3>Снасті</h3>
-        <p class="psub">Поліпшення назавжди</p>
-        <div id="upgs"></div>
+
+      <div class="mkpane" data-pane="gear" hidden>
+        <div class="pframe ppanel">
+          <h3>Снасті</h3>
+          <p class="psub">Назавжди. Видно, що саме зміниться.</p>
+          <div class="mkupgs" id="upgs"></div>
+        </div>
+        <div class="pframe ppanel">
+          <h3>Наживка</h3>
+          <p class="psub">Витрачається, коли риба на гачку: витягнув, обірвав чи зійшла. Хліб завжди є.</p>
+          <div class="mkbaits" id="baits"></div>
+        </div>
+        <div class="pframe curse ppanel">
+          <h3>Прокляті речі</h3>
+          <p class="psub">Кожна дає плюс і мінус. Лежать глибоко: пірнай у Водяника.</p>
+          <div class="partifacts" id="artlist"></div>
+        </div>
       </div>
-      <div class="pframe ppanel">
-        <h3>Наживка</h3>
-        <p class="psub">Витрачається, коли риба на гачку: витягнув, обірвав чи зійшла. Хліб завжди є.</p>
-        <div id="baits"></div>
-      </div>
-      <div class="pframe gold ppanel">
-        <h3>Викупити заводь</h3>
-        <p class="psub" id="pondinfo"></p>
-        <div class="pbar pgoal"><div class="pbar-fill" id="pondfill"></div></div>
-        <button class="pbtn" id="pondbuy">Викупити</button>
-      </div>
-      <div class="pframe curse ppanel">
-        <h3>Прокляті речі</h3>
-        <p class="psub">Кожна дає плюс і мінус. Лежать глибоко: пірнай у Водяника.</p>
-        <div class="partifacts" id="artlist"></div>
-      </div>
-      <div class="pframe ppanel">
-        <h3>Журнал</h3>
-        <div class="pstats" id="stats"></div>
-        <button class="pbtn ghost" id="bestopen">Бестіарій · <span id="bestcount">0</span></button>
+
+      <div class="mkpane" data-pane="collector" hidden>
+        <div class="pframe deep ppanel">
+          <div class="mkhead"><h3>Колекціонер</h3><em id="collmood"></em></div>
+          <p class="psub" id="collsub"></p>
+          <div class="mkgrid" id="colllist"></div>
+          <div class="mkdeal" id="colldeal" hidden></div>
+        </div>
       </div>
     </section>
 
@@ -791,17 +888,23 @@ const CONFIG = {
     newMoon: { phase: 0, dealCostMul: 0.5, dealBaitAdd: 3 },
   },
 
-  // Ринок: кожна продана рибина збиває ціну виду, ціна вертається з часом.
-  market: { dropPerSale: 0.04, floor: 0.5, recoverPerHour: 0.05 },
-  // Попит дня: раз на добу 1–2 види дорожчі, один дешевший.
-  demand: { up: [1, 2], upMul: [1.5, 2], downMul: 0.6 },
-  // Дошка доручень: завжди три — коротке, середнє, довге. Без дедлайнів; виконане одразу замінюється.
-  // bonus — надбавка до ринкової ціни кожної зданої рибини; reward — що дають за все доручення.
+  // Ринок на пристані. Галя купує все за ціну риби (ту саму, за якою рахує Водяник).
+  // Колекціонер: лише рідкісна й вище (minTier), по одній, за priceMul від ціни. Кожен торг — ще haggleStep від ціни,
+  // але з шансом offend[крок] він ображається й іде на away закидів; риба лишається в тебе. Більше торгів, ніж offend, нема.
+  market: {
+    collector: { minTier: 'rare', priceMul: 1.3, haggleStep: 0.25, offend: [0.25, 0.5], away: [10, 15] },
+  },
+  // Корчмар: завжди три замовлення — мале, середнє, велике. Без дедлайнів; виконане одразу замінюється.
+  // bonus — надбавка до ціни кожної зданої рибини; bait — наживка за все замовлення (одна з переліку).
+  // items: що просить (tiers — з якого рівня брати вид, qty — скільки, stars — шанс вимоги якості, chance — чи буде цей рядок).
+  // refuseEvery: від одного замовлення можна відмовитись раз на стільки закидів.
   board: {
-    bonus: 0.5,
-    short: { tiers: ['common'], qty: [2, 3], rewards: { coins: 3, bait: 2 }, coins: [25, 50], bait: { worm: 10 } },
-    mid: { tiers: ['uncommon', 'common'], qty: [1, 2], stars: { 2: 0.5 }, rewards: { coins: 2, bait: 2, symbol: 1 }, coins: [80, 160], bait: { moth: 6, live: 5 } },
-    long: { tiers: ['rare', 'uncommon', 'epic'], qty: [1, 1], stars: { 3: 0.6 }, snag: 0.5, rewards: { symbol: 2, artifact: 1, coins: 1, bait: 1 }, coins: [300, 600], bait: { moon: 2 } },
+    refuseEvery: 10,
+    sizes: {
+      short: { name: 'Мале', bonus: 0.2, items: [{ tiers: ['common'], qty: [2, 3] }], bait: { worm: 5 } },
+      mid: { name: 'Середнє', bonus: 0.3, items: [{ tiers: ['uncommon', 'common'], qty: [1, 2], stars: { 2: 0.4 } }, { tiers: ['common'], qty: [1, 2], chance: 0.5 }], bait: { moth: 4, live: 4 } },
+      long: { name: 'Велике', bonus: 0.4, items: [{ tiers: ['rare', 'uncommon'], qty: [1, 1], stars: { 3: 0.5 } }, { tiers: ['uncommon', 'rare'], qty: [1, 1], chance: 0.7 }], bait: { moon: 1, live: 6 } },
+    },
   },
   // Верші: ловлять самі, по рибині раз на every хвилин, до cap риб; повна верша просто чекає.
   // Ставиш із наживкою з торби (хліб теж можна). Риба переважно дрібна й середня.
@@ -1346,141 +1449,149 @@ function recordCatch(S, c) {
 }
 
 /* ---------- market ---------- */
+// Three buyers at the landing. Galia buys anything at the fish's own price; the innkeeper's orders pay above it
+// and add bait; the collector pays most for rare fish, one at a time, and can be haggled with.
 const MK = CONFIG.market;
-// What the market pays now: the drop from recent sales, and the day's demand on top.
-const demandMul = (S, name) => {
-  const d = S.demand;
-  if (!d) return 1;
-  const up = d.up.find(e => e.n === name);
-  return up ? up.mul : d.down && d.down.n === name ? d.down.mul : 1;
-};
+const TIER_ORDER = ['junk', 'common', 'uncommon', 'rare', 'epic', 'legend'];
+const tierRank = t => TIER_ORDER.indexOf(t);
 const fairMul = S => (S.event && S.event.k === 'fair' && eventOn(S) ? CONFIG.events.list.fair.marketMul : 1);
-const marketMul = (S, name, extra = 0) => Math.max(MK.floor, 1 - (S.market[name] || 0) - extra) * demandMul(S, name) * fairMul(S);
-const salePrice = (S, f) => Math.max(1, Math.round(f.price * marketMul(S, f.n)));
+// The fish's own price: what Vodianyk counts it at too.
+const basePrice = f => f.price;
+// What Galia pays: the fish's price, and the village fair on top while it lasts.
+const salePrice = (S, f) => Math.max(1, Math.round(f.price * fairMul(S)));
+// Rare and up: worth taking to the collector instead.
+const isTrophy = f => !!f && !f.junk && !f.item && tierRank(f.t) >= tierRank(MK.collector.minTier);
 
-// Every sale pushes the price down, and it is the next fish that feels it.
 function sellFish(S, index) {
   const f = S.net[index];
   if (!f) return 0;
   const coins = salePrice(S, f);
   S.net.splice(index, 1);
-  S.market[f.n] = (S.market[f.n] || 0) + MK.dropPerSale;
   S.coins += coins;
   S.stats.earned += coins;
   return coins;
 }
-
-// Orders the net can fill go first, at their bonus; the rest goes to the market.
-function sellAllValue(S) {
-  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, demand: S.demand, event: S.event, board: S.board.map(o => ({ ...o, done: true })), coins: 0, stats: { earned: 0 } };
-  return sellAll(T, true).coins;
+// «Sell all» sells everything to Galia, keeping rare fish back when the player asked to.
+const sellAllPicks = S => S.net.map((f, i) => i).filter(i => !(S.keepTrophies && isTrophy(S.net[i])));
+const sellAllValue = S => sellAllPicks(S).reduce((a, i) => a + salePrice(S, S.net[i]), 0);
+function sellAll(S) {
+  const picks = sellAllPicks(S);
+  let coins = 0;
+  for (let k = picks.length - 1; k >= 0; k--) coins += sellFish(S, picks[k]);
+  return { coins, count: picks.length, kept: S.net.length };
 }
 
-// Fish an order wants go to the order first (a finished order is not replaced here: preview passes dry).
-function sellAll(S, dry = false, rng = Math.random) {
-  let coins = 0, orders = 0;
-  const done = [];
-  S.board.forEach((o, i) => {
-    while (canFill(S, o)) {
-      const r = fillOrder(S, i, dry, rng);
-      coins += r.coins;
-      orders++;
-      if (r.done) { done.push(r.done); break; }
-    }
-  });
-  while (S.net.length) coins += sellFish(S, 0);
-  return { coins, orders, done };
-}
-
-// Prices come back with time, not with nights.
-function recoverMarket(S, hours) {
-  if (!(hours > 0)) return;
-  for (const n of Object.keys(S.market)) {
-    S.market[n] -= MK.recoverPerHour * hours;
-    if (S.market[n] <= 0) delete S.market[n];
-  }
-}
-
-const dayKey = now => { const d = new Date(now); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const openFish = S => [...new Set(S.unlocked.flatMap(k => LOC[k].fish))].filter(n => !FISH[n].junk);
 
-function rollDemand(S, now, rng = Math.random) {
-  const D = CONFIG.demand, pool = openFish(S);
-  const n = Math.min(pool.length - 1, D.up[0] + Math.floor(rng() * (D.up[1] - D.up[0] + 1)));
-  const up = [];
-  for (let i = 0; i < n; i++) {
-    const name = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    up.push({ n: name, mul: Math.round(rangeRnd(rng, D.upMul[0], D.upMul[1]) * 10) / 10 });
-  }
-  const down = pool.length ? { n: pool[Math.floor(rng() * pool.length)], mul: D.downMul } : null;
-  S.demand = { day: dayKey(now), up, down };
-}
-
-/* ---------- the order board ---------- */
+/* ---------- the innkeeper's orders ---------- */
 const BOARD_LENS = ['short', 'mid', 'long'];
+const BD = CONFIG.board;
 
-// A new order of one length, from fish of the places already open.
+// A new order of one size: one or two kinds of fish from places already open.
 function makeOrder(S, len, rng = Math.random) {
-  const B = CONFIG.board[len], open = openFish(S);
-  let pool = [];
-  for (const t of B.tiers) { pool = open.filter(n => FISH[n].t === t); if (pool.length) break; }
-  if (!pool.length) pool = open;
-  const n = pool[Math.floor(rng() * pool.length)];
-  const qty = B.qty[0] + Math.floor(rng() * (B.qty[1] - B.qty[0] + 1));
-  let stars = 0;
-  for (const [k, ch] of Object.entries(B.stars || {})) if (rng() < ch) stars = +k;
-  const snag = !!B.snag && rng() < B.snag;
-  const kind = pickWeighted(B.rewards, rng);
-  let reward;
-  if (kind === 'coins') reward = { type: 'coins', v: Math.round(rangeRnd(rng, B.coins[0], B.coins[1]) / 5) * 5 };
-  else if (kind === 'bait') { const k = pickWeighted(Object.fromEntries(Object.keys(B.bait).map(x => [x, 1])), rng); reward = { type: 'bait', k, v: B.bait[k] }; }
-  else if (kind === 'symbol') {
-    // the symbol is the fish asked for, or a rarer one from the open places
-    const rarer = open.filter(x => TIER_ORDER.indexOf(FISH[x].t) > TIER_ORDER.indexOf(FISH[n].t));
-    reward = { type: 'symbol', k: rarer.length && rng() < 0.5 ? rarer[Math.floor(rng() * rarer.length)] : n };
-  } else reward = { type: 'artifact' };
-  return { len, n, qty, left: qty, stars, snag, reward };
+  const B = BD.sizes[len], open = openFish(S), items = [];
+  for (const it of B.items) {
+    if (it.chance != null && rng() >= it.chance) continue;
+    let pool = [];
+    for (const t of it.tiers) { pool = open.filter(n => FISH[n].t === t && !items.some(x => x.n === n)); if (pool.length) break; }
+    if (!pool.length) continue;
+    const n = pool[Math.floor(rng() * pool.length)];
+    const qty = it.qty[0] + Math.floor(rng() * (it.qty[1] - it.qty[0] + 1));
+    let stars = 0;
+    for (const [k, ch] of Object.entries(it.stars || {})) if (rng() < ch) stars = +k;
+    items.push({ n, qty, left: qty, stars });
+  }
+  if (!items.length) { const n = open[0]; items.push({ n, qty: 1, left: 1, stars: 0 }); }
+  const bk = pickWeighted(Object.fromEntries(Object.keys(B.bait).map(x => [x, 1])), rng);
+  return { len, items, bonus: B.bonus, bait: { k: bk, v: B.bait[bk] } };
 }
-const TIER_ORDER = ['junk', 'common', 'uncommon', 'rare', 'epic', 'legend'];
 
-// Always three, one of each length.
+// Always three, one of each size.
 function ensureBoard(S, rng = Math.random) {
   if (!Array.isArray(S.board)) S.board = [];
-  BOARD_LENS.forEach((len, i) => { if (!S.board[i] || S.board[i].len !== len) S.board[i] = makeOrder(S, len, rng); });
+  BOARD_LENS.forEach((len, i) => { const o = S.board[i]; if (!o || o.len !== len || !Array.isArray(o.items)) S.board[i] = makeOrder(S, len, rng); });
   S.board.length = BOARD_LENS.length;
 }
 
-const fitsOrder = (o, f) => f.n === o.n && (!o.stars || (f.q || 0) >= o.stars) && (!o.snag || f.z === 'snag');
-const canFill = (S, o) => !!o && o.left > 0 && S.net.some(f => fitsOrder(o, f));
-
-function giveReward(S, r) {
-  if (r.type === 'coins') { S.coins += r.v; S.stats.earned += r.v; }
-  else if (r.type === 'bait') S.bait.have[r.k] = (S.bait.have[r.k] || 0) + r.v;
-  else if (r.type === 'symbol') S.gifts.push(r.k);
-  else if (r.type === 'artifact') {
-    const id = randomMissingArtifact(S);
-    if (id) { r.id = id; r.slotted = giveArtifact(S, id); }
-    else { r.type = 'coins'; r.v = 500; S.coins += 500; } // every cursed thing is already in your pockets
+const fitsItem = (it, f) => it.left > 0 && f.n === it.n && (!it.stars || (f.q || 0) >= it.stars);
+// Fish in the net an order would take now, at its price: the dearest ones that fit, each counted once.
+function orderTakes(S, o) {
+  const used = new Set(), out = [];
+  for (const it of o.items) {
+    const fits = S.net.map((f, i) => i).filter(i => !used.has(i) && fitsItem(it, S.net[i])).sort((a, b) => S.net[b].price - S.net[a].price).slice(0, it.left);
+    fits.forEach(i => { used.add(i); out.push({ i, it, coins: Math.max(1, Math.round(S.net[i].price * (1 + o.bonus))) }); });
   }
-  return r;
+  return out;
 }
+const orderWants = (S, f) => S.board.some(o => o.items.some(it => fitsItem(it, f)));
 
-// One fish to an order: the dearest that fits. A finished order pays its reward and a new one takes its place.
-function fillOrder(S, index, dry = false, rng = Math.random) {
-  const order = S.board[index];
-  if (!canFill(S, order)) return { coins: 0 };
-  let best = -1;
-  S.net.forEach((f, i) => { if (fitsOrder(order, f) && (best < 0 || f.price > S.net[best].price)) best = i; });
-  const f = S.net.splice(best, 1)[0];
-  const coins = Math.max(1, Math.round(f.price * marketMul(S, f.n) * (1 + CONFIG.board.bonus)));
+// Hands the innkeeper every fitting fish. A finished order pays its bait and a new one takes its place.
+function fillOrder(S, index, rng = Math.random) {
+  const o = S.board[index];
+  if (!o) return { coins: 0, count: 0 };
+  const takes = orderTakes(S, o);
+  if (!takes.length) return { coins: 0, count: 0 };
+  let coins = 0;
+  takes.forEach(t => { coins += t.coins; t.it.left--; });
+  takes.map(t => t.i).sort((a, b) => b - a).forEach(i => S.net.splice(i, 1));
   S.coins += coins;
   S.stats.earned += coins;
-  order.left--;
-  if (order.left > 0 || dry) return { coins };
-  const reward = giveReward(S, { ...order.reward });
-  S.stats.orders = (S.stats.orders || 0) + 1;
-  S.board[index] = makeOrder(S, order.len, rng);
-  return { coins, done: { order, reward } };
+  const out = { coins, count: takes.length };
+  if (o.items.every(it => it.left <= 0)) {
+    S.bait.have[o.bait.k] = (S.bait.have[o.bait.k] || 0) + o.bait.v;
+    S.stats.orders = (S.stats.orders || 0) + 1;
+    S.board[index] = makeOrder(S, o.len, rng);
+    out.done = o;
+  }
+  return out;
+}
+
+// One order may be turned down every refuseEvery casts, so an impossible one never blocks the board.
+const refuseIn = S => Math.max(0, BD.refuseEvery - ((S.stats.casts || 0) - (S.refusedAt == null ? -Infinity : S.refusedAt)));
+function refuseOrder(S, index, rng = Math.random) {
+  if (refuseIn(S) > 0 || !S.board[index]) return false;
+  S.board[index] = makeOrder(S, S.board[index].len, rng);
+  S.refusedAt = S.stats.casts || 0;
+  return true;
+}
+
+/* ---------- the collector ---------- */
+const CL = MK.collector;
+const fishKey = f => `${f.n}|${f.w}|${f.price}|${f.q || 0}`;
+const collectorHere = S => !(S.collector && S.collector.away > 0);
+// How far the haggling over this very fish has gone: 0, 1 or 2.
+const haggleStep = (S, f) => (S.collector && S.collector.deal && S.collector.deal.key === fishKey(f) ? S.collector.deal.step : 0);
+const collectorPrice = (S, f, step = haggleStep(S, f)) => Math.max(1, Math.round(f.price * (CL.priceMul + step * CL.haggleStep)));
+// The chance he storms off if you haggle once more, or null when he will not haggle further.
+const haggleRisk = (S, f) => { const st = haggleStep(S, f); return st < CL.offend.length ? CL.offend[st] : null; };
+const collectorMood = S => (!collectorHere(S) ? 'gone' : !S.collector.deal ? 'content' : S.collector.deal.step >= 2 ? 'annoyed' : 'thoughtful');
+
+function sellToCollector(S, index) {
+  const f = S.net[index];
+  if (!isTrophy(f) || !collectorHere(S)) return 0;
+  const coins = collectorPrice(S, f);
+  S.net.splice(index, 1);
+  S.coins += coins;
+  S.stats.earned += coins;
+  S.collector.deal = null;
+  S.stats.collector = (S.stats.collector || 0) + 1;
+  return coins;
+}
+// One more round of haggling: the price goes up, or he walks off and the fish stays with you.
+function haggle(S, index, rng = Math.random) {
+  const f = S.net[index], risk = isTrophy(f) && collectorHere(S) ? haggleRisk(S, f) : null;
+  if (risk == null) return null;
+  if (rng() < risk) {
+    S.collector.away = CL.away[0] + Math.floor(rng() * (CL.away[1] - CL.away[0] + 1));
+    S.collector.deal = null;
+    return { left: true, away: S.collector.away };
+  }
+  S.collector.deal = { key: fishKey(f), step: haggleStep(S, f) + 1 };
+  return { left: false, price: collectorPrice(S, f) };
+}
+// Each cast that reaches a bite brings him a step nearer.
+function marketAfterCast(S) {
+  if (S.collector && S.collector.away > 0) S.collector.away--;
 }
 
 /* ---------- the goal ---------- */
@@ -2196,17 +2307,14 @@ function daysToFull(now) {
 function countCast(S) {
   S.stats.casts = (S.stats.casts || 0) + 1;
   moodAfterCast(S);
+  marketAfterCast(S);
 }
 
-// Real time moves the moon, the market and the day. Returns what changed, for the page to tell.
+// Real time moves only the moon. Returns what changed, for the page to tell.
 function syncTime(S, now = Date.now(), rng = Math.random) {
   const out = {};
   const phase = moonPhaseAt(now);
   if (phase !== S.night.phase) { out.phase = phase; S.night.phase = phase; }
-  const last = S.marketAt || now;
-  recoverMarket(S, (now - last) / 3600000);
-  S.marketAt = now;
-  if (!S.demand || S.demand.day !== dayKey(now)) { rollDemand(S, now, rng); out.demand = true; }
   ensureBoard(S, rng);
   return out;
 }
@@ -2298,8 +2406,8 @@ const trapsReady = (S, now = Date.now()) => S.traps.reduce((a, t) => a + (t ? tr
 const SC = CONFIG.slot;
 const NIGHT = CONFIG.night;
 
-// What the fish would fetch right now: a stake of fish from a crashed market is worth a crashed price.
-const netValue = S => S.net.reduce((a, f) => a + salePrice(S, f), 0);
+// Fish count at their own price here, whatever the market does.
+const netValue = S => S.net.reduce((a, f) => a + basePrice(f), 0);
 const netStake = S => Math.round(netValue(S) * SC.netStakeRate);
 
 
@@ -2383,7 +2491,7 @@ function applyEffects(S, out, stake) {
 /* ---------- a fish for free spins ---------- */
 // How many free spins a fish is worth, on average. The page shows this before you give.
 const spinCost = k => FREE.coinsPerSpin[isWild(k) ? 'wild' : fishTierOf(k)];
-const freeSpinsFor = (S, f) => Math.max(1, (salePrice(S, f) / spinCost(f.n)) * artifactFx(S).freeSpinMul);
+const freeSpinsFor = (S, f) => Math.max(1, (basePrice(f) / spinCost(f.n)) * artifactFx(S).freeSpinMul);
 // The fraction is a fair draw: 2.4 spins are 2, or 3 four times in ten.
 const drawSpins = (x, rng) => Math.max(1, Math.floor(x) + (rng() < x - Math.floor(x) ? 1 : 0));
 const canGiveFish = (S, f) => !!f && !f.junk && isFishSym(f.n) && !S.free && !S.pending && !S.deal;
@@ -2391,7 +2499,7 @@ function giveFish(S, netIndex, rng = Math.random) {
   const f = S.net[netIndex];
   if (!canGiveFish(S, f)) return null;
   const n = drawSpins(freeSpinsFor(S, f), rng);
-  feedMood(S, salePrice(S, f), true);
+  feedMood(S, basePrice(f), true);
   S.net.splice(netIndex, 1);
   S.free = { fish: f.n, left: n, total: n, won: 0 };
   S.stats.donated = (S.stats.donated || 0) + 1;
@@ -2601,7 +2709,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 15;
+const SCHEMA_VERSION = 16;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2632,10 +2740,10 @@ const defaultState = () => ({
   shells: null, // a shell game in play: { stake, pot, round, n, pay, start, swaps, pearl, phase }
   bestiary: {},
   rewarded: [],
-  market: {},
-  board: [], // three orders; filled on load
-  demand: null,
-  marketAt: 0,
+  board: [], // the innkeeper's three orders; filled on load
+  refusedAt: null, // the cast count when an order was last turned down
+  collector: { away: 0, deal: null }, // away: casts until he is back; deal: the haggling over one fish { key, step }
+  keepTrophies: false, // «sell all» leaves rare fish for the collector
   traps: [null], // one trap comes free; null is an empty one
   gifts: [], // symbols the buyer gave, waiting to be put on a reel
   seen: 0, // when the game was last open
@@ -2756,6 +2864,15 @@ const MIGRATIONS = {
   },
   // v15: Vodianyk's wagers.
   14: d => ({ ...d, v: 15, wager: null, sinceWager: 0, form: { f: 0, c: 0 } }),
+  // The landing: the market's memory and the day's demand go; the order board becomes the innkeeper's, progress kept.
+  15: d => {
+    const { market, demand, marketAt, ...rest } = d;
+    const bonus = { short: 0.2, mid: 0.3, long: 0.4 }, bait = { short: { k: 'worm', v: 5 }, mid: { k: 'moth', v: 4 }, long: { k: 'live', v: 6 } };
+    const board = (Array.isArray(d.board) ? d.board : []).map(o => (o && o.n && bait[o.len]
+      ? { len: o.len, items: [{ n: o.n, qty: o.qty, left: o.left, stars: o.stars || 0 }], bonus: bonus[o.len], bait: bait[o.len] }
+      : null)).filter(Boolean);
+    return { ...rest, v: 16, board, refusedAt: null, collector: { away: 0, deal: null }, keepTrophies: false };
+  },
 };
 
 function migrate(data) {
@@ -2778,7 +2895,7 @@ function migrate(data) {
     mood: { ...b.mood, ...(d.mood || {}) },
     artifacts: Array.isArray(d.artifacts) ? d.artifacts : [],
     bestiary: d.bestiary && typeof d.bestiary === 'object' ? d.bestiary : {},
-    market: d.market && typeof d.market === 'object' ? d.market : {},
+    collector: { away: 0, deal: null, ...(d.collector && typeof d.collector === 'object' ? d.collector : {}) },
     rewarded: Array.isArray(d.rewarded) ? d.rewarded : [],
     board: Array.isArray(d.board) ? d.board : [],
     traps: Array.isArray(d.traps) && d.traps.length ? d.traps.slice(0, CONFIG.traps.slots) : [null],
@@ -3480,6 +3597,106 @@ function vodianykSprites() {
   return out;
 }
 
+/* ---------- the landing's buyers: base rows, then a face patched in per mood and blink ---------- */
+const BUYER_ROWS = {
+  galia: [
+    '................',
+    '.....rrrrrr.....',
+    '....rrgrrgrr....',
+    '...rrrrrrrrrr...',
+    '...rrmmmmmmrr...',
+    '...rmmmmmmmmr...',
+    '...rmvmmmmvmr...',
+    '...rmRmmmmRmr...',
+    '...rrmmmmmmrr...',
+    '....rmmRRmmr....',
+    '.....rmmmmr.....',
+    '......rggr......',
+    '....bbbbbbbb....',
+    '...bbrbbbbrbb...',
+    '..bbbbrbbrbbbb..',
+    '..bhbbbrrbbbhb..',
+    '.mbhhbbbbbbhhbm.',
+    '.mmhhhbbbbhhhmm.',
+    '..hhhhbbbbhhhh..',
+    '..hhhhhhhhhhhh..',
+    '..hhhhhhhhhhhh..',
+    '..hhhhhhhhhhhh..',
+  ],
+  korchmar: [
+    '................',
+    '................',
+    '.....mmmmmm.....',
+    '....mMMmmmmm....',
+    '...hmmmmmmmmh...',
+    '...hmvmmmmvmh...',
+    '...hmmmmmmmmh...',
+    '....mmmrrmmm....',
+    '...hhhhmmhhhh...',
+    '....mmmRRmmm....',
+    '.....mmmmmm.....',
+    '...LLLmmmmLLL...',
+    '..LLLLbbbbLLLL..',
+    '.LLLLbbbbbbLLLL.',
+    '.LLLbbbbbbbbLLL.',
+    '.mLLbbbbbbbbLLgb',
+    '.mmLbbbbbbbbLmgg',
+    '..LLbbbbbbbbLLgg',
+    '..LLbbbbbbbbLL..',
+    '..LLbbbbbbbbLL..',
+    '..hhhhhhhhhhhh..',
+    '..hhhh....hhhh..',
+  ],
+  collector: [
+    '.....vvvvvv.....',
+    '.....vvvvvv.....',
+    '.....vvvvvv.....',
+    '.....xxxxxx.....',
+    '...vvvvvvvvvv...',
+    '.....mmmmmm.....',
+    '....mmmmmmmm....',
+    '....mvmmmgvg....',
+    '....mmmmmmgm....',
+    '....mmmmmmmg....',
+    '.....mmmmmmg....',
+    '......mmmm.g....',
+    '....cbbbbbbc....',
+    '...cccbxxbccc...',
+    '..ccccbbbbcccc..',
+    '..cccccbbccccc..',
+    '..cccccxxccccc..',
+    '..cccccccccccc..',
+    '.mcccccxxcccccm.',
+    '.mcccccccccccc..',
+    '..cccccxxccccc..',
+    '..cccccccccccc..',
+    '..cc.cccccc.cc..',
+    '..vv.cc..cc.vv..',
+  ],
+};
+// [x, y, char] patches. Eyes close on a blink; the collector's face follows how the haggling goes.
+const BUYER_BLINK = { galia: [[5, 6, 'd'], [10, 6, 'd']], korchmar: [[5, 5, 'd'], [10, 5, 'd']], collector: [[5, 7, 'd'], [10, 7, 'd']] };
+const COLLECTOR_FACES = {
+  content: [[6, 10, 'R'], [9, 10, 'R'], [7, 11, 'R'], [8, 11, 'R']],
+  thoughtful: [[5, 7, 'd'], [10, 7, 'd'], [5, 6, 'v'], [6, 6, 'v'], [9, 6, 'v'], [10, 6, 'v'], [6, 10, 'R'], [7, 10, 'R'], [8, 10, 'R'], [13, 9, 'm'], [12, 10, 'm']],
+  annoyed: [[4, 6, 'v'], [5, 6, 'v'], [6, 7, 'v'], [9, 7, 'v'], [10, 6, 'v'], [11, 6, 'v'], [4, 8, 'r'], [9, 8, 'r'], [7, 10, 'R'], [8, 10, 'R'], [6, 11, 'R'], [9, 11, 'R']],
+};
+function buyerRows(kind, blink, face) {
+  const g = BUYER_ROWS[kind].map(r => [...r]);
+  const put = ([x, y, ch]) => { if (g[y] && g[y][x] !== undefined) g[y][x] = ch; };
+  (face ? COLLECTOR_FACES[face] : []).forEach(put);
+  if (blink) BUYER_BLINK[kind].forEach(put);
+  return g.map(r => r.join(''));
+}
+function buyerSprites() {
+  const out = {
+    buyer_galia: { fps: 1, frames: [buyerRows('galia', false), buyerRows('galia', true)] },
+    buyer_korchmar: { fps: 1, frames: [buyerRows('korchmar', false), buyerRows('korchmar', true)] },
+  };
+  for (const f of Object.keys(COLLECTOR_FACES)) out[`buyer_collector_${f}`] = { fps: 1, frames: [buyerRows('collector', false, f), buyerRows('collector', true, f)] };
+  return out;
+}
+
 // Keys match CONFIG.slot.weights.
 const SYM_SPRITE = { hook: 'sym_hook', frog: 'sym_frog', star: 'sym_star', skull: 'sym_skull', moon: 'sym_moon', wash: 'sym_wash' };
 
@@ -3507,6 +3724,7 @@ for (let p = 0; p < 8; p++) moonSprites[`moon_${p}`] = { fps: 1, frames: [moonPh
 
 defineSprites({
   ...moonSprites,
+  ...buyerSprites(),
 
   fisher_wait: { fps: 1.5, frames: [
     fisherPose({ arms: [[ARM_REST, 18, 14]] }),
@@ -5548,6 +5766,233 @@ class SlotScene {
   }
 }
 
+/* render/market.js */
+// The landing at dawn: far bank with building plots, water, plank deck, lanterns, fog and three buyers.
+const MARKET_SCENE_H = 62;
+const MK_HORIZON = 21, MK_DECK = 38;
+// Positions on a 120-wide layout; wider screens centre it.
+const MK_SPOTS = {
+  galia: { x: 9, y: MK_DECK + 6 - 22, w: 16, h: 22 },
+  korchmar: { x: 54, y: MK_DECK + 9 - 22, w: 16, h: 22 },
+  collector: { x: 92, y: MK_DECK + 9 - 24, w: 16, h: 24 },
+};
+const MK_COUNTER = { x: 2, y: MK_DECK + 4, w: 42, h: 9 };
+const MK_SCALE = { x: 34, y: MK_DECK - 3 };
+// Plots on the far bank for the landing's buildings (phase two fills them).
+const MK_PLOTS = [8, 30, 54, 78, 100];
+const WEIGH_TIME = 0.9;
+
+class MarketScene {
+  constructor({ calm = false } = {}) {
+    this.calm = calm;
+    this.t = 0;
+    this.weigh = null; // { sprite, t }
+    this.pops = [];
+    this.blinks = { galia: 1.3, korchmar: 2.7, collector: 0.6 };
+    this.blinkT = { galia: 0, korchmar: 0, collector: 0 };
+    this.surf = null;
+  }
+
+  resize(w, h) {
+    this.w = w; this.h = h;
+    this.ox = Math.floor((w - 120) / 2);
+    this.surf = new Surface(w, h);
+    this.back = new Surface(w, h);
+    this.paintBack();
+  }
+
+  // Scene box of a buyer, in scene pixels (for taps and the labels over the canvas).
+  box(kind) { const b = MK_SPOTS[kind]; return { x: b.x + this.ox, y: b.y, w: b.w, h: b.h }; }
+  scaleAt() { return { x: MK_SCALE.x + this.ox, y: MK_SCALE.y }; }
+  hit(x, y) {
+    for (const k of Object.keys(MK_SPOTS)) { const b = this.box(k); if (x >= b.x - 3 && x <= b.x + b.w + 3 && y >= b.y - 2 && y <= MK_DECK + 12) return k; }
+    if (x >= MK_COUNTER.x + this.ox && x <= MK_COUNTER.x + this.ox + MK_COUNTER.w && y >= MK_DECK - 8) return 'galia';
+    return null;
+  }
+
+  paintBack() {
+    const S = this.back, { w, h } = this;
+    // dawn: night at the top, fog, then the lamp-orange band at the horizon
+    // dawn: night above, a violet band, then orange at the horizon
+    const bands = [['night', 'night2'], ['night2', 'curseD'], ['curseD', 'lamp']];
+    for (let y = 0; y < MK_HORIZON; y++) {
+      const k = (y / MK_HORIZON) * bands.length, i = Math.min(bands.length - 1, Math.floor(k));
+      S.dither(0, y, w, 1, bands[i][0], bands[i][1], i === 2 ? (k - i) * 0.8 : k - i);
+    }
+    for (const [x, y] of [[6, 2], [19, 5], [33, 1], [47, 4], [70, 2], [88, 6], [104, 3], [117, 1]]) S.px(x + this.ox, y, 'moonS');
+    // the sun just up behind the far bank
+    const sx = this.ox + 86;
+    S.ditherCircle(sx, MK_HORIZON - 2, 14, 'gold', 0.7, 0.55);
+    S.ellipse(sx, MK_HORIZON - 1, 5, 5, 'gold', true);
+    S.ellipse(sx, MK_HORIZON - 2, 3, 3, 'moon', true);
+    // far bank
+    for (let x = 0; x < w; x++) {
+      const top = MK_HORIZON - Math.round(1 + Math.sin(x * 0.11) * 0.8 + Math.sin(x * 0.37) * 0.5);
+      S.rect(x, top, 1, MK_HORIZON + 3 - top, 'night');
+    }
+    // water
+    for (let y = MK_HORIZON + 2; y < MK_DECK; y++) {
+      const k = (y - MK_HORIZON - 2) / (MK_DECK - MK_HORIZON - 2);
+      S.dither(0, y, w, 1, 'waterM', 'waterD', k);
+    }
+    // deck: planks with seams, staggered joins and nails
+    S.rect(0, MK_DECK, w, h - MK_DECK, 'wood');
+    for (let y = MK_DECK, r = 0; y < h; y += 4, r++) {
+      S.rect(0, y, w, 1, 'void');
+      for (let x = (r * 13) % 23; x < w; x += 23) { S.rect(x, y, 1, 4, 'void'); S.px(x + 2, y + 2, 'moonD'); }
+    }
+    S.dither(0, MK_DECK + 1, w, 3, null, 'lamp', 0.15);
+    S.dither(0, h - 6, w, 6, null, 'void', 0.35);
+  }
+
+  // The empty plots: stakes and a string, waiting for a building.
+  drawPlots(built) {
+    const S = this.surf;
+    MK_PLOTS.forEach((px, i) => {
+      const x = px + this.ox, base = MK_HORIZON + 1;
+      if (built && built[i]) return; // phase two paints the building here
+      S.rect(x, base - 3, 1, 3, 'wood'); S.rect(x + 9, base - 3, 1, 3, 'wood');
+      S.rect(x + 1, base - 3, 8, 1, 'moonD');
+    });
+  }
+
+  drawWater() {
+    const S = this.surf, t = this.calm ? 0 : this.t, sx = this.ox + 86;
+    // the sun's road on the water, flickering
+    for (let y = MK_HORIZON + 3; y < MK_DECK - 1; y += 2) {
+      const half = 2 + Math.floor((y - MK_HORIZON) / 3), shift = Math.floor(Math.sin(t * 2 + y) * 1.5);
+      for (let x = sx - half; x <= sx + half; x += 4) if (((x + y + Math.floor(t * 3)) % 5) < 2) S.rect(x + shift, y, 2, 1, (x + y) % 2 ? 'gold' : 'lamp');
+    }
+    for (let i = 0; i < 6; i++) {
+      const y = MK_HORIZON + 4 + i * 2, x = ((i * 37 + Math.floor(t * (4 + i))) % (this.w + 20)) - 10;
+      S.rect(x, y, 4 + (i % 3), 1, 'shimmer');
+    }
+  }
+
+  drawLantern(x, poleTop) {
+    const S = this.surf, flick = this.calm ? 0 : Math.sin(this.t * 7 + x) * 0.1;
+    S.ditherCircle(x + 3, poleTop + 4, 6, 'lamp', 0.3 + flick, 0.9);
+    S.rect(x + 3, poleTop + 7, 1, MK_DECK + 4 - poleTop - 7, 'void');
+    S.drawSprite(SPRITES.lantern_2, 0, x, poleTop);
+  }
+
+  drawBuyer(kind, view) {
+    const S = this.surf, b = this.box(kind);
+    const sp = kind === 'collector' ? SPRITES[`buyer_collector_${view.collector === 'gone' ? 'content' : view.collector}`] : SPRITES[`buyer_${kind}`];
+    const breathe = this.calm ? 0 : Math.floor((this.t * 0.8 + b.x * 0.07) % 2);
+    S.drawSprite(sp, this.blinkT[kind] > 0 ? 1 : 0, b.x, b.y + breathe);
+  }
+
+  // The collector's place when he has gone off: a post with a sign.
+  drawSign() {
+    const S = this.surf, b = this.box('collector'), x = b.x + 2, y = MK_DECK - 12;
+    S.rect(x + 5, y + 6, 2, 15, 'wood');
+    S.rect(x, y, 12, 7, 'wood');
+    S.rect(x + 1, y + 1, 10, 5, 'bone');
+    for (const [dx, dy, w] of [[2, 2, 7], [2, 4, 5]]) S.rect(x + dx, y + dy, w, 1, 'moonD');
+  }
+
+  drawBoard() {
+    // the innkeeper's order board: three papers on a post, and his barrel
+    const S = this.surf, x = this.ox + 42, y = MK_DECK - 16;
+    S.rect(x + 4, y + 8, 2, 16, 'wood');
+    S.rect(x, y, 10, 9, 'wood');
+    S.rect(x, y, 10, 1, 'moonD');
+    [[1, 2], [4, 1], [7, 3]].forEach(([dx, dy]) => S.rect(x + dx, y + dy, 2, 4, 'bone'));
+    const bx = this.ox + 71, by = MK_DECK + 1;
+    S.rect(bx, by, 9, 10, 'wood');
+    S.rect(bx, by + 2, 9, 1, 'void'); S.rect(bx, by + 7, 9, 1, 'void');
+    S.rect(bx + 1, by, 7, 1, 'lamp');
+  }
+
+  drawCounter() {
+    const S = this.surf, { y, w, h } = MK_COUNTER, x = MK_COUNTER.x + this.ox;
+    S.rect(x, y, w, h, 'wood');
+    S.rect(x, y, w, 2, 'moonD');
+    S.rect(x, y + 2, w, 1, 'void');
+    for (let px = x + 5; px < x + w; px += 9) S.rect(px, y + 3, 1, h - 3, 'void');
+    S.rect(x, y + h - 1, w, 1, 'void');
+    // a basket of greens at Galia's elbow
+    S.rect(x + 2, y - 3, 6, 3, 'wood'); S.rect(x + 3, y - 4, 4, 1, 'frog'); S.px(x + 5, y - 5, 'frogL');
+  }
+
+  // The scale: a beam that tips while a fish is weighed.
+  drawScale() {
+    const S = this.surf, { x, y } = this.scaleAt(), wg = this.weigh;
+    let tilt = 0;
+    if (wg) {
+      const k = wg.t / WEIGH_TIME;
+      tilt = k < 0.25 ? 0 : Math.round(Math.sin((k - 0.25) * 14) * 2.5 * Math.max(0, 1 - k));
+      if (k >= 0.25 && k < 0.35) tilt = 2;
+    }
+    S.rect(x, y, 1, 8, 'moonD');
+    S.rect(x - 2, y + 7, 5, 1, 'moonD');
+    S.line(x - 7, y - tilt, x + 7, y + tilt, 'gold');
+    const pan = (px, py) => { S.rect(px - 4, py + 3, 9, 1, 'moonD'); S.px(px - 3, py + 2, 'moonD'); S.px(px + 3, py + 2, 'moonD'); };
+    pan(x - 7, y - tilt); pan(x + 7, y + tilt);
+    if (wg && wg.sprite) {
+      const k = wg.t / WEIGH_TIME, drop = k < 0.25 ? Math.round((1 - k / 0.25) * 10) : 0;
+      if (k < 0.85) {
+        const sp = wg.sprite, fx = x - 7 - (sp.w >> 1), fy = y - tilt + 4 - sp.h - drop;
+        S.drawOutline(sp, 0, fx, fy, 'void');
+        S.drawSprite(sp, 0, fx, fy);
+      }
+    }
+    for (const p of this.pops) S.drawSprite(SPRITES.coin, 0, p.x, p.y);
+  }
+
+  drawFog() {
+    if (this.calm) return;
+    const S = this.surf;
+    for (let i = 0; i < 4; i++) {
+      const span = this.w + 60, x = ((i * 47 + this.t * (2 + i * 0.7)) % span) - 30, y = MK_HORIZON + 2 + i * 6;
+      S.ditherCircle(x, y, 22, 'fog', 0.32, 0.18);
+    }
+  }
+
+  // A fish lands on the scale; coins jump from the pan once it has settled.
+  weighFish(name) {
+    this.weigh = { sprite: name ? fishSpriteFor(name) : null, t: this.calm ? WEIGH_TIME * 0.8 : 0, popped: false };
+  }
+
+  advance(dt) {
+    this.t += dt;
+    for (const k of Object.keys(this.blinks)) {
+      this.blinkT[k] = Math.max(0, this.blinkT[k] - dt);
+      this.blinks[k] -= dt;
+      if (this.blinks[k] <= 0) { this.blinkT[k] = 0.14; this.blinks[k] = 2 + Math.random() * 2.5; }
+    }
+    if (this.weigh) {
+      this.weigh.t += dt;
+      const { x, y } = this.scaleAt();
+      if (!this.weigh.popped && this.weigh.t >= WEIGH_TIME * 0.55) {
+        this.weigh.popped = true;
+        for (let i = 0; i < 3; i++) this.pops.push({ x: x - 10 + i * 3, y: y - 4, vy: -26 - i * 6, life: 0.6 });
+      }
+      if (this.weigh.t >= WEIGH_TIME) this.weigh = null;
+    }
+    this.pops = this.pops.filter(p => { p.life -= dt; p.vy += 90 * dt; p.y += p.vy * dt; return p.life > 0; });
+  }
+
+  // view: { collector: 'content'|'thoughtful'|'annoyed'|'gone', built: [bool] }
+  draw(view) {
+    const S = this.surf;
+    S.copyFrom(this.back);
+    this.drawPlots(view.built);
+    this.drawWater();
+    this.drawFog();
+    this.drawLantern(this.ox - 1, MK_DECK - 20);
+    this.drawLantern(this.ox + 81, MK_DECK - 20);
+    this.drawLantern(this.ox + 113, MK_DECK - 20);
+    this.drawBoard();
+    this.drawBuyer('korchmar', view);
+    if (view.collector === 'gone') this.drawSign(); else this.drawBuyer('collector', view);
+    this.drawBuyer('galia', view);
+    this.drawCounter();
+    this.drawScale();
+  }
+}
+
 /* render/finale.js */
 // The last scene: the first dawn on the pond, and Vodianyk sinking for good.
 
@@ -7147,14 +7592,15 @@ function useBait(){
 /* ---------- sell everything from the bridge ---------- */
 function renderPondSell(){
   const b=$('#pondsell'),n=S.net.length;
-  b.disabled=!n||cardOpen;
+  b.disabled=!sellAllPicks(S).length||cardOpen;
   $('#pondsellv').textContent=n?fmt(sellAllValue(S)):'0';
 }
 function sellAllFrom(el){
-  if(!S.net.length)return;
-  flyCoins(el,S.net.length);
+  const n=sellAllPicks(S).length;
+  if(!n)return;
+  flyCoins(el,n);
   const r=sellAll(S);
-  toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);
+  toast(`Галя: +${fmt(r.coins)} монет${r.kept?` · ${r.kept} рідк. лишились`:''}`);
   save();renderHud();updateAct(true);
 }
 $('#pondsell').addEventListener('click',e=>{e.stopPropagation();if(cardOpen)return;sellAllFrom($('#pondsell'))});
@@ -7310,7 +7756,7 @@ function nextNightIfDue(force){
   if(!force&&now-lastTick<15000)return;
   lastTick=now;
   const ch=syncTime(S,now);
-  if(!ch.phase&&!ch.demand)return;
+  if(!ch.phase)return;
   save();renderHud();
   if(tab==='market')renderMarket();
   if(ch.phase!==undefined){
@@ -7318,7 +7764,7 @@ function nextNightIfDue(force){
     if(isFullMoon(S))say('Повня. Вода неспокійна, скарб росте, легенди близько.','gold',3200);
     else if(isNewMoon(S))say('Новий місяць. Водяник похмурий, зате на угоди щедрий.','bad',3200);
     SFX.night();
-  }else if(ch.demand)toast('Новий день: на ринку інший попит');
+  }
 }
 
 function land(){
@@ -7465,6 +7911,7 @@ function loop(now){
     scene.surf.present(ctx);
   }
   if(tab==='slot')slotTick(dt);
+  if(tab==='market')mkTick(dt);
   if(cardOpen)cardTick(now/1000);
   eventsTick(now);
   finaleTick(dt);
@@ -7595,107 +8042,254 @@ function eventsTick(now){
 }
 
 /* ui/market.js */
-/* ---------- market ---------- */
+/* ---------- the landing: scene, stall, the innkeeper's orders, the collector, gear ---------- */
 const UPG=CONFIG.upgrades;
-const UPG_DESC={
-  rod:()=>'Ширша безпечна зона натягу, риба виводиться швидше',
-  net:l=>{const n=CONFIG.netCapacity,c=n.base+n.perLevel*l;return l<UPG.net.cost.length?`Місткість ${c} → ${c+n.perLevel}`:`Місткість ${c}`},
-  lamp:l=>{const p=Math.round(CONFIG.fishing.lampSpeedPerLevel*100);return l<UPG.lamp.cost.length?`Клює на ${l*p}% → ${(l+1)*p}% швидше`:`Клює на ${l*p}% швидше`}
-};
 const artArm={id:null,t:0};
 const pondArm={on:false,t:0};
-function renderMarket(){
-  tip('board');
-  const list=$('#fishlist'),cap=netCapacity(S);
-  if(!S.net.length)list.innerHTML='<div class="pempty">Порожньо. Риба сама себе не зловить.</div>';
-  else list.innerHTML=S.net.map((f,i)=>{
-    const low=marketMul(S,f.n)<1;
-    return `<button class="pfish${f.golden?' golden':''}" data-i="${i}" aria-label="Продати ${f.n}"><i class="pfish-tier ${f.t}"></i><i class="picon ${fishIconClass(f.n)}"></i><span class="pfish-name">${f.n}</span><span class="pfish-kg">${f.w.toFixed(2).replace('.',',')} кг</span><span class="pfish-price${low?' low':''}">${salePrice(S,f)}</span></button>`}).join('');
-  $('#netsum').textContent=S.net.length?`${S.net.length}/${cap} · торкнись рибу, щоб продати одну. Чим більше одного виду, тим дешевше`:`0/${cap}`;
-  $('#sellall').disabled=!S.net.length;
-  $('#sellall').textContent=S.net.length?`Продати все · ${fmt(sellAllValue(S))}`:'Продати все';
-  renderBoard();renderDemand();
-  const price=pondPrice(S),goal=$('#pondbuy');
-  $('#pondfill').style.width=Math.min(100,S.coins/price*100)+'%';
-  $('#pondinfo').textContent=`${S.ng?`Уже ${S.ng} раз викуплено. `:''}Без поспіху: заплати ${fmt(price)} монет, і заводь твоя. У тебе ${fmt(S.coins)}.`;
-  goal.disabled=!canBuyPond(S);
-  goal.textContent=pondArm.on?'Точно?':`Викупити · ${fmt(price)}`;
-  goal.classList.toggle('armed',pondArm.on);
-  $('#bestcount').textContent=`${knownCount(S)}/${CONFIG.fish.length}`;
+const mk={pane:'stall',sel:null,refuseArm:null,refuseT:0};
+const MK_MOOD={content:'задоволений',thoughtful:'задумливий',annoyed:'роздратований',gone:'пішов'};
+const PANE_OF={galia:'stall',korchmar:'orders',collector:'collector'};
+
+const mkCv=$('#mkcv'),mkCtx=mkCv.getContext('2d');
+const mkScene=new MarketScene({calm:REDUCED_MOTION});
+let mkReady=false,mkScale=3;
+function mkResize(){
+  const box=$('#v-market').getBoundingClientRect();
+  if(!box.width)return;
+  const scale=pixelLayout(box.width,0).scale,l=pixelLayout(box.width,MARKET_SCENE_H*scale);
+  mkScale=l.scale;
+  const ml=snapInBox(box.left,(box.width-l.w*l.scale)/2);
+  mkCv.style.width=l.w*l.scale+'px';mkCv.style.height=l.h*l.scale+'px';mkCv.style.marginLeft=ml+'px';
+  $('#mkscene').style.height=l.h*l.scale+'px';
+  if(!(mkCv.width===l.w&&mkCv.height===l.h&&mkReady)){mkCv.width=l.w;mkCv.height=l.h;mkScene.resize(l.w,l.h);mkReady=true}
+  // labels and anchors sit over the canvas in scene pixels
+  const at=(el,x,y)=>{el.style.left=ml+x*l.scale+'px';el.style.top=y*l.scale+'px'};
+  document.querySelectorAll('.mklbl').forEach(el=>{const b=mkScene.box(el.dataset.who);at(el,b.x+b.w/2,MK_DECK+15)});
+  const sb=mkScene.box('collector');at($('#mksign'),Math.min(sb.x+sb.w/2,mkScene.w-21),MK_DECK-18);
+  const sc=mkScene.scaleAt();at($('#mkscalept'),sc.x-7,sc.y-2);
+}
+new ResizeObserver(mkResize).observe($('#v-market'));
+function mkTick(dt){
+  if(!mkReady)return;
+  mkScene.advance(dt);
+  mkScene.draw({collector:collectorMood(S),built:null});
+  mkScene.surf.present(mkCtx);
+}
+$('#mkscene').addEventListener('click',e=>{
+  const r=mkCv.getBoundingClientRect();if(!r.width)return;
+  const who=mkScene.hit((e.clientX-r.left)/mkScale,(e.clientY-r.top)/mkScale);
+  if(who){setPane(PANE_OF[who]);SFX.tap&&SFX.tap()}
+});
+
+/* ---------- what the buyers say ---------- */
+let mkMsgT;
+function mkSay(t,who='galia',ms=2600){
+  const el=$('#mkmsg');el.textContent=t;el.hidden=false;el.classList.toggle('right',who==='collector');
+  clearTimeout(mkMsgT);mkMsgT=setTimeout(()=>{el.hidden=true},ms);
+}
+const pickLine=a=>a[Math.floor(Math.random()*a.length)];
+const GALIA={
+  junk:['Мотлох? Давай, у господарстві все згодиться.','Чобіт без пари… Ну, може, хтось одноногий купить.','Чайник! Ще й з іржею — антикваріат.'],
+  small:['Дрібненька, та на юшку саме те.','Рибка до рибки — і вечеря є.','Беру, беру. Кіт мені спасибі скаже.'],
+  mid:['Ой, свіженька! Ще й хвостом махає.','Оце рибина! Хоч зараз на сковорідку.','Чесна ціна, чесна риба. Тримай.'],
+  big:['Ох і звір! Де ти таке витяг?','За таку й торгуватись соромно. Тримай.','Пів села збіжиться дивитись!'],
+  all:['Усе гуртом? Давай сюди, рахую.','Оце улов! Тримай монети, поки не передумала.','Садок порожній — душа повна.'],
+};
+const galiaLine=f=>pickLine(!f?GALIA.all:f.junk?GALIA.junk:f.price>=100?GALIA.big:f.price>=15?GALIA.mid:GALIA.small);
+const KORCH={give:['Оце діло! Юшка буде на славу.','Гості вже ложками стукають — неси ще.','Добра риба. Плачу як домовились.'],done:['Замовлення закрите! Ось тобі з моєї комори.','Дякую, рибалко. Тримай наживку, лови ще.'],refuse:['Не виходить? Та й бог з ним, вигадаю інше.']};
+const COLL={offer:['Гм. Пристойний екземпляр.','Цікаво… Дуже цікаво.','Під лупою — непогано.'],up1:['Ви мене грабуєте… Гаразд.','Ох. Ну хай буде так.'],up2:['Це вже нахабство. І ні копійки більше.','Останнє слово. Більше не торгуюсь.'],left:['Що?! Я вам не базарна баба! Бувайте.','Досить. Піду подихаю туманом.'],sold:['Чудово. Піде під скло в мою колекцію.','Угоду укладено. Приємно мати справу.'],empty:['Нема нічого, вартого моєї уваги. Принесіть рідкісне.']};
+
+/* ---------- panes ---------- */
+function setPane(p){
+  mk.pane=p;
+  document.querySelectorAll('#mktabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===p));
+  document.querySelectorAll('.mkpane').forEach(el=>{el.hidden=el.dataset.pane!==p});
+  document.querySelectorAll('.mklbl').forEach(el=>el.classList.toggle('on',PANE_OF[el.dataset.who]===p));
+  renderMarket();
+  if(p==='collector'&&!collectorHere(S))mkSay(`Табличка: «Пішов ображений. Повернуся за ${S.collector.away} закидів».`,'collector');
+}
+$('#mktabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setPane(b.dataset.m)});
+
+const kgText=f=>`${f.w.toFixed(f.w<10?2:1).replace('.',',')} кг`;
+const starRow=f=>`<span class="mkstars">${f.junk||f.item?'':[1,2,3].map(k=>`<i class="picon ic-star-${k<=(f.q||0)?'on':'off'}"></i>`).join('')}</span>`;
+// One card for the net, the same size for every fish. price: what this buyer pays; note: why it differs.
+function fishCard(f,i,price,{tags=true,sel=false,note=''}={}){
+  const tier=f.junk||f.item?'junk':f.t;
+  const tg=tags?(orderWants(S,f)?'<span class="mktag">Корчмар</span>':'')+(isTrophy(f)?'<span class="mktag coll">рідк.</span>':''):'';
+  return `<button class="mkfish ${tier}${f.golden?' golden':''}${sel?' sel':''}" data-i="${i}" aria-label="${f.n}, ${price} монет">${tg}<span class="mkicon"><i class="picon ${fishIconClass(f.n)}"></i></span><span class="mkname">${f.n}</span>${starRow(f)}<span class="mkw">${kgText(f)}</span><span class="mkp">${fmt(price)}${note}</span></button>`;
+}
+const fairNote=()=>fairMul(S)>1?` <s>▲${Math.round((fairMul(S)-1)*100)}%</s>`:'';
+
+function renderStall(){
+  const cap=netCapacity(S),n=S.net.length;
+  $('#netsum').textContent=`${n}/${cap}`;
+  const rare=S.net.filter(isTrophy).length;
+  $('#stallsub').textContent=!n?'Порожньо. Риба сама себе не зловить.'
+    :`Галя бере все за ціну риби${fairMul(S)>1?' (зараз ярмарок: ▲'+Math.round((fairMul(S)-1)*100)+'%)':''}. Торкнись рибу — продаси одну.${rare?' Рідкісних краще нести Колекціонеру: дасть більше.':''}`;
+  $('#fishlist').innerHTML=S.net.map((f,i)=>fishCard(f,i,salePrice(S,f),{note:fairNote()})).join('');
+  const k=$('#keeptrophies');k.setAttribute('aria-checked',String(!!S.keepTrophies));
+  const picks=sellAllPicks(S),v=sellAllValue(S),b=$('#sellall');
+  b.disabled=!picks.length;
+  b.textContent=!n?'Садок порожній':!picks.length?'Лише рідкісні — неси Колекціонеру':picks.length<n?`Продати ${picks.length} за ${fmt(v)}`:`Продати все за ${fmt(v)}`;
+}
+function galiaSell(i){
+  const f=S.net[i];if(!f)return;
+  sellFish(S,i);
+  mkScene.weighFish(f.junk&&!f.item?f.n:f.n);flyCoins($('#mkscalept'),Math.min(4,1+Math.floor(f.price/40)));
+  mkSay(galiaLine(f));
+  save();renderHud();renderMarket();
+}
+$('#fishlist').addEventListener('click',e=>{const c=e.target.closest('.mkfish');if(c)galiaSell(+c.dataset.i)});
+$('#keeptrophies').addEventListener('click',()=>{S.keepTrophies=!S.keepTrophies;save();renderMarket();toast(S.keepTrophies?'«Продати все» лишає рідкісних для Колекціонера':'«Продати все» продає й рідкісних')});
+$('#sellall').addEventListener('click',()=>{
+  const picks=sellAllPicks(S);if(!picks.length)return;
+  const top=picks.map(i=>S.net[i]).sort((a,b)=>b.price-a.price)[0];
+  flyCoins($('#mkscalept'),picks.length);
+  const r=sellAll(S);mkScene.weighFish(top.n);
+  toast(`+${fmt(r.coins)} монет${r.kept?` · ${r.kept} рідк. лишились`:''}`);mkSay(galiaLine(null));
+  save();renderHud();renderMarket()});
+
+/* ---------- the innkeeper ---------- */
+function renderOrders(){
+  const lo=Math.round(BD.sizes.short.bonus*100),hi=Math.round(BD.sizes.long.bonus*100);
+  $('#boardsub').textContent=`Платить за кожну рибу її ціну +${lo}–${hi}%, а за все замовлення — наживку. Строків нема: виконане одразу міняється на нове.`;
+  const rin=refuseIn(S);
+  $('#orders').innerHTML=S.board.map((o,i)=>{
+    const B=BD.sizes[o.len],takes=orderTakes(S,o),coins=takes.reduce((a,t)=>a+t.coins,0);
+    const rows=o.items.map(it=>{
+      const known=isKnown(S,it.n),have=S.net.filter(f=>f.n===it.n&&(!it.stars||(f.q||0)>=it.stars)).length,got=it.qty-it.left;
+      const cond=[it.stars?`від ${it.stars}★`:'',it.left?`у садку: ${have}`:'є'].filter(Boolean).join(' · ');
+      return `<div class="mkitem${it.left?'':' done'}"><span class="mkicon"><i class="picon ${known?fishIconClass(it.n):silhouetteClass(it.n)}"></i></span><span>${fishLabel(it.n)}<small>${cond}</small></span><b class="${it.left?'':'ok'}">${got}/${it.qty}</b></div>`}).join('');
+    const armed=mk.refuseArm===i;
+    const refuse=rin>0?`<button class="mkrefuse" disabled>Відмова · ${rin} зак.</button>`:`<button class="mkrefuse${armed?' armed':''}" data-r="${i}">${armed?'Точно?':'Відмовитись'}</button>`;
+    return `<div class="mkcard" data-card="${i}"><div class="mkcard-top"><b>${B.name} замовлення</b><em>+${Math.round(o.bonus*100)}%</em></div>${rows}
+      <div class="mkrew">За все: ${FCU.baits[o.bait.k].name.toLowerCase()} ×${o.bait.v}</div>
+      <div class="mkacts"><button class="pbuy" data-o="${i}" ${takes.length?'':'disabled'}>${takes.length?`Здати ${takes.length} за ${fmt(coins)}`:'Нема в садку'}</button>${refuse}</div></div>`}).join('');
+}
+$('#orders').addEventListener('click',e=>{
+  const g=e.target.closest('.pbuy');
+  if(g&&!g.disabled){
+    const i=+g.dataset.o,r=fillOrder(S,i);if(!r.count)return;
+    flyCoins(g,Math.min(6,r.count+1));
+    if(r.done){toast(`Замовлення виконано: +${fmt(r.coins)} і ${FCU.baits[r.done.bait.k].name.toLowerCase()} ×${r.done.bait.v}`);SFX.win();mkSay(pickLine(KORCH.done),'korchmar')}
+    else{toast(`Корчмар: +${fmt(r.coins)}`);mkSay(pickLine(KORCH.give),'korchmar')}
+    save();renderHud();renderMarket();
+    const c=document.querySelector(`[data-card="${i}"]`);if(c)c.classList.add('flash');
+    return;
+  }
+  const rb=e.target.closest('.mkrefuse');if(!rb||rb.disabled)return;
+  const i=+rb.dataset.r;
+  if(mk.refuseArm!==i){mk.refuseArm=i;mk.refuseT=Date.now();renderOrders();setTimeout(()=>{if(Date.now()-mk.refuseT>=2900&&mk.refuseArm===i){mk.refuseArm=null;if(tab==='market')renderOrders()}},3000);return}
+  mk.refuseArm=null;
+  if(refuseOrder(S,i)){mkSay(pickLine(KORCH.refuse),'korchmar');SFX.plop();save();renderMarket();const c=document.querySelector(`[data-card="${i}"]`);if(c)c.classList.add('flash')}
+});
+
+/* ---------- the collector ---------- */
+function renderCollector(){
+  const mood=collectorMood(S);
+  $('#collmood').textContent=MK_MOOD[mood];
+  const C=MK.collector,list=$('#colllist'),deal=$('#colldeal');
+  if(mood==='gone'){
+    $('#collsub').textContent=`Пішов ображений. Повернеться за ${S.collector.away} закидів. Твоя риба чекає в садку.`;
+    list.innerHTML='';deal.hidden=true;return;
+  }
+  $('#collsub').textContent=`Купує лише рідкісну рибу й трофеї, по одній, за ${Math.round(C.priceMul*100)}% ціни. Торг: +${Math.round(C.haggleStep*100)}% за раз, але може образитись і піти на ${C.away[0]}–${C.away[1]} закидів (риба лишиться в тебе). Двічі — максимум.`;
+  const items=S.net.map((f,i)=>({f,i})).filter(x=>isTrophy(x.f));
+  if(S.collector.deal&&!items.some(x=>fishKey(x.f)===S.collector.deal.key))S.collector.deal=null;
+  if(S.collector.deal)mk.sel=S.collector.deal.key;
+  if(!items.some(x=>fishKey(x.f)===mk.sel))mk.sel=null;
+  if(!items.length){list.innerHTML=`<p class="pempty">${COLL.empty[0]} Рідкісні: короп, судак, минь і вище.</p>`;deal.hidden=true;return}
+  list.innerHTML=items.map(({f,i})=>fishCard(f,i,collectorPrice(S,f),{tags:false,sel:fishKey(f)===mk.sel})).join('');
+  const cur=items.find(x=>fishKey(x.f)===mk.sel);
+  if(!cur){deal.hidden=false;deal.innerHTML='<p>Обери рибу — він назве ціну.</p>';return}
+  const f=cur.f,price=collectorPrice(S,f),risk=haggleRisk(S,f),step=haggleStep(S,f);
+  const next=risk==null?null:collectorPrice(S,f,step+1);
+  deal.hidden=false;
+  deal.innerHTML=`<p>«${step===0?'Гм.':step===1?'Гаразд…':'Остаточно.'} ${f.n}, ${kgText(f)}. Даю <b>${fmt(price)}</b>.» <span class="psub">Галя дала б ${fmt(salePrice(S,f))}.</span></p>
+    <button class="pbtn" id="collsell" data-i="${cur.i}">Продати за ${fmt(price)}</button>
+    <button class="pbtn ghost" id="collhaggle" data-i="${cur.i}" ${risk==null?'disabled':''}>${risk==null?'Більше не торгується':`Торгуватись: ${fmt(next)} (+${Math.round(MK.collector.haggleStep*100)}%, ризик ${Math.round(risk*100)}%)`}</button>`;
+}
+$('#colllist').addEventListener('click',e=>{const c=e.target.closest('.mkfish');if(!c)return;const f=S.net[+c.dataset.i];if(!f)return;
+  if(S.collector.deal&&S.collector.deal.key!==fishKey(f)){toast('Спершу доведи до кінця торг за попередню');return}
+  mk.sel=fishKey(f);mkSay(`${pickLine(COLL.offer)} Даю ${fmt(collectorPrice(S,f))}.`,'collector');renderCollector()});
+$('#colldeal').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.disabled)return;const i=+b.dataset.i;
+  if(b.id==='collsell'){const coins=sellToCollector(S,i);if(!coins)return;flyCoins(b,Math.min(6,1+Math.floor(coins/60)));SFX.win();mk.sel=null;
+    toast(`Колекціонер: +${fmt(coins)}`);mkSay(pickLine(COLL.sold),'collector');save();renderHud();renderMarket();return}
+  const r=haggle(S,i);if(!r)return;
+  if(r.left){SFX.bad();mk.sel=null;mkSay(pickLine(COLL.left),'collector',3200);toast(`Колекціонер пішов на ${r.away} закидів. Риба лишилась у садку`)}
+  else{SFX.coin();mkSay(`${pickLine(haggleRisk(S,S.net[i])==null?COLL.up2:COLL.up1)} ${fmt(r.price)}.`,'collector')}
+  save();renderMarket();
+});
+
+/* ---------- gear ---------- */
+const pctS=v=>`${Math.round(v*100)}%`;
+const secS=v=>`${v.toFixed(2).replace('.',',')} с`;
+const rodZone=l=>{const Z=CONFIG.fishing.reel.zoneHalf;return 2*Math.max(Z.min,Math.min(Z.max,Z.base+Z.perRod*l+Z.perDifficulty*0.5))};
+// What each level changes, as numbers: [label, value at a level].
+const UPG_STATS={
+  rod:[['Безпечна зона',l=>pctS(rodZone(l))],['Час на підсічку',l=>secS(biteWindow(l))]],
+  net:[['Місць у садку',l=>String(Math.max(1,CONFIG.netCapacity.base+CONFIG.netCapacity.perLevel*l+artifactFx(S).netCapAdd))]],
+  lamp:[['Клює швидше на',l=>pctS(CONFIG.fishing.lampSpeedPerLevel*l)]],
+};
+const UPG_ICON={rod:'ic-rod',net:'ic-net',lamp:'ic-lamp'};
+function renderGear(){
+  $('#upgs').innerHTML=Object.entries(UPG).map(([k,u])=>{
+    const l=S.lv[k],max=l>=u.cost.length,cost=u.cost[l],lack=max?0:Math.max(0,cost-S.coins);
+    const deltas=UPG_STATS[k].map(([lbl,f])=>`<div class="mkdelta">${lbl}: <em>${f(l)}</em>${max?'':` → <i>${f(l+1)}</i>`}</div>`).join('');
+    const levels=u.levels.map((nm,i)=>`<span class="${i<l?'have':i===l?'now':''}">${nm}${i>l?` · ${fmt(u.cost[i-1])}`:''}</span>`).join('');
+    const btn=max?'<button class="pbuy" disabled>Найкраща</button>':lack?`<button class="pbuy" disabled>Бракує ${fmt(lack)}</button>`:`<button class="pbuy" data-u="${k}">Купити «${u.levels[l+1]}» за ${fmt(cost)}</button>`;
+    return `<div class="mkcard" data-up="${k}"><div class="mkup"><i class="picon ${UPG_ICON[k]}"></i><div class="mkup-main"><b>${u.name}: <span>${u.levels[l]}</span></b>${deltas}</div></div><div class="mklevels">${levels}</div>${btn}</div>`}).join('');
   $('#baits').innerHTML=FCU.baitOrder.map(k=>{
     const B=FCU.baits[k],n=baitCount(S,k),on=S.bait.on===k;
-    const btn=B.free?`<button class="pbuy" data-bait="${k}" data-pick="1" ${on?'disabled':''}>ВЗЯТИ</button>`
-      :`<button class="pbuy" data-bait="${k}" ${S.coins<B.cost?'disabled':''}>${B.cost}</button>`;
-    return `<div class="pupg${on?' on':''}"><i class="picon ic-bait-${k}"></i><div class="pupg-main"><div class="pupg-name">${B.name} · <span>${B.free?'завжди':`є ${n} · пачка ${B.pack}`}</span>${on?' <span>· на гачку</span>':''}</div>
-      <div class="pupg-desc">${B.desc}</div></div>${btn}</div>`}).join('');
-  $('#upgs').innerHTML=Object.entries(UPG).map(([k,u])=>{
-    const l=S.lv[k],max=l>=u.cost.length,cost=u.cost[l];
-    return `<div class="pupg"><i class="picon ic-${k}"></i><div class="pupg-main"><div class="pupg-name">${u.name} · <span>${u.levels[l]}</span></div>
-      <div class="ppips">${u.cost.map((_,i)=>`<i class="${i<l?'on':''}"></i>`).join('')}</div>
-      <div class="pupg-desc">${UPG_DESC[k](l)}${max?'':` · далі: ${u.levels[l+1]}`}</div></div>
-      <button class="pbuy" data-u="${k}" ${max||S.coins<cost?'disabled':''}>${max?'МАКС':cost}</button></div>`}).join('');
+    const pick=`<button class="pbuy" data-bait="${k}" data-pick="1" ${on?'disabled':''}>${on?'На гачку':'На гачок'}</button>`;
+    const buy=B.free?'<button class="pbuy" disabled>Безплатно</button>':S.coins<B.cost?`<button class="pbuy" disabled>Бракує ${fmt(B.cost-S.coins)}</button>`:`<button class="pbuy" data-bait="${k}">Купити ${B.pack} за ${fmt(B.cost)}</button>`;
+    return `<div class="mkcard" data-bc="${k}"><div class="mkup"><i class="picon ic-bait-${k}"></i><div class="mkup-main"><b>${B.name}: <span>${B.free?'завжди є':`є ${n}`}</span></b><div class="mkdelta">${B.desc}</div></div></div><div class="mkbait-row">${pick}${buy}</div></div>`}).join('');
   $('#artlist').innerHTML=Array.from({length:SC.artifactSlots},(_,i)=>{
     const id=S.artifacts[i];
     if(!id)return '<div class="partifact empty"><i class="partslot"></i><span class="psub">Порожня кишеня</span></div>';
     const a=artifactById(id),armed=artArm.id===id;
     return `<div class="partifact"><i class="picon ic-art-${id}"></i><span><b>${a.name}</b><em class="plus">+ ${a.plus}</em><em class="minus">− ${a.minus}</em></span><button class="pthrow${armed?' armed':''}" data-a="${id}">${armed?'Точно?':'У воду'}</button></div>`}).join('');
-  const b=S.stats.best;
-  $('#stats').innerHTML=`<div><span>Спіймано</span><b>${S.stats.caught}</b></div><div><span>Порвано лесок</span><b>${S.stats.snapped}</b></div>
-    <div><span>Найкращий улов</span><em>${b?b.n:'—'}</em></div><div><span>Його ціна</span><b>${b?b.price:'—'}</b></div>`;
 }
-$('#fishlist').addEventListener('click',e=>{const r=e.target.closest('.pfish');if(!r)return;flyCoins(r,1);
-  sellFish(S,+r.dataset.i);save();renderHud();renderMarket()});
-$('#sellall').addEventListener('click',()=>{if(!S.net.length)return;
-  flyCoins($('#fishlist'),S.net.length);
-  const r=sellAll(S);toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);r.done.forEach(announceOrder);save();renderHud();renderMarket()});
+const flashCard=sel=>{const c=document.querySelector(sel);if(c)c.classList.add('flash')};
+$('#upgs').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;const k=b.dataset.u,c=UPG[k].cost[S.lv[k]];if(c==null||S.coins<c)return;
+  S.coins-=c;S.lv[k]++;SFX.win();toast(`${UPG[k].name}: ${UPG[k].levels[S.lv[k]]}`);save();renderHud();renderMarket();flashCard(`[data-up="${k}"]`)});
 // Buying a pack also puts it on the hook: you bought it to fish with it.
 $('#baits').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;const k=b.dataset.bait;
-  if(b.dataset.pick){selectBait(S,k);save();renderMarket();return}
-  if(!buyBait(S,k))return;selectBait(S,k);SFX.coin();toast(`${FCU.baits[k].name} ×${FCU.baits[k].pack}. На гачку`);save();renderHud();renderMarket()});
-$('#orders').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
-  flyCoins(b,2);const r=fillOrder(S,+b.dataset.o);
-  if(r.done)announceOrder(r.done);else toast(`Скупник задоволений: +${fmt(r.coins)}`);
-  save();renderHud();renderMarket()});
-$('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
-  if(!pondArm.on){pondArm.on=true;pondArm.t=Date.now();renderMarket();setTimeout(()=>{if(Date.now()-pondArm.t>=2900){pondArm.on=false;if(tab==='market')renderMarket()}},3000);return}
-  pondArm.on=false;buyPond(S);save();renderHud();openFinale()});
-$('#upgs').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b)return;const k=b.dataset.u,c=UPG[k].cost[S.lv[k]];if(c==null||S.coins<c)return;
-  S.coins-=c;S.lv[k]++;SFX.win();toast(`${UPG[k].name}: ${UPG[k].levels[S.lv[k]]}`);save();renderHud();renderMarket()});
+  if(b.dataset.pick){selectBait(S,k);save();renderMarket();renderBait();return}
+  if(!buyBait(S,k))return;selectBait(S,k);SFX.coin();toast(`${FCU.baits[k].name} ×${FCU.baits[k].pack}. На гачку`);save();renderHud();renderMarket();renderBait();flashCard(`[data-bc="${k}"]`)});
 $('#artlist').addEventListener('click',e=>{const b=e.target.closest('.pthrow');if(!b)return;const id=b.dataset.a;
   if(artArm.id!==id){artArm.id=id;artArm.t=Date.now();renderMarket();setTimeout(()=>{if(Date.now()-artArm.t>=2900){artArm.id=null;if(tab==='market')renderMarket()}},3000);return}
   artArm.id=null;throwArtifact(S,id);SFX.plop();toast('Вода забрала своє');save();renderHud();renderMarket()});
 
-/* ui/board.js */
-/* ---------- the order board and the day's demand ---------- */
-function rewardText(r){
-  switch(r.type){
-    case 'coins':return `+${fmt(r.v)} монет`;
-    case 'bait':return `+${r.v} · ${FCU.baits[r.k].name.toLowerCase()}`;
-    case 'symbol':return `обертання з «${r.k}» у Водяника`;
-    case 'artifact':return r.id?artifactById(r.id).name:'проклята річ з дна';
-  }
-  return '';
+/* ---------- the rest of the stall: buying the pond back, the journal ---------- */
+function renderStallExtras(){
+  const price=pondPrice(S),goal=$('#pondbuy');
+  $('#pondfill').style.width=Math.min(100,S.coins/price*100)+'%';
+  $('#pondinfo').textContent=`${S.ng?`Уже ${S.ng} раз викуплено. `:''}Без поспіху: заплати ${fmt(price)} монет, і заводь твоя. У тебе ${fmt(S.coins)}.`;
+  goal.disabled=!canBuyPond(S);
+  goal.textContent=pondArm.on?'Точно?':`Викупити за ${fmt(price)}`;
+  goal.classList.toggle('armed',pondArm.on);
+  $('#bestcount').textContent=`${knownCount(S)}/${CONFIG.fish.length}`;
+  const b=S.stats.best;
+  $('#stats').innerHTML=`<div><span>Спіймано</span><b>${S.stats.caught}</b></div><div><span>Порвано лесок</span><b>${S.stats.snapped}</b></div>
+    <div><span>Найкращий улов</span><em>${b?b.n:'—'}</em></div><div><span>Його ціна</span><b>${b?b.price:'—'}</b></div>`;
 }
+$('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
+  if(!pondArm.on){pondArm.on=true;pondArm.t=Date.now();renderMarket();setTimeout(()=>{if(Date.now()-pondArm.t>=2900){pondArm.on=false;if(tab==='market')renderMarket()}},3000);return}
+  pondArm.on=false;buyPond(S);save();renderHud();openFinale()});
+
+function renderMarket(){
+  tip('landing');
+  renderStall();renderStallExtras();renderOrders();renderCollector();renderGear();
+  const gone=!collectorHere(S),sign=$('#mksign');
+  sign.hidden=!gone;if(gone)sign.textContent=`Пішов ображений. Повернеться за ${S.collector.away} закидів`;
+  document.querySelector('.mklbl[data-who="collector"]').hidden=gone;
+}
+
+/* ui/board.js */
 // A fish not yet caught is named only by its rarity.
 const fishLabel=n=>isKnown(S,n)?n:TIERS[fishByName(n).t].label+' риба';
-const condText=o=>[o.stars?`на ${o.stars} зірки`:'',o.snag?'з корча':''].filter(Boolean).join(', ');
-function renderBoard(){
-  $('#boardsub').textContent=`Без строку. Кожна рибина +${Math.round(CONFIG.board.bonus*100)}% до ринку, а за все доручення — нагорода.`;
-  $('#orders').innerHTML=S.board.map((o,i)=>{
-    const f=fishByName(o.n),known=isKnown(S,o.n),can=canFill(S,o),cond=condText(o);
-    return `<div class="porder"><i class="picon ${known?fishIconClass(o.n):silhouetteClass(o.n)}"></i><div class="pord-main"><span class="pfish-name">${fishLabel(o.n)} · ${o.qty-o.left}/${o.qty}</span>${cond?`<span class="pord-cond">${cond}</span>`:''}<span class="pord-rew">${rewardText(o.reward)}</span></div><button class="pbuy" data-o="${i}" ${can?'':'disabled'}>Здати</button></div>`}).join('');
-}
-function renderDemand(){
-  const d=S.demand;if(!d){$('#demand').innerHTML='';return}
-  const row=(n,mul,cls)=>`<div class="pdem"><i class="picon ${isKnown(S,n)?fishIconClass(n):silhouetteClass(n)}"></i><span class="pfish-name">${fishLabel(n)}</span><b class="${cls}">×${String(mul).replace('.',',')}</b></div>`;
-  $('#demand').innerHTML=d.up.map(e=>row(e.n,e.mul,'up')).join('')+(d.down?row(d.down.n,d.down.mul,'down'):'')+'<p class="psub">Завтра буде інший.</p>';
-}
-function announceOrder(done){
-  const r=done.reward;
-  toast(`Доручення виконано: ${rewardText(r)}`);SFX.win();
-  if(r.type==='artifact'&&r.id&&!r.slotted)setTimeout(()=>toast('Кишені повні: знахідка чекає у Водяника'),1900);
-  if(r.type==='symbol')setTimeout(()=>toast('Подарунок чекає у Водяника'),1900);
-}
 
 /* ---------- traps ---------- */
 function renderTrapBtn(){
@@ -7748,8 +8342,8 @@ function showAway(since){
   else parts.push('<p>Верші стоять сухі. Постав, і наступного разу щось чекатиме.</p>');
   const toFull=daysToFull(now);
   parts.push(`<p>Місяць: <b>${phaseName(S)}</b>${toFull?`, повня за ${toFull} дн.`:'. Легенди близько.'}</p>`);
-  if(S.demand)parts.push(`<p>Попит дня: ${S.demand.up.map(e=>`<b>${fishLabel(e.n)} ×${String(e.mul).replace('.',',')}</b>`).join(', ')}${S.demand.down?`; дешевше: ${fishLabel(S.demand.down.n)}`:''}.</p>`);
-  parts.push(`<p>Дошка: ${S.board.map(o=>`${fishLabel(o.n)} ${o.qty-o.left}/${o.qty}`).join(' · ')}.</p>`);
+  parts.push(`<p>Корчмар чекає: ${S.board.map(o=>o.items.map(it=>`${fishLabel(it.n)} ${it.qty-it.left}/${it.qty}`).join(' + ')).join(' · ')}.</p>`);
+  if(!collectorHere(S))parts.push(`<p>Колекціонер повернеться за ${S.collector.away} закидів.</p>`);
   if(S.gifts.length)parts.push(`<p>У Водяника чекає символ: <b>${S.gifts[0]}</b>.</p>`);
   $('#awaybody').innerHTML=`<div class="paway">${parts.join('')}</div>`;
   $('#awaytake').hidden=!ready;
@@ -7851,7 +8445,7 @@ const spinsWord=x=>{const r=Math.round(x*10)/10;return Number.isInteger(r)?Strin
 function giveText(f){
   const x=freeSpinsFor(S,f),k=f.n,pay=isWild(k)?SC.free.pays.legend:SC.free.pays[fishTierOf(k)];
   const spins=x%1?`${Math.floor(x)} або ${Math.floor(x)+1} (у середньому ${spinsWord(x)})`:String(x);
-  return `За <b>${k}</b> (ціна ${salePrice(S,f)}) Водяник дасть ${spins} безкоштовних обертань по ${SC.free.stake}. Поки вони йдуть, гачки на барабанах — це ${k}: 3 в ряд платять ×${num(pay)}${isWild(k)?', і вона ще й вайлд':''}.`;
+  return `За <b>${k}</b> (ціна ${basePrice(f)}) Водяник дасть ${spins} безкоштовних обертань по ${SC.free.stake}. Поки вони йдуть, гачки на барабанах — це ${k}: 3 в ряд платять ×${num(pay)}${isWild(k)?', і вона ще й вайлд':''}.`;
 }
 function renderGive(){
   const busy=slot.busy||S.pending>0||S.deal||!!S.free;
@@ -7860,7 +8454,7 @@ function renderGive(){
   const a=slot.ask;
   $('#giveask').hidden=!a;$('#givefish').hidden=!!a;
   if(a){const f=S.net[a.i];if(!f){slot.ask=null;return renderGive()}$('#givetxt').innerHTML=giveText(f);$('#giveyes').disabled=busy;return}
-  $('#givefish').innerHTML=list.length?list.map(({f,i})=>`<button class="pfish" data-i="${i}" ${busy?'disabled':''}><i class="pfish-tier ${f.t}"></i><i class="picon ${fishIconClass(f.n)}"></i><span class="pfish-name">${f.n}</span><span class="pfish-kg">≈${spinsWord(freeSpinsFor(S,f))} об.</span><span class="pfish-price">${salePrice(S,f)}</span></button>`).join('')
+  $('#givefish').innerHTML=list.length?list.map(({f,i})=>`<button class="pfish" data-i="${i}" ${busy?'disabled':''}><i class="pfish-tier ${f.t}"></i><i class="picon ${fishIconClass(f.n)}"></i><span class="pfish-name">${f.n}</span><span class="pfish-kg">≈${spinsWord(freeSpinsFor(S,f))} об.</span><span class="pfish-price">${basePrice(f)}</span></button>`).join('')
     :'<div class="pempty">У садку нема що дати. Мотлох Водяник не бере.</div>';
 }
 $('#givefish').addEventListener('click',e=>{const b=e.target.closest('.pfish');if(!b||b.disabled)return;slot.ask={i:+b.dataset.i};renderGive()});
@@ -8206,12 +8800,12 @@ const TIPS={
   release:'Малу рибу можна відпустити. Іноді по неї приходить батько — трофейний.',
   bait:'Наживка — зліва від кнопки, торкнись, щоб змінити. Мотиль — для мирної риби, живець — для хижаків.',
   traps:'Кошик унизу сцени — верші. Постав їх, і вони ловитимуть, поки тебе нема.',
-  board:'Дошка доручень без строків: нагорода за все доручення. Попит дня міняється щодня.',
+  landing:'Торкнись покупця на пристані. Галя бере все, Корчмар платить більше за замовлення, Колекціонер — за рідкісну рибу.',
   slot:'Платить лише середній ряд — таблиця під кнопкою. Рибу можна віддати за безкоштовні обертання, а три зорі дають перли.',
   moon:'Місяць тут справжній, як за вікном. У повню виходять легенди — скільки днів до неї, видно внизу сцени.',
 };
 // Each hint belongs to one screen; leaving it drops the queue, and the hint waits for the next time.
-const TIP_TAB={board:'market',slot:'slot'};
+const TIP_TAB={landing:'market',slot:'slot'};
 if(!prefs.hints)prefs.hints={};
 const tipQueue=[];let tipT=0;
 function tip(key){
@@ -8241,7 +8835,7 @@ const TUTORIAL=[
   {text:'Клює! Тисни кнопку зараз.',target:'#act',done:()=>F.state==='reel',fishing:true},
   {text:'Тримай кнопку, щоб тягнути. Стрілка має стояти у світлій зоні. Почервоніла? Відпусти, бо леска лусне.',target:'#meter',done:()=>cardOpen,fishing:true},
   {text:'Перший улов! Натисни «У садок».',target:'#cok',done:()=>!cardOpen},
-  {text:'Рибу продають на Ринку. Там же снасті, замовлення скупника й бестіарій.',target:'[data-tab=market]',done:()=>tab==='market'},
+  {text:'Рибу продають на Ринку, на пристані. Там же снасті, замовлення Корчмаря й бестіарій.',target:'[data-tab=market]',done:()=>tab==='market'},
   {text:'Продай рибу: торкнись її або «Продати все».',target:'#sellall',done:()=>!S.net.length},
   {text:'А там, під водою, живе Водяник. Його автомат бере більше, ніж дає. Грай лише тим, чого не шкода.',target:'[data-tab=slot]',done:()=>tab==='slot'},
   {text:'Оце й усе. Кола, бульбашки й сплески на воді видають рибу: влучиш у них, клюне швидше. Наживку купують на Ринку, хліб завжди є. Тихої ночі!',target:null,finish:true},
