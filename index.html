@@ -96,6 +96,17 @@ main{flex:1;min-height:0;position:relative}
 .msg.pbubble::after{left:calc(50% - var(--px)*2)}
 .pmeter{position:absolute;left:calc(var(--px)*2);right:calc(var(--px)*2);top:calc(var(--px)*22);z-index:1;pointer-events:none}
 .mainact{flex:none;min-height:calc(var(--px)*20);touch-action:none}
+.pactrow{display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;gap:calc(var(--px)*2)}
+.pactrow .pbtn{margin-left:var(--px);margin-right:var(--px);width:auto}
+.pactrow .mainact{min-width:0}
+.pside{min-width:calc(var(--px)*18);min-height:calc(var(--px)*20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--px);padding:var(--px);touch-action:manipulation}
+.pside b{font-family:var(--f-text);font-weight:400;font-size:20px;line-height:1;color:var(--bone)}
+.pside:disabled .picon{opacity:.45}
+.psnag{position:absolute;left:calc(var(--px)*4);right:calc(var(--px)*4);bottom:calc(var(--px)*16);z-index:2;text-align:center}
+.psnag .pdeal{margin:0}
+.pstars{display:flex;justify-content:center;gap:calc(var(--px)*2);min-height:calc(var(--px)*7)}
+.pstars:empty{display:none}
+.pupg.on .pupg-name{color:var(--gold)}
 
 /* Pixel UI kit. --px is one game pixel in CSS px, set from pixelLayout(). No radii, no soft shadows. */
 :root{--px:3px;--f-text:'Handjet',system-ui,sans-serif;--f-num:'Press Start 2P',ui-monospace,monospace;color-scheme:dark}
@@ -338,6 +349,7 @@ main{flex:1;min-height:0;position:relative}
 .pwin-sum span{font-size:22px;line-height:1;color:var(--moonS)}
 .pwin-sum b{font-family:var(--f-num);font-weight:400;font-size:24px;line-height:1.25;color:var(--gold)}
 .pbtn-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
+.pbtn-row.one{grid-template-columns:1fr}
 .pdeal{margin:0;font-size:22px;line-height:1.1;color:var(--bone)}
 .pdeal b{font-weight:600;color:var(--magicL)}
 .ppays{display:flex;flex-direction:column;gap:var(--px)}
@@ -405,19 +417,31 @@ main{flex:1;min-height:0;position:relative}
           <span>Натяг</span><div class="pbar" id="tbar"><div class="pbar-danger"></div><div class="pbar-next" id="tnext" hidden></div><div class="pbar-zone" id="tzone"></div><div class="pbar-needle" id="tneedle"></div></div>
           <span>Риба</span><div class="pbar" id="pbar"><div class="pbar-fill" id="pfill"></div></div>
         </div>
+        <div id="power" class="pmeter pframe deep" hidden>
+          <span>Закид</span><div class="pbar" id="wbar"><div class="pbar-zone lit" id="wmark"></div><div class="pbar-needle" id="wneedle"></div></div>
+        </div>
+        <div id="snagbox" class="psnag pframe curse ppanel" hidden>
+          <p class="pdeal" id="snagtxt">Зачепилась за корч!</p>
+          <div class="pbtn-row"><button class="pbtn ghost" id="snagcut">Різати</button><button class="pbtn" id="snagpull">Смикнути</button></div>
+        </div>
         <div id="catch" class="catch" hidden>
           <div class="pcard pframe" id="ccard">
             <div class="pcard-top"><span class="pbanner" id="ctier"></span><span class="pstamp" id="cstamp" hidden>НОВИЙ ВИД</span></div>
             <canvas id="ccv" class="pcanvas"></canvas>
             <h2 class="pcard-name" id="cname"></h2>
+            <div class="pstars" id="cstars"></div>
             <div class="pcard-meta"><span id="cw"></span><span class="pcard-price" id="cp"></span></div>
             <div class="pcard-note" id="cnote"></div>
-            <button id="cok" class="pbtn">У садок</button>
+            <div class="pbtn-row" id="cbtns"><button id="crel" class="pbtn ghost">Відпустити</button><button id="cok" class="pbtn">У садок</button></div>
           </div>
         </div>
       </div>
-      <button id="act" class="pbtn mainact">Закинути</button>
-      <div class="phint" id="hint">Натисни, щоб закинути вудку</div>
+      <div class="pactrow">
+        <button id="baitbtn" class="pbtn ghost pside" aria-label="Наживка"><i class="picon" id="baiticon"></i><b id="baitn"></b></button>
+        <button id="act" class="pbtn mainact">Закинути</button>
+        <button id="pondsell" class="pbtn ghost pside" aria-label="Продати все"><i class="picon ic-coin"></i><b id="pondsellv"></b></button>
+      </div>
+      <div class="phint" id="hint">Утримуй, щоб закинути</div>
     </section>
 
     <section id="v-market" class="view scroll" hidden>
@@ -436,6 +460,11 @@ main{flex:1;min-height:0;position:relative}
         <h3>Снасті</h3>
         <p class="psub">Поліпшення назавжди</p>
         <div id="upgs"></div>
+      </div>
+      <div class="pframe ppanel">
+        <h3>Наживка</h3>
+        <p class="psub">Витрачається, коли риба на гачку: витягнув, обірвав чи зійшла. Хліб завжди є.</p>
+        <div id="baits"></div>
       </div>
       <div class="pframe gold ppanel">
         <h3>Викупити заводь</h3>
@@ -586,7 +615,7 @@ const CONFIG = {
     { n: 'Карась', t: 'common', w: [0.2, 0.9], p: 7, d: 0.25, pattern: 'steady' },
     { n: 'Лящ', t: 'uncommon', w: [0.6, 2.5], p: 15, d: 0.42, pattern: 'heavy' },
     { n: 'Щука', t: 'uncommon', w: [1, 5], p: 24, d: 0.58, pattern: 'jerk' },
-    { n: 'Короп', t: 'rare', w: [2, 9], p: 42, d: 0.62, pattern: 'heavy' },
+    { n: 'Короп', t: 'rare', w: [2, 9], p: 42, d: 0.62, pattern: 'heavy', prog: 0.75 }, // prog: тягне довше
     { n: 'Судак', t: 'rare', w: [1.5, 6], p: 55, d: 0.7, pattern: 'trick' },
     { n: 'Минь', t: 'rare', w: [1, 5], p: 48, d: 0.66, pattern: 'dive' },
     { n: 'Сом', t: 'epic', w: [8, 40], p: 120, d: 0.84, pattern: 'dive' },
@@ -597,18 +626,20 @@ const CONFIG = {
 
   // Рибне місце. tierMul множить ваги рівнів наживки, решта множить складність виводки.
   locations: {
+    // snags: центри корчів у частках води (x — ширина, y — від дальнього краю 0 до містка 1).
+    // shallow: звідки вода стає мілиною; reeds: очерет ліворуч теж мілина.
     zavod: {
-      name: 'Заводь', cost: 0,
+      name: 'Заводь', cost: 0, snags: [{ x: 0.36, y: 0.3 }], shallow: 0.7, reeds: true,
       fish: ['Старий чобіт', 'Плітка', 'Окунь', 'Карась', 'Лящ', 'Щука', 'Короп'],
       tierMul: {}, tensionMul: 1, surgeMul: 1, zoneMul: 1,
     },
     ruslo: {
-      name: 'Старе русло', cost: 800,
+      name: 'Старе русло', cost: 800, snags: [{ x: 0.13, y: 0.47 }, { x: 0.62, y: 0.25 }], shallow: 0.72, reeds: true,
       fish: ['Іржавий чайник', 'Плітка', 'Окунь', 'Лящ', 'Щука', 'Короп', 'Судак', 'Минь', 'Стерлядь'],
       tierMul: { common: 0.6, uncommon: 1.3, rare: 1.6, epic: 1.2 }, tensionMul: 1.1, surgeMul: 1.2, zoneMul: 0.95,
     },
     vyr: {
-      name: 'Вир під млином', cost: 4000,
+      name: 'Вир під млином', cost: 4000, snags: [{ x: 0.17, y: 0.33 }, { x: 0.66, y: 0.7 }], shallow: 0.8, reeds: false,
       fish: ['Кістка утопленика', 'Окунь', 'Щука', 'Судак', 'Минь', 'Сом', 'Стерлядь', 'Місячна рибка', 'Білуга'],
       tierMul: { junk: 0.5, common: 0.15, uncommon: 0.6, rare: 1.4, epic: 2.5, legend: 4 }, tensionMul: 1.3, surgeMul: 1.4, zoneMul: 0.85,
     },
@@ -654,13 +685,59 @@ const CONFIG = {
 
   upgrades: {
     rod: { name: 'Вудка', levels: ['Ліщинова', 'Бамбукова', 'Склопластик', 'Карбон', 'Срібна'], cost: [40, 180, 650, 2100] },
-    bait: { name: 'Наживка', levels: ['Хліб', 'Черв’як', 'Опариш', 'Живець', 'Місячний мотиль'], cost: [50, 220, 750, 2500] },
     net: { name: 'Садок', levels: ['Відро', 'Сітка', 'Садок', 'Великий садок', 'Бездонний'], cost: [30, 120, 450, 1200] },
     lamp: { name: 'Ліхтар', levels: ['Без світла', 'Свічка', 'Гасова лампа', 'Ліхтарик', 'Світляки'], cost: [35, 150, 550, 1500] },
   },
   netCapacity: { base: 5, perLevel: 3 },
 
   fishing: {
+    // Наживка витрачається, коли риба на гачку дійшла до кінця: витягнув, обірвав, зійшла чи перерізав.
+    // Закрив гру посеред виводки, змотав вудку чи не встиг підсікти — наживка лишається.
+    // lv — сила наживки за старою шкалою (tierWeights), tierMul — множники рівнів,
+    // like — види, що клюють у likeMul разів частіше; решта нормальної риби — у dislikeMul.
+    baits: {
+      bread: { name: 'Хліб', short: 'Хліб', lv: 0, free: true, tierMul: { common: 1.5, uncommon: 0.4, rare: 0.15, epic: 0.05, legend: 0.05 }, desc: 'Безплатний. Плітка й карась його люблять, решта нюхає й пливе далі' },
+      worm: { name: 'Черв’як', short: 'Черв.', lv: 1.5, pack: 10, cost: 20, desc: 'Бере все підряд. Чесна наживка' },
+      moth: { name: 'Мотиль', short: 'Мот.', lv: 2.5, pack: 10, cost: 50, like: ['Карась', 'Лящ', 'Короп'], likeMul: 2.5, dislikeMul: 0.5, desc: 'Мирна риба: карась, лящ, короп' },
+      live: { name: 'Живець', short: 'Живець', lv: 3.5, pack: 8, cost: 60, like: ['Щука', 'Судак', 'Минь', 'Сом', 'Білуга'], likeMul: 3, dislikeMul: 0.4, desc: 'Хижаки: щука, судак, сом' },
+      moon: { name: 'Місячний мотиль', short: 'Місяч.', lv: 4, moon: true, guests: ['Місячна рибка'], pack: 3, cost: 150, desc: 'Маленька повня на гачку. Легенди клюють будь-якої ночі' },
+    },
+    baitOrder: ['bread', 'worm', 'moth', 'live', 'moon'],
+    // Старе поліпшення «Наживка» повертається пачками з запасом (≈1,5 ціни): куплений рівень i дає baitRefund[i].
+    baitRefund: [{ worm: 40 }, { moth: 70 }, { live: 150 }, { moon: 75 }],
+    // Зони води. tierMul множить ваги рівнів, waitMul — час до клювання, tensionMul — ріст натягу.
+    zones: {
+      shallow: { name: 'Мілина', waitMul: 0.7, tensionMul: 0.9, tierMul: { junk: 1.2, common: 1.6, uncommon: 0.7, rare: 0.35, epic: 0.2, legend: 0.3 } },
+      deep: { name: 'Глибина', waitMul: 1.3, tensionMul: 1, tierMul: { junk: 0.7, common: 0.6, uncommon: 1.2, rare: 1.5, epic: 1.6, legend: 1.2 } },
+      snag: { name: 'Корч', waitMul: 1.1, tensionMul: 1.05, snagChance: 0.4, tierMul: { junk: 1.3, common: 0.4, uncommon: 1, rare: 2.2, epic: 2.4, legend: 1.6 } },
+    },
+    snagZone: { x: 0.11, y: 0.15 }, // півширина й піввисота корча в частках води
+    reedsShallow: { x: 0.2, y: 0.4 }, // ліворуч від x і нижче y біля очерету мілко
+    // Закид: шкала дальності ходить туди-назад за period секунд, поплавок падає на (сила / потрібна сила) шляху до цілі.
+    cast: { period: 1.5, minNeed: 0.12 },
+    // Сигнали на воді. hitRadius у пікселях сцени; влучив — вид сигналу клює у fishMul разів частіше й швидше.
+    signals: {
+      every: [2.5, 5],
+      max: 3,
+      hitRadius: 7,
+      fishMul: 8,
+      waitMul: 0.6,
+      types: {
+        rings: { name: 'Кола', life: [6, 9], weight: 5, zones: { shallow: 3, deep: 1, snag: 0.4 }, fish: ['Плітка', 'Окунь', 'Карась'] },
+        bubbles: { name: 'Бульбашки', life: [6, 10], weight: 3, zones: { shallow: 0.4, deep: 3, snag: 1 }, fish: ['Карась', 'Лящ', 'Короп', 'Минь', 'Сом', 'Стерлядь', 'Білуга'] },
+        splash: { name: 'Сплеск', life: [2, 3], weight: 2.5, zones: { shallow: 1, deep: 1, snag: 2 }, fish: ['Окунь', 'Щука', 'Судак'] },
+        moon: { name: 'Мерехтіння', life: [4, 6], weight: 0.6, fullMoonMul: 3, zones: { shallow: 0.2, deep: 2, snag: 2 }, tiers: ['rare', 'epic', 'legend'] },
+      },
+    },
+    // Якість виводки: red — секунд у червоній зоні, out — частка часу поза безпечною зоною.
+    // Поза зоною не рахується, коли так і треба: риба пірнає, ось-ось смикне, зникла чи щойно стрибнула (jumpGrace с).
+    quality: { jumpGrace: 0.5, redAt: 0.88, three: { red: 0.25, out: 0.25 }, two: { red: 1.2, out: 0.5 }, priceMul: [0.7, 1, 1.4] },
+    // Видихлась: велика риба наприкінці на мить здається. Ні ривків, зона ширша, тягнеться швидше.
+    tired: { minD: 0.5, at: 0.72, len: 1.6, progMul: 2.5, zoneMul: 1.5 },
+    // Корч: риба заводить волосінь за корч, коли прогрес доходить до at. Смикнути: шанс pull (+perRod за рівень вудки), інакше обрив.
+    snag: { at: [0.25, 0.7], pull: 0.5, perRod: 0.06, pullTension: 0.78 },
+    // Відпустити можна рибу з нижньої половини ваги свого виду. Тоді з шансом father за within закидів на цьому місці клюне батько.
+    release: { maxQ: 0.5, father: 0.2, within: [3, 10], fatherW: [1.15, 1.4], fatherD: 0.08 },
     castTime: 0.55,
     waitRange: [2.5, 7],
     waitMin: 1.2,
@@ -1031,20 +1108,17 @@ function sellFish(S, index) {
   return coins;
 }
 
+// Orders the net can fill go first, at their bonus; the rest goes to the market.
 function sellAllValue(S) {
-  const pushed = {};
-  let sum = 0;
-  for (const f of S.net) {
-    sum += Math.max(1, Math.round(f.price * marketMul(S, f.n, pushed[f.n] || 0)));
-    pushed[f.n] = (pushed[f.n] || 0) + MK.dropPerSale;
-  }
-  return sum;
+  const T = { net: S.net.map(f => ({ ...f })), market: { ...S.market }, orders: S.orders.map(o => ({ ...o })), coins: 0, stats: { earned: 0 } };
+  return sellAll(T).coins;
 }
 
 function sellAll(S) {
-  let sum = 0;
-  while (S.net.length) sum += sellFish(S, 0);
-  return sum;
+  let coins = 0, orders = 0;
+  S.orders.forEach((o, i) => { while (canFill(S, o)) { coins += fillOrder(S, i); orders++; } });
+  while (S.net.length) coins += sellFish(S, 0);
+  return { coins, orders };
 }
 
 function recoverMarket(S) {
@@ -1131,24 +1205,118 @@ function tierWeights(baitLv, moonBait) {
   return w;
 }
 
-// Tier chances of one place: only tiers that have fish there. A full moon brings legends to any water.
-function locationTable(baitLv, moonBait, locationKey = 'zavod', phase = null, fx = NO_FX) {
-  const loc = CONFIG.locations[locationKey], F = CONFIG.night.full;
-  const names = phase === F.phase ? [...new Set([...loc.fish, ...F.guests])] : loc.fish;
+const baitDef = key => FC.baits[key] || FC.baits.bread;
+
+// Chances of every species at one spot: place, moon, bait, zone of the water and a signal the float landed on.
+function fishTable({ location = 'zavod', phase = null, bait = 'bread', zone = null, signal = null, fx = NO_FX } = {}) {
+  const loc = CONFIG.locations[location], F = CONFIG.night.full, B = baitDef(bait);
+  const names = new Set(loc.fish);
+  if (phase === F.phase) F.guests.forEach(n => names.add(n));
+  (B.guests || []).forEach(n => names.add(n));
   const byTier = {};
   for (const n of names) (byTier[FISH_BY_NAME[n].t] ||= []).push(FISH_BY_NAME[n]);
-  const base = tierWeights(baitLv, moonBait), weights = {};
-  for (const t in byTier) weights[t] = base[t] * (loc.tierMul[t] ?? 1);
-  if (phase === F.phase && byTier.legend) weights.legend += F.legendWeight;
-  if (weights.legend) weights.legend *= fx.legendMul;
-  if (weights.junk) weights.junk *= fx.junkMul;
-  return { byTier, weights };
+  const base = tierWeights(B.lv, !!B.moon), Z = zone && FC.zones[zone], sig = signal && FC.signals.types[signal];
+  const list = [];
+  for (const t in byTier) {
+    let w = base[t] * (loc.tierMul[t] ?? 1) * ((B.tierMul && B.tierMul[t]) ?? 1) * ((Z && Z.tierMul[t]) ?? 1);
+    if (t === 'legend') {
+      if (phase === F.phase) w += F.legendWeight;
+      w *= fx.legendMul;
+    }
+    if (t === 'junk') w *= fx.junkMul;
+    for (const f of byTier[t]) {
+      let k = w / byTier[t].length;
+      if (B.like && !f.junk) k *= B.like.includes(f.n) ? B.likeMul : B.dislikeMul;
+      if (sig && ((sig.fish && sig.fish.includes(f.n)) || (sig.tiers && sig.tiers.includes(t)))) k *= FC.signals.fishMul;
+      if (k > 0) list.push({ fish: f, w: k });
+    }
+  }
+  return list;
 }
 
-function pickFish(baitLv, moonBait, rng = Math.random, locationKey = 'zavod', phase = null, fx = NO_FX) {
-  const { byTier, weights } = locationTable(baitLv, moonBait, locationKey, phase, fx);
-  const list = byTier[pickWeighted(weights, rng)];
-  return list[Math.floor(rng() * list.length)];
+function pickFish(opts, rng = Math.random) {
+  const list = fishTable(opts);
+  let r = rng() * list.reduce((a, e) => a + e.w, 0);
+  for (const e of list) if ((r -= e.w) < 0) return e.fish;
+  return list[list.length - 1].fish;
+}
+
+// Which water a point is: u across, v from the far bank (0) to the bridge (1).
+function zoneAt(locationKey, u, v) {
+  const loc = CONFIG.locations[locationKey], Z = FC.snagZone, R = FC.reedsShallow;
+  for (const c of loc.snags || []) if (Math.abs(u - c.x) <= Z.x && Math.abs(v - c.y) <= Z.y) return 'snag';
+  if (v >= loc.shallow || (loc.reeds && u <= R.x && v >= R.y)) return 'shallow';
+  return 'deep';
+}
+
+// A signal type shows only where one of its fish could bite.
+function signalTypesFor(locationKey, phase, bait) {
+  const names = new Set(fishTable({ location: locationKey, phase, bait: 'moon' }).map(e => e.fish.n));
+  fishTable({ location: locationKey, phase, bait }).forEach(e => names.add(e.fish.n));
+  const out = {};
+  for (const [k, t] of Object.entries(FC.signals.types)) {
+    const ok = [...names].some(n => (t.fish && t.fish.includes(n)) || (t.tiers && t.tiers.includes(FISH_BY_NAME[n].t)));
+    if (ok) out[k] = t.weight * (t.fullMoonMul && phase === CONFIG.night.full.phase ? t.fullMoonMul : 1);
+  }
+  return out;
+}
+
+/* ---------- bait ---------- */
+const baitCount = (S, k) => (baitDef(k).free ? Infinity : S.bait.have[k] || 0);
+const baitOwned = S => FC.baitOrder.filter(k => baitCount(S, k) > 0);
+
+function selectBait(S, k) {
+  if (!FC.baits[k] || baitCount(S, k) <= 0) return false;
+  S.bait.on = k;
+  return true;
+}
+function nextBait(S) {
+  const own = baitOwned(S), i = own.indexOf(S.bait.on);
+  S.bait.on = own[(i + 1) % own.length];
+  return S.bait.on;
+}
+function buyBait(S, k) {
+  const B = FC.baits[k];
+  if (!B || B.free || S.coins < B.cost) return false;
+  S.coins -= B.cost;
+  S.bait.have[k] = (S.bait.have[k] || 0) + B.pack;
+  return true;
+}
+// Returns true when the last one went and the hook fell back to bread.
+function spendBait(S, k) {
+  if (baitDef(k).free || !S.bait.have[k]) return false;
+  S.bait.have[k]--;
+  if (S.bait.have[k] > 0) return false;
+  if (S.bait.on === k) S.bait.on = 'bread';
+  return true;
+}
+
+/* ---------- release and the father ---------- */
+const sizeQ = c => { const f = FISH_BY_NAME[c.n]; return (c.w - f.w[0]) / Math.max(1e-9, f.w[1] - f.w[0]); };
+const canRelease = c => !!c && !c.junk && c.t !== 'legend' && !c.father && sizeQ(c) <= FC.release.maxQ + 1e-9;
+
+function releaseFish(S, index, rng = Math.random) {
+  const c = S.net[index];
+  if (!canRelease(c)) return null;
+  S.net.splice(index, 1);
+  S.stats.released = (S.stats.released || 0) + 1;
+  let father = false;
+  if (!S.father && rng() < FC.release.father) {
+    const [a, b] = FC.release.within;
+    S.father = { n: c.n, loc: S.location, in: a + Math.floor(rng() * (b - a + 1)) };
+    father = true;
+  }
+  return { fish: c, father };
+}
+
+// Called on every bite. The father only counts bites at the place he was let go.
+function fatherBites(S) {
+  const f = S.father;
+  if (!f || f.loc !== S.location) return null;
+  f.in--;
+  if (f.in > 0) return null;
+  S.father = null;
+  return FISH_BY_NAME[f.n];
 }
 
 const waitTime = (lampLv, rng = Math.random, fx = NO_FX) =>
@@ -1157,10 +1325,17 @@ const waitTime = (lampLv, rng = Math.random, fx = NO_FX) =>
 const biteWindow = (rodLv, fx = NO_FX) => Math.max(0.35, FC.biteWindow.base + FC.biteWindow.perRod * rodLv + fx.biteWindowAdd);
 
 // Applies buffs, puts the catch into the net. Moon bait is spent here, on a landed fish, not on the bite.
-function landFish(S, fish, rng = Math.random) {
-  const q = rng();
+// extra: { stars, zone, father } from the fight.
+function landFish(S, fish, rng = Math.random, extra = {}) {
   const notes = [];
-  let price = fish.p * (FC.price.min + FC.price.range * q) * artifactFx(S).priceMul;
+  const fatherK = extra.father ? rangeRnd(rng, FC.release.fatherW[0], FC.release.fatherW[1]) : 0;
+  const q = extra.father ? 1 : rng();
+  let price = fish.p * (FC.price.min + FC.price.range * q) * (fatherK || 1) * artifactFx(S).priceMul;
+  const stars = fish.junk ? 0 : extra.stars || 0;
+  if (stars) price *= FC.quality.priceMul[stars - 1];
+  if (stars === 3) notes.push('clean');
+  if (stars === 1) notes.push('rough');
+  if (extra.father) notes.push('father');
   if (S.night.phase === CONFIG.night.newMoon.phase) {
     price *= CONFIG.night.newMoon.fishPriceMul;
     notes.push('newmoon');
@@ -1177,11 +1352,13 @@ function landFish(S, fish, rng = Math.random) {
     S.buffs.curse--;
     notes.push('curse');
   }
-  if (S.buffs.rare > 0) S.buffs.rare--;
   const c = {
     n: fish.n,
     t: fish.t,
-    w: +(fish.w[0] + q * (fish.w[1] - fish.w[0])).toFixed(2),
+    w: +(extra.father ? fish.w[1] * fatherK : fish.w[0] + q * (fish.w[1] - fish.w[0])).toFixed(2),
+    q: stars,
+    z: extra.zone || null,
+    father: !!extra.father,
     price: Math.max(1, Math.round(price)),
     golden,
     junk: !!fish.junk,
@@ -1189,6 +1366,7 @@ function landFish(S, fish, rng = Math.random) {
   };
   S.net.push(c);
   S.stats.caught++;
+  if (stars === 3) S.stats.clean = (S.stats.clean || 0) + 1;
   if (!c.junk && (!S.stats.best || c.price > S.stats.best.price)) S.stats.best = { n: c.n, w: c.w, price: c.price };
   const { isNew, rewards } = recordCatch(S, c);
   return { fish: c, notes, isNew, rewards };
@@ -1196,10 +1374,16 @@ function landFish(S, fish, rng = Math.random) {
 
 const mergePatterns = p => Object.assign({}, ...[].concat(p).map(k => FC.reel.patterns[k]));
 
-function newReel(fish, rodLv, locationKey = 'zavod', rng = Math.random, fx = NO_FX) {
-  const R = FC.reel, P = mergePatterns(fish.pattern);
+// opts: { zone, snag (roll the snag), father }
+function newReel(fish, rodLv, locationKey = 'zavod', rng = Math.random, fx = NO_FX, opts = {}) {
+  const R = FC.reel, P = mergePatterns(fish.pattern), Z = opts.zone && FC.zones[opts.zone];
+  const snagRoll = Z && Z.snagChance && rng() < Z.snagChance;
   return {
     fish, rodLv, P, fx, loc: CONFIG.locations[locationKey],
+    d: Math.min(1, fish.d + (opts.father ? FC.release.fatherD : 0)),
+    zoneTension: Z ? Z.tensionMul : 1,
+    red: 0, out: 0, grace: 0, tired: 0, tiredDone: fish.d < FC.tired.minD,
+    snagAt: snagRoll ? between(rng, FC.snag.at) : null, snagged: false,
     tension: R.startTension, prog: R.startProgress, surgeT: R.firstSurge, time: 0, zoneC: R.zoneCenter, half: R.zoneHalf.base,
     surged: false, events: [],
     zoneShift: 0, nextShift: null, zoneNext: null,
@@ -1223,6 +1407,7 @@ function runPattern(r, dt, tire, rng) {
     }
     if (r.jumpT <= 0) {
       r.zoneShift = r.nextShift;
+      r.grace = FC.quality.jumpGrace;
       r.nextShift = null;
       r.zoneNext = null;
       r.jumpT = between(rng, P.jumpEvery) / tire;
@@ -1283,37 +1468,81 @@ function runPattern(r, dt, tire, rng) {
 
 // One physics tick of the fight. Returns 'play', 'snap', 'lost' or 'land'.
 function reelStep(r, dt, holding, rng = Math.random) {
-  const R = FC.reel, d = r.fish.d, rod = r.rodLv, P = r.P, L = r.loc, fx = r.fx;
-  r.time += dt;
+  const R = FC.reel, d = r.d, rod = r.rodLv, P = r.P, L = r.loc, fx = r.fx, T = FC.tired;
   r.surged = false;
   r.events.length = 0;
+  if (r.snagged) return 'snag';
+  r.time += dt;
   const tire = 1 - R.fatigue * clampN(r.prog, 0, 1);
-  runPattern(r, dt, tire, rng);
-  r.half = clampN((R.zoneHalf.base + rod * R.zoneHalf.perRod + d * R.zoneHalf.perDifficulty) * L.zoneMul * fx.zoneMul, R.zoneHalf.min, R.zoneHalf.max);
+  // Worn out: a short window with no tricks and a wide zone. Comes once, near the end.
+  if (!r.tiredDone && r.prog >= T.at && !r.diving && !r.ghost) {
+    r.tiredDone = true;
+    r.tired = T.len;
+    r.events.push('tired');
+  }
+  const tiredNow = r.tired > 0;
+  if (tiredNow) {
+    r.tired -= dt;
+    if (r.tired <= 0) { r.tired = 0; r.events.push('tired-end'); }
+  } else runPattern(r, dt, tire, rng);
+  r.half = clampN((R.zoneHalf.base + rod * R.zoneHalf.perRod + d * R.zoneHalf.perDifficulty) * L.zoneMul * fx.zoneMul, R.zoneHalf.min, R.zoneHalf.max) * (tiredNow ? T.zoneMul : 1);
   const speed = (R.zoneSpeed.base + d * R.zoneSpeed.perDifficulty) * (P.zoneSpeedMul ?? 1);
   r.zoneC = clampN(R.zoneCenter + r.zoneShift + Math.sin(r.time * speed) * R.zoneSwing * d * (P.zoneSwingMul ?? 1) * tire, r.half, 1 - r.half);
   const lo = r.zoneC - r.half, hi = r.zoneC + r.half;
-  r.tension += (holding ? (R.tensionUp.base + d * R.tensionUp.perDifficulty * tire) * L.tensionMul * fx.tensionMul : -R.tensionDown) * dt;
+  r.tension += (holding ? (R.tensionUp.base + d * R.tensionUp.perDifficulty * tire) * L.tensionMul * fx.tensionMul * r.zoneTension : -R.tensionDown) * dt;
   // Under the snag a held line can only break.
   if (r.diving > 0 && holding) r.tension += P.diveUp * tire * dt;
   r.surgeT -= dt;
   if (r.surgeT <= 0) {
     r.surgeT = rangeRnd(rng, R.surgeInterval[0], R.surgeInterval[1]) * (R.surgeIntervalScale.base + d * R.surgeIntervalScale.perDifficulty) * (P.surgeEvery ?? 1);
-    if (P.surge > 0) {
+    if (P.surge > 0 && !tiredNow) {
       r.tension += rangeRnd(rng, R.surgeForce[0], R.surgeForce[1]) * d * (1 - rod * R.surgeRodResist) * P.surge * L.surgeMul * fx.surgeMul * tire;
       r.surged = true;
     }
   }
   r.tension = clampN(r.tension, 0, R.tensionCap);
-  const rate = (R.progress.base + rod * R.progress.perRod) * (R.progress.fishBase + d * R.progress.fishPerDifficulty) * fx.progressMul;
+  const rate = (R.progress.base + rod * R.progress.perRod) * (R.progress.fishBase + d * R.progress.fishPerDifficulty) * fx.progressMul * (r.fish.prog ?? 1) * (tiredNow ? T.progMul : 1);
+  const inZone = r.tension >= lo && r.tension <= hi;
   if (r.diving > 0) r.prog -= (P.diveProgLoss ?? 0) * dt;
-  else if (r.tension >= lo && r.tension <= hi) r.prog += rate * dt * (holding ? 1 : R.progressWhenSlack);
+  else if (inZone) r.prog += rate * dt * (holding ? 1 : R.progressWhenSlack);
   else if (r.tension < lo) r.prog -= R.progressLossBelowZone * dt;
   else r.prog += rate * R.progressWhenTight * dt;
+  // what the stars are made of
+  if (r.tension >= FC.quality.redAt) r.red += dt;
+  if (r.grace > 0) r.grace -= dt;
+  const excused = r.diving > 0 || r.diveWarn || r.jerkWarn || r.ghost > 0 || r.grace > 0 || tiredNow;
+  if (!inZone && !excused) r.out += dt;
   if (r.tension >= R.snapAt * fx.snapMul) return 'snap';
+  if (r.snagAt !== null && r.prog >= r.snagAt && r.prog < 1) {
+    r.snagAt = null;
+    r.snagged = true;
+    r.events.push('snag');
+    return 'snag';
+  }
   if (r.prog <= 0) return 'lost';
   if (r.prog >= 1) return 'land';
   return 'play';
+}
+
+// The line is round a snag. Pull: a chance to tear it free with a tight line, or it snaps. Cut: the bait stays on the snag.
+function resolveSnag(r, pull, rng = Math.random) {
+  if (!r.snagged) return 'play';
+  if (!pull) return 'cut';
+  if (rng() >= snagPullChance(r.rodLv)) return 'snap';
+  r.snagged = false;
+  r.tension = Math.max(r.tension, FC.snag.pullTension);
+  r.events.push('snag-free');
+  return 'play';
+}
+const snagPullChance = rodLv => Math.min(0.95, FC.snag.pull + FC.snag.perRod * rodLv);
+
+// 1–3 stars for how cleanly the fish was led. Junk earns none.
+function reelStars(r) {
+  if (r.fish.junk) return 0;
+  const Q = FC.quality, out = r.out / Math.max(r.time, 1e-6);
+  if (r.red <= Q.three.red && out <= Q.three.out) return 3;
+  if (r.red <= Q.two.red && out <= Q.two.out) return 2;
+  return 1;
 }
 
 /* core/mood.js */
@@ -1683,7 +1912,7 @@ function acceptDeal(S) {
   if (!canAcceptDeal(S)) return null;
   const cost = dealCost(S);
   S.coins -= cost;
-  S.buffs.rare += SC.deal.moonBaitFish;
+  S.bait.have.moon = (S.bait.have.moon || 0) + SC.deal.moonBaitFish;
   S.deal = false;
   feedMood(S, cost);
   return { cost };
@@ -1715,7 +1944,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -1724,7 +1953,10 @@ const defaultState = () => ({
   v: SCHEMA_VERSION,
   coins: CONFIG.startCoins,
   net: [],
-  lv: { rod: 0, bait: 0, net: 0, lamp: 0 },
+  lv: { rod: 0, net: 0, lamp: 0 },
+  bait: { on: 'bread', have: { worm: 0, moth: 0, live: 0, moon: 0 } },
+  father: null,
+  aim: null, // last chosen spot on the water, { u, v }
   jackpot: CONFIG.slot.jackpot.base,
   heatPool: 0,
   pending: 0,
@@ -1746,8 +1978,8 @@ const defaultState = () => ({
   ordersNight: 0,
   ng: 0,
   ended: false,
-  buffs: { golden: 0, curse: 0, rare: 0 },
-  stats: { caught: 0, best: null, earned: 0, snapped: 0 },
+  buffs: { golden: 0, curse: 0 },
+  stats: { caught: 0, best: null, earned: 0, snapped: 0, released: 0, clean: 0 },
 });
 
 const MIGRATIONS = {
@@ -1791,6 +2023,19 @@ const MIGRATIONS = {
     if (d.stats && d.stats.best) see(d.stats.best.n, d.stats.best.w);
     return { ...d, v: 5, bestiary, rewarded: [], market: {}, orders: [], ordersNight: 0, ng: 0, ended: false };
   },
+  // v6: bait is spent now. Every bought level of the old bait upgrade comes back as packs, with some to spare;
+  // the moon bait from a deal moves into the bag.
+  5: d => {
+    const { bait: baitLv = 0, ...lv } = d.lv || {};
+    const { rare = 0, ...buffs } = d.buffs || {};
+    const have = { worm: 0, moth: 0, live: 0, moon: 0 };
+    for (let i = 0; i < Math.min(baitLv, CONFIG.fishing.baitRefund.length); i++) {
+      for (const [k, n] of Object.entries(CONFIG.fishing.baitRefund[i])) have[k] += n;
+    }
+    have.moon += rare;
+    const best = ['worm', 'moth', 'live'].find(k => have[k] > 0) || 'bread';
+    return { ...d, v: 6, lv, buffs, bait: { on: best, have }, father: null, aim: null };
+  },
 };
 
 // Everything a new run starts from, plus what a player carries over: artifacts, the bestiary and the record.
@@ -1812,6 +2057,7 @@ function migrate(data) {
     ...b,
     ...d,
     lv: { ...b.lv, ...(d.lv || {}) },
+    bait: { on: (d.bait && d.bait.on) || 'bread', have: { ...b.bait.have, ...((d.bait && d.bait.have) || {}) } },
     buffs: { ...b.buffs, ...(d.buffs || {}) },
     stats: { ...b.stats, ...(d.stats || {}) },
     night: { ...b.night, ...(d.night || {}) },
@@ -2953,6 +3199,74 @@ defineSprites({
     'hh..............',
     '................',
   ]] },
+  bait_bread: { fps: 1, frames: [[
+    '........',
+    '..hLLh..',
+    '.hLggLh.',
+    'hLgbbgLh',
+    'hgbbbbgh',
+    'hgbbbbgh',
+    '.hggggh.',
+    '..hhhh..',
+  ]] },
+  bait_worm: { fps: 1, frames: [[
+    '........',
+    '...RrrR.',
+    '..RrLLrR',
+    '..rR..R.',
+    '...RrrR.',
+    '.R...LrR',
+    '.RrrrrR.',
+    '........',
+  ]] },
+  bait_moth: { fps: 1, frames: [[
+    '........',
+    '.r..r.R.',
+    '.R.rr.r.',
+    '..rL.rr.',
+    '.rr.rL..',
+    '.r.rR.r.',
+    'R..r..R.',
+    '........',
+  ]] },
+  bait_live: { fps: 1, frames: [[
+    '........',
+    '........',
+    '..sss..s',
+    '.slllsss',
+    'slvMlls.',
+    '.slllsss',
+    '..sss..s',
+    '........',
+  ]] },
+  bait_moon: { fps: 1, frames: [[
+    '........',
+    '.X....X.',
+    'XMX..XMX',
+    'XMMXXMMX',
+    '.XMggMX.',
+    '..XggX..',
+    '.X.gg.X.',
+    '........',
+  ]] },
+  star_on: { fps: 1, frames: [[
+    '...g...',
+    '..ggg..',
+    'ggggggg',
+    '.gMggg.',
+    '..ggg..',
+    '.gg.gg.',
+    'gg...gg',
+  ]] },
+  star_off: { fps: 1, frames: [[
+    '...d...',
+    '..dnd..',
+    'ddnnndd',
+    '.dnnnd.',
+    '..dnd..',
+    '.dd.dd.',
+    'dd...dd',
+  ]] },
   icon_bait: { fps: 1, frames: [[
     '................',
     '......ooo.......',
@@ -3175,9 +3489,7 @@ const LOCATION_ART = {
     water: [['shimmer', 'waterL'], ['waterL', 'waterM'], ['waterM', 'reedD'], ['reedD', 'night']],
     forest: ['tree_willow', 'tree_willow', 'tree_a'],
     props: [
-      { name: 'snag', x: 0.06, y: 0.42 },
-      { name: 'snag', x: 0.78, y: 0.66 },
-      { name: 'stone', x: 0.2, y: 0.74 },
+      { name: 'stone', x: 0.3, y: 0.74 },
     ],
     reeds: true,
     fog: 'fog',
@@ -3222,10 +3534,14 @@ const mix = (a, b, k) => a + (b - a) * k;
 function pondGeometry(w, h) {
   const horizon = Math.floor(h * 0.38);
   const bridgeY = h - BRIDGE_H;
-  const fisherX = Math.floor(w * 0.6) - 12;
+  // the fisher stands to the right, so most of the water lies in front of him
+  const fisherX = Math.floor(w * 0.78) - 12;
   const fisherY = bridgeY - 26;
   return {
     w, h, horizon, bridgeY, fisherX, fisherY,
+    // where the float comes home, and the water a cast can reach
+    home: { x: fisherX - 2, y: bridgeY - 3 },
+    reach: { x0: 2, x1: fisherX + 6, y0: horizon + 3, y1: bridgeY - 4 },
     // a rod of human length: its tip stays above the float, the line is what crosses to the water
     tip: { x: Math.floor(w * 0.25), y: Math.max(6, horizon + Math.floor((bridgeY - horizon) * 0.45) - 20) },
     target: { x: Math.floor(w * 0.22), y: horizon + Math.floor((bridgeY - horizon) * 0.45) },
@@ -3234,9 +3550,27 @@ function pondGeometry(w, h) {
   };
 }
 
+// Water fractions <-> scene pixels. v runs from the far bank (0) to the bridge (1).
+const waterPoint = (geo, u, v) => ({ x: Math.round(u * geo.w), y: Math.round(geo.horizon + v * (geo.bridgeY - geo.horizon)) });
+const waterUV = (geo, x, y) => ({ u: x / geo.w, v: (y - geo.horizon) / (geo.bridgeY - geo.horizon) });
+const clampToReach = (geo, x, y) => ({ x: Math.round(clampN(x, geo.reach.x0, geo.reach.x1)), y: Math.round(clampN(y, geo.reach.y0, geo.reach.y1)) });
+// The rod tip hangs a little right of and well above wherever the float is meant to go.
+const rodTip = (geo, spot) => ({ x: clampN(spot.x + 3, 4, geo.w - 4), y: Math.max(6, spot.y - 20) });
+
+// The cast: power 0..1 against the power this aim needs. Overshoot flies past the aim.
+function castNeed(geo, aim) {
+  const o = geo.home, far = Math.hypot(o.x - geo.reach.x0, o.y - geo.reach.y0);
+  return clampN(Math.hypot(aim.x - o.x, aim.y - o.y) / far, CONFIG.fishing.cast.minNeed, 1);
+}
+function castLanding(geo, aim, power) {
+  const o = geo.home, k = power / castNeed(geo, aim);
+  return clampToReach(geo, o.x + (aim.x - o.x) * k, o.y + (aim.y - o.y) * k);
+}
+const castTolerance = geo => CONFIG.fishing.signals.hitRadius / Math.hypot(geo.home.x - geo.reach.x0, geo.home.y - geo.reach.y0);
+
 // Where the float is, from the view alone. show says if it sits on the water; null means it hangs on the rod.
 function floatPosition(view, geo, t) {
-  const { target, tip } = geo;
+  const target = view.spot || geo.target, tip = rodTip(geo, target);
   switch (view.state) {
     case 'cast': {
       const k = view.castT;
@@ -3250,7 +3584,7 @@ function floatPosition(view, geo, t) {
     case 'bite':
       return { x: target.x, y: target.y, flying: false };
     case 'reel': {
-      const home = { x: geo.fisherX - 2, y: geo.bridgeY - 3 };
+      const home = geo.home;
       return {
         x: mix(target.x, home.x, view.prog * 0.75) + Math.sin(t * 9) * 3 * view.tension,
         y: mix(target.y, home.y, view.prog * 0.75) + Math.cos(t * 7),
@@ -3342,7 +3676,12 @@ class PondScene {
   emit(type, data) {
     const f = this.lastFloat;
     switch (type) {
-      case 'cast-land': this.geo && this.addRing(this.geo.target.x + 1, this.geo.target.y + 6, 12); this.splash(this.geo.target.x + 1, this.geo.target.y + 5, 6); break;
+      case 'cast-land': { const p = data || this.geo.target; this.addRing(p.x + 1, p.y + 6, 12); this.splash(p.x + 1, p.y + 5, 6); break; }
+      case 'signal': this.addRing(data.x, data.y, data.type === 'splash' ? 9 : 5); if (data.type === 'splash') this.splash(data.x, data.y - 1, 5); break;
+      case 'snag': this.shake = 0.15; this.shiver = 0.4; this.addRing(f.x + 1, f.y + 5, 6); break;
+      case 'snag-free': this.shiver = 0.3; this.addRing(f.x + 1, f.y + 5, 12); this.splash(f.x + 1, f.y + 3, 6); break;
+      case 'tired': this.addRing(f.x + 1, f.y + 5, 10); break;
+      case 'release': { const g = this.geo, x = g.home.x - 4, y = g.home.y - 1; this.addRing(x, y + 2, 10); this.splash(x, y, 4); break; }
       case 'nibble': this.twitch = 0.22; this.addRing(f.x + 1, f.y + 6, 5); break;
       case 'bite': this.freeze = HIT_STOP; this.twitch = 0; this.addRing(f.x + 1, f.y + 6, 14); this.splash(f.x + 1, f.y + 4, 4); break;
       case 'early': this.addRing(f.x + 1, f.y + 6, 10); break;
@@ -3413,6 +3752,7 @@ class PondScene {
 
   fisherFrame(view) {
     const t = this.t;
+    if (view.state === 'aim') return { name: 'fisher_cast', frame: 0 };
     if (view.state === 'cast') return { name: 'fisher_cast', frame: view.castT < 0.35 ? 0 : 1 };
     if (this.strike > 0) return { name: 'fisher_strike', frame: 0 };
     if (view.state === 'reel') return { name: 'fisher_pull', frame: frameAt(SPRITES.fisher_pull, t) };
@@ -3467,6 +3807,12 @@ class PondScene {
       const px = Math.floor(w * p.x);
       S.drawSprite(SPRITES[p.name], 0, px, horizon + Math.floor(waterH * p.y) + (Math.sin(t + px) > 0.6 ? 1 : 0));
     }
+    // snags come from the rules, so what the eye sees is where the hook catches
+    const snag = SPRITES.snag;
+    for (const c of CONFIG.locations[view.location || 'zavod'].snags || []) {
+      const p = waterPoint(g, c.x, c.y);
+      S.drawSprite(snag, 0, p.x - (snag.w >> 1), p.y - (snag.h >> 1));
+    }
     if (art.wheel) {
       const wheel = SPRITES.mill_wheel;
       S.drawSprite(wheel, frameAt(wheel, t), w - wheel.w + 6, horizon - 20);
@@ -3475,6 +3821,59 @@ class PondScene {
       const k = r.r / r.max;
       S.ellipse(r.x, r.y, r.r, r.r / 3, k < 0.35 ? 'moon' : k < 0.7 ? 'shimmer' : 'waterL');
     }
+  }
+
+  // Signals on the water: what lives under each one shows on the surface.
+  drawSignals(view) {
+    const S = this.surf, g = this.geo;
+    for (const s of view.signals || []) {
+      const { x, y } = waterPoint(g, s.u, s.v), age = s.t, left = s.life - s.t;
+      if (left < 1 && Math.floor(left * 8) % 2) continue; // blinks out
+      switch (s.type) {
+        case 'rings': {
+          for (let i = 0; i < 2; i++) {
+            const r = ((age * 5 + i * 4) % 8) + 1;
+            S.ellipse(x, y, r, Math.max(1, r / 3), r < 4 ? 'shimmer' : 'waterL');
+          }
+          break;
+        }
+        case 'bubbles': {
+          for (let i = 0; i < 3; i++) {
+            const k = (age * 1.3 + i / 3) % 1;
+            S.px(x + (i - 1) * 2 + (i === 1 ? 0 : Math.round(Math.sin(age * 3 + i))), y - Math.round(k * 3), k < 0.75 ? 'moon' : 'shimmer');
+          }
+          S.rect(x - 2, y + 1, 5, 1, 'waterL');
+          break;
+        }
+        case 'splash': {
+          // a fin cutting the water, and its wake
+          const dx = Math.round(Math.sin(age * 2 + s.u * 9) * 3);
+          S.rect(x + dx, y - 2, 1, 2, 'bone');
+          S.rect(x + dx + 1, y - 1, 1, 1, 'moonS');
+          S.line(x + dx - 1, y, x + dx - 5, y + 1, 'shimmer');
+          S.line(x + dx + 2, y, x + dx + 6, y + 1, 'shimmer');
+          break;
+        }
+        case 'moon': {
+          const on = Math.sin(age * 7 + s.u * 13) > -0.2;
+          S.px(x, y, on ? 'moon' : 'gold');
+          if (on) { S.px(x - 1, y, 'moonS'); S.px(x + 1, y, 'moonS'); S.px(x, y - 1, 'moonS'); S.px(x, y + 1, 'moonS'); }
+          if (Math.sin(age * 3) > 0.3) { S.px(x - 3, y - 1, 'gold'); S.px(x + 3, y + 1, 'gold'); }
+          break;
+        }
+        default: break;
+      }
+    }
+  }
+
+  // Where the next cast is meant to go: four blinking corners.
+  drawAim(view) {
+    if (!view.aim || (view.state !== 'idle' && view.state !== 'aim')) return;
+    const S = this.surf, { x, y } = view.aim, on = view.state === 'aim' || Math.floor(this.t * 2.5) % 3 !== 2;
+    if (!on) return;
+    const c = view.state === 'aim' ? 'gold' : 'moonS';
+    for (const [dx, dy] of [[-3, -1], [3, -1], [-3, 1], [3, 1]]) S.px(x + dx, y + dy, c);
+    S.px(x - 2, y - 1, c); S.px(x + 2, y - 1, c); S.px(x - 2, y + 1, c); S.px(x + 2, y + 1, c);
   }
 
   drawReeds() {
@@ -3514,9 +3913,11 @@ class PondScene {
     const fl = floatPosition(view, g, t);
     const tension = view.state === 'reel' ? view.tension : 0;
 
-    let tipX = g.tip.x, tipY = g.tip.y;
-    if (view.state === 'cast') {
-      const back = Math.max(0, 1 - view.castT / 0.35);
+    const tip0 = rodTip(g, view.spot || g.target);
+    let tipX = tip0.x, tipY = tip0.y;
+    if (view.state === 'cast' || view.state === 'aim') {
+      // winding up: the rod goes back further the harder the throw
+      const back = view.state === 'aim' ? 0.6 + 0.4 * (view.power || 0) : Math.max(0, 1 - view.castT / 0.35);
       tipX = mix(tipX, hx + 14, back);
       tipY = mix(tipY, hy - 44, back);
     } else if (this.strike > 0) {
@@ -3549,7 +3950,7 @@ class PondScene {
       // line hangs from the tip, float dangles
       S.line(tipX, tipY, tipX, tipY + 10, 'fog');
       S.drawSprite(SPRITES.float, 0, tipX - 1, tipY + 10);
-      this.lastFloat = { x: g.target.x, y: g.target.y };
+      this.lastFloat = { ...(view.spot || g.target) };
       if (view.state === 'landing') this.lastFloat = this.jump ? { x: this.jump.x, y: this.jump.y } : this.lastFloat;
       return;
     }
@@ -3590,7 +3991,7 @@ class PondScene {
     }
   }
 
-  // view: { state, castT, tension, prog, lampLv, moonPhase, location, ghost }
+  // view: { state, castT, tension, prog, lampLv, moonPhase, location, ghost, spot, aim, signals }
   draw(view) {
     const S = this.surf, g = this.geo, place = view.location || 'zavod';
     if (this.paintedFor !== place) this.paintBackground(place);
@@ -3598,6 +3999,8 @@ class PondScene {
     this.drawSky();
     this.drawMoon(view);
     this.drawWater(view);
+    this.drawSignals(view);
+    this.drawAim(view);
     this.drawReeds();
     this.drawLight(view);
     this.drawFlies(view);
@@ -4976,7 +5379,8 @@ function createAmbience(eng) {
 // The game's own sounds, retuned to the score: only D, E, F, A and C, which both the pond's
 // D minor and the Vodianyk's Ukrainian Dorian contain. Most of them push the music down for a moment.
 
-const SFX_NAMES = ['plop', 'nibble', 'bite', 'catch', 'bad', 'tick', 'stop', 'win', 'coin', 'jerk', 'warn', 'dive', 'ghost', 'snap', 'night'];
+const SFX_NAMES = ['plop', 'nibble', 'bite', 'catch', 'bad', 'tick', 'stop', 'win', 'coin', 'jerk', 'warn', 'dive', 'ghost', 'snap', 'night',
+  'signal', 'splash', 'shimmer', 'snag', 'tired', 'clean', 'release', 'father', 'aim'];
 
 const SN = { D2: 38, D3: 50, D4: 62, E3: 52, F4: 65, A4: 69, D5: 74, E5: 76, F5: 77, A5: 81, D6: 86 };
 
@@ -5004,6 +5408,16 @@ function createSfx(eng, music) {
     ghost: () => flute(eng, { bus: 'sfx', midi: SN.E5, t: at(), dur: 0.5, gain: v(0.04) }),
     snap: () => { duck(); shaker(eng, { bus: 'sfx', t: at(), gain: v(0.12) }); str(SN.D2, 0.03, 0.16, 0.8); str(SN.E3 - 12, 0.03, 0.1, 0.6); },
     night: () => { duck(); [SN.D4, SN.F4, SN.A4].forEach((m, i) => str(m, i * 0.14, 0.1)); box(SN.D5, 0.45, 0.05, 1); },
+    // the water speaks: quiet enough to sit under the music
+    signal: () => bubble(eng, { bus: 'sfx', t: at(), from: 300, to: 700, dur: 0.08, gain: v(0.035), pan: -0.3, wet: 0.5 }),
+    splash: () => { bubble(eng, { bus: 'sfx', t: at(), from: 900, to: 200, dur: 0.1, gain: v(0.07), pan: -0.3, wet: 0.4 }); shaker(eng, { bus: 'sfx', t: at(0.02), gain: v(0.04) }); },
+    shimmer: () => { box(SN.D6, 0, 0.03, 0.6, 0.7); box(SN.A5, 0.12, 0.025, 0.6, 0.7); },
+    aim: () => box(SN.D5, 0, 0.02, 0.05, 0),
+    snag: () => { duck(); str(SN.D2, 0, 0.16, 0.5); str(SN.D2 + 1, 0.06, 0.12, 0.6); kick(eng, { bus: 'sfx', t: at(0.02), gain: v(0.15) }); },
+    tired: () => { str(SN.A4, 0, 0.08, 0.3); str(SN.D5, 0.07, 0.08, 0.4); },
+    clean: () => { duck(); [SN.D5, SN.F5, SN.A5, SN.D6].forEach((m, i) => box(m, 0.25 + i * 0.06, 0.06, 0.4)); },
+    release: () => { bubble(eng, { bus: 'sfx', t: at(), from: 600, to: 150, dur: 0.18, gain: v(0.1), wet: 0.4 }); str(SN.D4, 0.15, 0.06, 0.6); },
+    father: () => flute(eng, { bus: 'sfx', midi: SN.D4, t: at(0.3), dur: 0.9, gain: v(0.05) }),
   };
   const out = {};
   for (const k of SFX_NAMES) out[k] = () => { if (live()) sounds[k](); };
@@ -5134,7 +5548,8 @@ function say(t,cls='',ms=2600){const el=$('#msg');el.className='msg pbubble '+cl
 /* ---------- tabs ---------- */
 let tab='pond';
 function showTab(t){
-  if(t!=='pond'&&['cast','waiting','bite','reel'].includes(F.state)){F.state='idle';F.holding=false;$('#meter').hidden=true;say('Вудку змотано')}
+  // leaving the bridge winds the rod in; a fight that never ended costs no bait
+  if(t!=='pond'&&FISHING_BUSY.includes(F.state)){F.state='idle';F.holding=false;F.reel=null;F.father=false;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;say('Вудку змотано')}
   tab=t;
   document.querySelectorAll('.ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('#v-pond').hidden=t!=='pond';$('#v-market').hidden=t!=='market';$('#v-slot').hidden=t!=='slot';
@@ -5177,7 +5592,8 @@ function spriteDataUrl(sprite,silhouette=false){
 function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
-  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp'};
+  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off'};
+  for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYMBOL_SPRITE)names['sym-'+SYMBOL_SPRITE[k]]=SYMBOL_SPRITE[k];
   CONFIG.artifacts.forEach((a,i)=>{names['art-'+a.id]=`icon_artifact_${String(i+1).padStart(2,'0')}`});
@@ -5203,13 +5619,14 @@ function renderHud(){
   const b=[];
   if(S.buffs.golden>0)b.push(`<span class="pchip golden">Луска ×${S.buffs.golden}</span>`);
   if(S.buffs.curse>0)b.push(`<span class="pchip curse">Прокляття ×${S.buffs.curse}</span>`);
-  if(S.buffs.rare>0)b.push(`<span class="pchip rare">Наживка ×${S.buffs.rare}</span>`);
+  if(S.father)b.push(`<span class="pchip rare">Батько поруч${S.father.loc===S.location?'':` · ${CONFIG.locations[S.father.loc].name}`}</span>`);
   if(S.loan)b.push(`<span class="pchip curse">Борг ${fmt(S.loan.owe)} · ${S.loan.casts}</span>`);
   const chips=b.join('');
   if(chips!==hud.chips){hud.chips=chips;$('#buffs').innerHTML=chips}
   $('#nightinfo').textContent=`Ніч ${S.night.n} · ${phaseName(S)} · ще ${castsLeftTonight(S)}`;
   const mb=$('#mbadge');
   if(S.net.length){mb.hidden=false;mb.textContent=S.net.length;mb.classList.toggle('warn',S.net.length>=cap)}else mb.hidden=true;
+  renderPondSell();
 }
 
 // Coins fly from a page element to the counter, on whole game pixels; the counter waits for them.
@@ -5306,11 +5723,14 @@ new ResizeObserver(resize).observe($('#scene'));
 
 /* ui/card.js */
 /* ---------- catch card ---------- */
-const CARD_CHROME_H=230; // banner, name, numbers, note and button around the fish
+const CARD_CHROME_H=260; // banner, stars, name, numbers, note and buttons around the fish
 const CARD_NOTES={
   golden:`<span style="color:var(--gold)">Золота луска: ціна ×${CONFIG.fishing.goldenMul}</span>`,
   curse:'<span style="color:var(--red)">Прокляття: ціна вдвічі менша</span>',
-  newmoon:'<span style="color:var(--fog)">Новий місяць: риба дешевша</span>'
+  newmoon:'<span style="color:var(--fog)">Новий місяць: риба дешевша</span>',
+  clean:`<span style="color:var(--gold)">Чиста виводка! Ціна ×${String(CONFIG.fishing.quality.priceMul[2]).replace(".",",")}</span>`,
+  rough:`<span style="color:var(--fog)">Пошарпана виводка: ціна ×${String(CONFIG.fishing.quality.priceMul[0]).replace(".",",")}</span>`,
+  father:'<span style="color:var(--magicL)">Батько! Трофейний розмір</span>'
 };
 const cardArt={fish:null,surf:null,ctx:$('#ccv').getContext('2d')};
 
@@ -5322,6 +5742,7 @@ function fillCard(c,notes,isNew){
   $('#cw').textContent=`${c.w.toFixed(2).replace('.',',')} кг`;
   $('#cp').textContent=`${c.price} мон.`;
   $('#cnote').innerHTML=notes.map(n=>CARD_NOTES[n]).join('<br>');
+  $('#cstars').innerHTML=c.q?[1,2,3].map(i=>`<i class="picon ${i<=c.q?'ic-star-on':'ic-star-off'}"></i>`).join(''):'';
   $('#cstamp').hidden=!isNew;
   sizeCardArt(c);
 }
@@ -5343,7 +5764,10 @@ function cardTick(seconds){
 
 /* ui/fishing.js */
 /* ---------- fishing ---------- */
-const F={state:'idle',t:0,wait:0,biteT:0,win:0,fish:null,reel:null,holding:false,nibT:0};
+const FCU=CONFIG.fishing,SIG=FCU.signals;
+const F={state:'idle',t:0,wait:0,biteT:0,win:0,fish:null,reel:null,holding:false,nibT:0,
+  chargeT:0,power:0,aim:null,spot:null,zone:null,signal:null,bait:'bread',father:false,castNote:'',cardIndex:-1,inMark:false};
+const FISHING_BUSY=['aim','cast','waiting','bite','reel','snag'];
 let cardOpen=false,lastActKey='';
 function renderLocations(){
   const box=$('#locs'),busy=F.state!=='idle'||cardOpen;
@@ -5360,13 +5784,89 @@ $('#locs').addEventListener('click',e=>{
   const k=b.dataset.loc;
   if(isUnlocked(S,k)){
     if(S.location===k)return;
-    goToLocation(S,k);locArm.key=null;save();say(`${CONFIG.locations[k].name}`,'',1400);SFX.plop();renderLocations();return;
+    goToLocation(S,k);locArm.key=null;signals.list=[];save();say(`${CONFIG.locations[k].name}`,'',1400);SFX.plop();renderLocations();renderHud();updateAct(true);return;
   }
   if(!canBuyLocation(S,k)){toast(`Треба ${fmt(CONFIG.locations[k].cost)} монет`);SFX.bad();return}
   if(locArm.key!==k){locArm.key=k;locArm.t=Date.now();renderLocations();setTimeout(()=>{if(Date.now()-locArm.t>=2900){locArm.key=null;renderLocations()}},3000);return}
-  buyLocation(S,k);locArm.key=null;save();renderHud();renderLocations();
+  buyLocation(S,k);locArm.key=null;signals.list=[];save();renderHud();renderLocations();updateAct(true);
   toast(`Відкрито: ${CONFIG.locations[k].name}`);SFX.win();
 });
+
+/* ---------- where the float goes ---------- */
+// The aim is kept in water fractions in the save and turned into scene pixels here.
+function aimPx(){
+  if(!scene.geo)return null;
+  const a=S.aim||{u:.22,v:.45},p=waterPoint(scene.geo,a.u,a.v);
+  return clampToReach(scene.geo,p.x,p.y);
+}
+function zoneOfPx(p){const {u,v}=waterUV(scene.geo,p.x,p.y);return zoneAt(S.location,u,v)}
+function scenePoint(e){
+  const r=cv.getBoundingClientRect();if(!r.width)return null;
+  return {x:Math.floor((e.clientX-r.left)/pxUnit),y:Math.floor((e.clientY-r.top)/pxUnit)};
+}
+const isWater=p=>!!p&&!!scene.geo&&p.y>scene.geo.horizon&&p.y<scene.geo.bridgeY;
+
+/* ---------- signals on the water: they live only on screen, a reload starts a fresh night breeze ---------- */
+const signals={list:[],next:1.2};
+const SIGNAL_SFX={rings:'signal',bubbles:'signal',splash:'splash',moon:'shimmer'};
+function spawnSignal(){
+  const g=scene.geo;if(!g)return;
+  const types=signalTypesFor(S.location,S.night.phase,S.bait.on);
+  if(!Object.keys(types).length)return;
+  const type=pickWeighted(types),T=SIG.types[type],zone=pickWeighted(T.zones);
+  for(let i=0;i<40;i++){
+    const x=Math.round(rnd(g.reach.x0+4,g.reach.x1-3)),y=Math.round(rnd(g.reach.y0+2,g.reach.y1-2));
+    const {u,v}=waterUV(g,x,y);
+    if(zoneAt(S.location,u,v)!==zone)continue;
+    if(signals.list.some(o=>{const p=waterPoint(g,o.u,o.v);return Math.hypot(p.x-x,p.y-y)<SIG.hitRadius*2.5}))continue;
+    signals.list.push({type,u,v,t:0,life:rnd(T.life[0],T.life[1])});
+    scene.emit('signal',{x,y,type});SFX[SIGNAL_SFX[type]]();
+    return;
+  }
+}
+function signalsTick(dt){
+  signals.next-=dt;
+  if(signals.next<=0){signals.next=rnd(SIG.every[0],SIG.every[1]);if(signals.list.length<SIG.max)spawnSignal()}
+  for(const s of signals.list)s.t+=dt;
+  signals.list=signals.list.filter(s=>s.t<s.life);
+}
+
+/* ---------- bait ---------- */
+function renderBait(){
+  const k=S.bait.on,n=baitCount(S,k),b=$('#baitbtn');
+  $('#baiticon').className='picon ic-bait-'+k;
+  $('#baitn').textContent=n===Infinity?FCU.baits[k].short:String(n);
+  b.setAttribute('aria-label',`Наживка: ${FCU.baits[k].name}`);
+  b.disabled=FISHING_BUSY.includes(F.state)||baitOwned(S).length<2;
+}
+$('#baitbtn').addEventListener('click',()=>{
+  if(FISHING_BUSY.includes(F.state))return;
+  if(baitOwned(S).length<2){toast('Іншої наживки нема. Купи на Ринку');return}
+  const k=nextBait(S);save();renderBait();SFX.tick();
+  say(`${FCU.baits[k].name}${k==='bread'?'':` · ${baitCount(S,k)}`}`,'',1100);
+  updateAct(true);
+});
+// The bait on the hook is gone once the fight is over, whatever its end.
+function useBait(){
+  const k=F.bait;
+  if(spendBait(S,k))toast(`${FCU.baits[k].name}: усе. Далі на хліб`);
+  renderBait();
+}
+
+/* ---------- sell everything from the bridge ---------- */
+function renderPondSell(){
+  const b=$('#pondsell'),n=S.net.length;
+  b.disabled=!n||cardOpen;
+  $('#pondsellv').textContent=n?fmt(sellAllValue(S)):'0';
+}
+function sellAllFrom(el){
+  if(!S.net.length)return;
+  flyCoins(el,S.net.length);
+  const r=sellAll(S);
+  toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);
+  save();renderHud();updateAct(true);
+}
+$('#pondsell').addEventListener('click',e=>{e.stopPropagation();if(cardOpen)return;sellAllFrom($('#pondsell'))});
 
 function updateAct(force){
   const a=$('#act'),h=$('#hint');
@@ -5374,28 +5874,32 @@ function updateAct(force){
   if(cardOpen){key='card';label='Гарний улов';cls='wait';hint='Торкнись «У садок» на картці'}
   else switch(F.state){
     case 'idle':
-      if(S.net.length>=netCapacity(S)){key='full';label='На ринок';cls='full';hint='Продай улов або постав його у Водяника'}
-      else{key='idle';label='Закинути';hint='Натисни, щоб закинути вудку'}break;
+      if(S.net.length>=netCapacity(S)){key='full';label='Продати все';cls='full';hint='Садок повний. Продай звідси або неси Водяникові'}
+      else{const p=aimPx(),z=p?FCU.zones[zoneOfPx(p)].name:'';key='idle'+z+S.bait.on;label='Закинути';hint=`${z?`Ціль: ${z}. `:''}Утримуй і відпусти на мітці. Торкнись води, щоб цілитись`}break;
+    case 'aim':key='aim';label='Відпусти!';cls='reel is-pressed';hint='Відпусти, коли стрілка на світлій мітці';break;
     case 'cast':case 'waiting':key='wait';label='Чекай…';cls='wait';hint='Коли поплавок пірне, підсікай. Смикнеш раніше, риба втече.';break;
     case 'bite':key='bite';label='ПІДСІКАЙ!';cls='bite';hint='Зараз!';break;
+    case 'snag':key='snag';label='Корч!';cls='wait';hint='Смикнути: шанс вирвати. Різати: рибу й наживку втратиш, леску ні.';break;
     case 'reel':
       if(F.reel&&(F.reel.diveWarn||F.reel.diving>0)){key='dive';label='ВІДПУСТИ!';cls='bite';hint='Риба пішла під корч. Тримати зараз значить порвати леску.';break}
+      if(F.reel&&F.reel.tired>0){key='tired'+F.holding;label='ТЯГНИ!';cls='bite'+(F.holding?' is-pressed':'');hint='Видихлась! Тягни, поки не оговталась';break}
       key='reel'+F.holding;label=F.holding?'Тягну…':'Тримай!';cls='reel'+(F.holding?' is-pressed':'');hint='Тримай: натяг росте. Відпусти: слабне. Стрілка має бути у світлій зоні.';break;
     case 'landing':key='landing';label='Є!';cls='wait';hint='Дивись, що там на гачку';break;
   }
   if(!force&&key===lastActKey)return;
-  if((lastActKey==='idle'||lastActKey==='full'||key==='idle'||key==='full'||key==='card'||lastActKey==='card'))renderLocations();
+  const calm=k=>!k||k.startsWith('idle')||k==='full'||k==='card';
+  if(calm(lastActKey)!==calm(key)||force)renderLocations();
   lastActKey=key;a.textContent=label;a.className='pbtn mainact '+cls;h.textContent=hint;
+  renderBait();renderPondSell();
 }
 
 function press(e){
   if(e){e.preventDefault()}
-  
   if(cardOpen){closeCard();return}
   switch(F.state){
     case 'idle':
-      if(S.net.length>=netCapacity(S)){showTab('market');toast('Садок повний, продай улов');return}
-      F.state='cast';F.t=0;say('');break;
+      if(S.net.length>=netCapacity(S)){sellAllFrom($('#act'));return}
+      startAim();break;
     case 'waiting':
       F.state='idle';scene.emit('early');say('Зарано, риба злякалась','bad');SFX.bad();break;
     case 'bite':hook();F.holding=true;break;
@@ -5403,24 +5907,97 @@ function press(e){
   }
   updateAct();
 }
-function release(){if(F.holding){F.holding=false;updateAct()}}
+function release(){
+  if(F.state==='aim'){throwCast();updateAct();return}
+  if(F.holding){F.holding=false;updateAct()}
+}
 $('#act').addEventListener('pointerdown',press);
-$('#scene').addEventListener('pointerdown',e=>{if(e.target.closest('.pcard'))return;press(e)});
+$('#scene').addEventListener('pointerdown',e=>{
+  if(e.target.closest('.pcard,.psnag'))return;
+  // a touch on the water while the rod is free picks where to cast, and starts the swing at once
+  if(F.state==='idle'&&!cardOpen&&S.net.length<netCapacity(S)){
+    const p=scenePoint(e);
+    if(isWater(p)){const q=clampToReach(scene.geo,p.x,p.y);S.aim=waterUV(scene.geo,q.x,q.y);save();SFX.aim()}
+  }
+  press(e);
+});
 window.addEventListener('pointerup',release);
 window.addEventListener('pointercancel',release);
 document.addEventListener('contextmenu',e=>e.preventDefault());
 $('#cok').addEventListener('click',e=>{e.stopPropagation();closeCard()});
 
+/* ---------- the cast ---------- */
+const powerAt=t=>{const k=(t/FCU.cast.period)%1;return k<.5?k*2:2-k*2};
+function startAim(){
+  if(!scene.geo)return;
+  F.state='aim';F.chargeT=0;F.power=0;F.aim=aimPx();F.inMark=false;
+  powerEls.needle.style.left='0px';powerEls.needle.className='pbar-needle';
+  $('#power').hidden=false;powerEls.width=0;powerEls.last='';
+  say('');
+}
+function throwCast(){
+  const g=scene.geo,aim=F.aim||aimPx();
+  $('#power').hidden=true;
+  F.spot=castLanding(g,aim,F.power);
+  F.zone=zoneOfPx(F.spot);
+  F.bait=S.bait.on;
+  let hit=null,best=SIG.hitRadius;
+  for(const sg of signals.list){const p=waterPoint(g,sg.u,sg.v),d=Math.hypot(p.x-F.spot.x,p.y-F.spot.y);if(d<=best){best=d;hit=sg}}
+  F.signal=hit?hit.type:null;
+  if(hit)signals.list.splice(signals.list.indexOf(hit),1);
+  const miss=F.power-castNeed(g,aim),tol=castTolerance(g);
+  F.castNote=hit?`${SIG.types[hit.type].name}! Влучив`:Math.abs(miss)<=tol?'Точно в ціль':miss<0?'Недокинув':'Перекинув';
+  F.state='cast';F.t=0;
+}
+const powerEls={bar:$('#wbar'),mark:$('#wmark'),needle:$('#wneedle'),width:0,last:''};
+function syncPower(){
+  const m=powerEls,unit=pxUnit,g=scene.geo;
+  if(!m.width)m.width=m.bar.clientWidth;
+  const snap=k=>Math.round(Math.max(0,Math.min(1,k))*m.width/unit)*unit;
+  const need=castNeed(g,F.aim),tol=castTolerance(g);
+  const lo=snap(need-tol),hi=Math.max(lo+unit*2,snap(need+tol)),inMark=Math.abs(F.power-need)<=tol;
+  const key=[lo,hi,snap(F.power),inMark].join();
+  if(inMark&&!F.inMark)SFX.aim();
+  F.inMark=inMark;
+  if(key===m.last)return;
+  m.last=key;
+  m.mark.style.left=lo+'px';m.mark.style.width=(hi-lo)+'px';
+  m.needle.style.left=Math.min(snap(F.power),m.width-unit*2)+'px';m.needle.className='pbar-needle'+(inMark?' in':'');
+}
+
 function hook(){
-  F.state='reel';F.reel=newReel(F.fish,S.lv.rod,S.location,Math.random,artifactFx(S));
+  F.state='reel';F.reel=newReel(F.fish,S.lv.rod,S.location,Math.random,artifactFx(S),{zone:F.zone,father:F.father});
   scene.emit('hook');
   $('#meter').hidden=false;
   meterEls.width=0; // re-measure: the bar has no width while hidden, and the phone may have turned
+  if(F.father){say('Це батько! Тримайся.','gold',2200);SFX.father();return}
   const d=F.fish.d;
   const feel=d<.35?'Легенька':d<.6?'Тягне помітно':d<.8?'Важка риба!':'Щось величезне…';
   say(feel,d>=.8?'gold':'',2000);
 }
-function lose(text,event){F.state='idle';F.holding=false;$('#meter').hidden=true;say(text,'bad');if(event==='snap'){SFX.snap();MUSIC.snap()}else SFX.bad();scene.emit(event);nextNightIfDue();updateAct()}
+function lose(text,event){
+  F.state='idle';F.holding=false;$('#meter').hidden=true;$('#snagbox').hidden=true;
+  if(F.reel){useBait();F.reel=null}
+  F.father=false;save();
+  say(text,'bad');if(event==='snap'){SFX.snap();MUSIC.snap()}else SFX.bad();scene.emit(event);nextNightIfDue();updateAct()
+}
+function enterSnag(){
+  F.state='snag';F.holding=false;
+  $('#snagtxt').textContent=`Зачепилась за корч! Смикнеш — ${Math.round(snagPullChance(S.lv.rod)*100)}% вирвати, інакше обрив.`;
+  $('#snagbox').hidden=false;
+  say('');SFX.snag();scene.emit('snag');updateAct();
+}
+$('#snagpull').addEventListener('click',e=>{
+  e.stopPropagation();if(F.state!=='snag')return;
+  const r=resolveSnag(F.reel,true);$('#snagbox').hidden=true;
+  if(r==='play'){F.state='reel';reelFeedback(F.reel);say('Вирвав! Натяг високий, обережно','gold',1600);SFX.jerk();updateAct()}
+  else{S.stats.snapped++;save();lose('Корч не відпустив. Леска луснула','snap')}
+});
+$('#snagcut').addEventListener('click',e=>{
+  e.stopPropagation();if(F.state!=='snag')return;
+  resolveSnag(F.reel,false);
+  lose('Перерізав. Наживка лишилась корчу, а риба — собі','lost');
+});
 function announceSeizure(r){
   if(!r)return;
   if(r.took==='tackle')toast(`Борг не повернуто. Водяник забрав рівень: ${CONFIG.upgrades[r.key].name}`);
@@ -5438,21 +6015,37 @@ function nextNightIfDue(){
 }
 
 function land(){
-  const {fish:c,notes,isNew,rewards}=landFish(S,F.fish);
+  const stars=reelStars(F.reel);
+  useBait();
+  const {fish:c,notes,isNew,rewards}=landFish(S,F.fish,Math.random,{stars,zone:F.zone,father:F.father});
+  F.cardIndex=S.net.length-1;F.reel=null;F.father=false;
   save();
   for(const r of rewards){toast(`Колекція «${CONFIG.locations[r.key].name}» повна: +${fmt(r.coins)} монет`);SFX.win()}
   F.state='landing';F.holding=false;$('#meter').hidden=true;
   scene.emit('land',{fish:c});SFX.catch();
   setTimeout(SFX.plop,770);
+  if(stars===3)setTimeout(SFX.clean,450);
   setTimeout(()=>{F.state='idle';openCard(c,notes,isNew)},650);
   renderHud();updateAct();
 }
 function openCard(c,notes,isNew){
   cardOpen=true;
   fillCard(c,notes,isNew);
+  $('#crel').hidden=!canRelease(c);
+  $('#cbtns').classList.toggle('one',!canRelease(c));
   $('#catch').hidden=false;updateAct(true);
 }
 function closeCard(){cardOpen=false;$('#catch').hidden=true;nextNightIfDue();updateAct(true)}
+$('#crel').addEventListener('click',e=>{
+  e.stopPropagation();
+  const r=releaseFish(S,F.cardIndex);
+  if(!r)return;
+  save();scene.emit('release');SFX.release();
+  cardOpen=false;$('#catch').hidden=true;
+  if(r.father){say('Пливи, малеча. …А біля корчів щось важко хлюпнуло. Батько прийшов подякувати?','gold',3600);setTimeout(SFX.father,400)}
+  else say('Пливи, малеча. Рости.','',1800);
+  renderHud();nextNightIfDue();updateAct(true);
+});
 
 // The bars move in whole game pixels, like everything else.
 const meterEls={zone:$('#tzone'),needle:$('#tneedle'),fill:$('#pfill'),bar:$('#tbar'),next:$('#tnext'),last:''};
@@ -5462,9 +6055,9 @@ function syncMeter(R){
   const snap=k=>Math.round(Math.max(0,k)*m.width/unit)*unit;
   const lo=R.zoneC-R.half,hi=R.zoneC+R.half;
   const inZone=R.tension>=lo&&R.tension<=hi;
-  const danger=R.tension>.88||R.diving>0||R.diveWarn;
+  const danger=R.tension>FCU.quality.redAt||R.diving>0||R.diveWarn;
   const state=[snap(lo),snap(R.half*2),snap(R.tension),snap(R.prog),danger?' hot':inZone?' in':'',
-    R.ghost>0?' ghost':inZone?' lit':'',R.zoneNext===null?-1:snap(R.zoneNext-R.half)];
+    R.ghost>0?' ghost':R.tired>0?' lit tired':inZone?' lit':'',R.zoneNext===null?-1:snap(R.zoneNext-R.half)];
   const key=state.join();
   if(key===m.last)return; // nothing moved a whole pixel, so the page is left alone
   m.last=key;
@@ -5485,6 +6078,8 @@ const REEL_EVENT={
   jump:()=>{say('Хитрує!','gold',600);SFX.jerk()},
   ghost:()=>{say('Зникла…','gold',800);SFX.ghost()},
   'ghost-end':()=>SFX.nibble(),
+  tired:()=>{say('Видихлась! Тягни!','gold',1200);SFX.tired();updateAct()},
+  'tired-end':()=>updateAct(),
 };
 function reelFeedback(R){
   for(const e of R.events){scene.emit(e);if(REEL_EVENT[e])REEL_EVENT[e]()}
@@ -5493,21 +6088,37 @@ function reelFeedback(R){
 function update(dt){
   const FC=CONFIG.fishing;
   switch(F.state){
+    case 'aim':
+      F.chargeT+=dt;F.power=powerAt(F.chargeT);syncPower();
+      break;
     case 'cast':
       F.t+=dt/FC.castTime;
-      if(F.t>=1){F.t=0;F.state='waiting';F.wait=waitTime(S.lv.lamp,Math.random,artifactFx(S));F.nibT=rnd(FC.nibbleFirstRange[0],FC.nibbleFirstRange[1]);scene.emit('cast-land');SFX.plop();updateAct()}
+      if(F.t>=1){
+        F.t=0;F.state='waiting';
+        F.wait=waitTime(S.lv.lamp,Math.random,artifactFx(S))*FC.zones[F.zone].waitMul*(F.signal?SIG.waitMul:1);
+        F.nibT=rnd(FC.nibbleFirstRange[0],FC.nibbleFirstRange[1]);
+        scene.emit('cast-land',F.spot);SFX.plop();
+        say(`${F.castNote} · ${FC.zones[F.zone].name}`,F.signal?'gold':'',1500);
+        updateAct();
+      }
       break;
     case 'waiting':
       F.t+=dt;F.nibT-=dt;
       if(artifactFx(S).seeBite){const left=Math.ceil(F.wait-F.t);if(left!==F.seenLeft){F.seenLeft=left;$('#hint').textContent=`Око щуки: клюне за ${Math.max(0,left)} с`}}
       if(F.nibT<=0&&F.t<F.wait-FC.nibbleQuietBeforeBite){F.nibT=rnd(FC.nibbleRange[0],FC.nibbleRange[1]);scene.emit('nibble');SFX.nibble()}
-      if(F.t>=F.wait){F.state='bite';F.biteT=0;F.win=biteWindow(S.lv.rod,artifactFx(S))*(tut.on?TUTORIAL_BITE_SLACK:1);F.fish=pickFish(S.lv.bait,S.buffs.rare>0,Math.random,S.location,S.night.phase,artifactFx(S));announceSeizure(countCast(S));save();renderHud();scene.emit('bite');say('Клює!','gold',900);SFX.bite();updateAct()}
+      if(F.t>=F.wait){
+        F.state='bite';F.biteT=0;F.win=biteWindow(S.lv.rod,artifactFx(S))*(tut.on?TUTORIAL_BITE_SLACK:1);
+        const father=fatherBites(S);F.father=!!father;
+        F.fish=father||pickFish({location:S.location,phase:S.night.phase,bait:F.bait,zone:F.zone,signal:F.signal,fx:artifactFx(S)});
+        announceSeizure(countCast(S));save();renderHud();scene.emit('bite');say('Клює!','gold',900);SFX.bite();updateAct();
+      }
       break;
-    case 'bite':F.biteT+=dt;if(F.biteT>F.win){F.state='idle';say('Не встиг, риба зірвалась з гачка','bad');SFX.bad();nextNightIfDue();updateAct()}break;
+    case 'bite':F.biteT+=dt;if(F.biteT>F.win){F.state='idle';say(F.father?'Батько обнюхав гачок і пішов. Ще повернеться? Навряд.':'Не встиг, риба зірвалась з гачка','bad');F.father=false;SFX.bad();nextNightIfDue();updateAct()}break;
     case 'reel':{
       const R=F.reel,status=reelStep(R,dt,F.holding);
       if(R.surged)scene.emit('surge');
       reelFeedback(R);
+      if(status==='snag'){enterSnag();break}
       if(status==='snap'){S.stats.snapped++;save();lose('Леска луснула!','snap');break}
       if(status==='lost'){lose('Риба зійшла','lost');break}
       if(status==='land'){land();break}
@@ -5521,8 +6132,11 @@ function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   update(dt);
   if(tab==='pond'&&sceneReady){
+    signalsTick(dt);
     scene.advance(dt);
-    scene.draw({state:F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:S.lv.lamp,moonPhase:S.night.phase,location:S.location,ghost:F.state==='reel'&&F.reel.ghost>0});
+    const fighting=F.state==='reel'||F.state==='snag';
+    scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:S.lv.lamp,moonPhase:S.night.phase,location:S.location,
+      ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list});
     scene.surf.present(ctx);
   }
   if(tab==='slot')slotTick(dt);
@@ -5540,7 +6154,6 @@ function loop(now){
 const UPG=CONFIG.upgrades;
 const UPG_DESC={
   rod:()=>'Ширша безпечна зона натягу, риба виводиться швидше',
-  bait:()=>'Менше мотлоху, частіше рідкісні та трофеї',
   net:l=>{const n=CONFIG.netCapacity,c=n.base+n.perLevel*l;return l<UPG.net.cost.length?`Місткість ${c} → ${c+n.perLevel}`:`Місткість ${c}`},
   lamp:l=>{const p=Math.round(CONFIG.fishing.lampSpeedPerLevel*100);return l<UPG.lamp.cost.length?`Клює на ${l*p}% → ${(l+1)*p}% швидше`:`Клює на ${l*p}% швидше`}
 };
@@ -5565,6 +6178,12 @@ function renderMarket(){
   goal.textContent=pondArm.on?'Точно?':`Викупити · ${fmt(price)}`;
   goal.classList.toggle('armed',pondArm.on);
   $('#bestcount').textContent=`${knownCount(S)}/${CONFIG.fish.length}`;
+  $('#baits').innerHTML=FCU.baitOrder.map(k=>{
+    const B=FCU.baits[k],n=baitCount(S,k),on=S.bait.on===k;
+    const btn=B.free?`<button class="pbuy" data-bait="${k}" data-pick="1" ${on?'disabled':''}>ВЗЯТИ</button>`
+      :`<button class="pbuy" data-bait="${k}" ${S.coins<B.cost?'disabled':''}>${B.cost}</button>`;
+    return `<div class="pupg${on?' on':''}"><i class="picon ic-bait-${k}"></i><div class="pupg-main"><div class="pupg-name">${B.name} · <span>${B.free?'завжди':`є ${n} · пачка ${B.pack}`}</span>${on?' <span>· на гачку</span>':''}</div>
+      <div class="pupg-desc">${B.desc}</div></div>${btn}</div>`}).join('');
   $('#upgs').innerHTML=Object.entries(UPG).map(([k,u])=>{
     const l=S.lv[k],max=l>=u.cost.length,cost=u.cost[l];
     return `<div class="pupg"><i class="picon ic-${k}"></i><div class="pupg-main"><div class="pupg-name">${u.name} · <span>${u.levels[l]}</span></div>
@@ -5584,7 +6203,11 @@ $('#fishlist').addEventListener('click',e=>{const r=e.target.closest('.pfish');i
   sellFish(S,+r.dataset.i);save();renderHud();renderMarket()});
 $('#sellall').addEventListener('click',()=>{if(!S.net.length)return;
   flyCoins($('#fishlist'),S.net.length);
-  const v=sellAll(S);toast(`+${fmt(v)} монет`);save();renderHud();renderMarket()});
+  const r=sellAll(S);toast(r.orders?`+${fmt(r.coins)} монет · скупник узяв ${r.orders}`:`+${fmt(r.coins)} монет`);save();renderHud();renderMarket()});
+// Buying a pack also puts it on the hook: you bought it to fish with it.
+$('#baits').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;const k=b.dataset.bait;
+  if(b.dataset.pick){selectBait(S,k);save();renderMarket();return}
+  if(!buyBait(S,k))return;selectBait(S,k);SFX.coin();toast(`${FCU.baits[k].name} ×${FCU.baits[k].pack}. На гачку`);save();renderHud();renderMarket()});
 $('#orders').addEventListener('click',e=>{const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
   flyCoins(b,2);const paid=fillOrder(S,+b.dataset.o);toast(`Скупник задоволений: +${fmt(paid)}`);save();renderHud();renderMarket()});
 $('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
@@ -5650,7 +6273,7 @@ function slotMsg(t,cls=''){const m=$('#slotmsg');m.textContent=t;m.className='sl
 function slotReset(){Object.assign(slot,{bet:SC.bets[0],busy:false,sacOpen:false,sacPick:-1,respinOpen:false,loanOpen:false});slotMsg('Водяник чекає ставку. Монети чи свіжий улов?');slotScene.hits=[false,false,false]}
 function dealText(){
   const c=dealCost(S),can=canAcceptDeal(S);
-  const offer=can?`Віддай ${fmt(c)} монет, і я дам тобі Місячну наживку на ${SC.deal.moonBaitFish} рибин.`:`Хотів би взяти ${fmt(c)} монет за Місячну наживку, та в кишенях вітер.`;
+  const offer=can?`Віддай ${fmt(c)} монет, і я дам тобі ${SC.deal.moonBaitFish} місячних мотилів.`:`Хотів би взяти ${fmt(c)} монет за місячних мотилів, та в кишенях вітер.`;
   return `Три черепи. З-під води простягається зелена рука.<br><b>«${offer} Відмовишся, візьму сам, що захочу, і прокляну на додачу.»</b>`;
 }
 // After a reload the bubble must speak of what is really waiting.
@@ -5818,7 +6441,7 @@ $('#offerno').addEventListener('click',()=>{declineOffer(S);SFX.plop();save();sl
 /* deal */
 $('#dealyes').addEventListener('click',()=>{if(!acceptDeal(S))return;
   slotScene.emit('deal-accepted');
-  slotMsg(`Угоду укладено. Наступні ${SC.deal.moonBaitFish} рибин будуть з тих, що зазвичай ховаються на дні.`,'gold');SFX.win();save();renderHud();renderSlot()});
+  slotMsg(`Угоду укладено. ${SC.deal.moonBaitFish} місячних мотилів ворушаться в торбі. На них клює те, що зазвичай ховається на дні.`,'gold');SFX.win();save();renderHud();renderSlot()});
 $('#dealno').addEventListener('click',()=>{const r=refuseDeal(S);
   slotScene.emit('deal-refused');
   const curse=`Прокляття ×${r.curse}.`;
@@ -5910,7 +6533,7 @@ $('#finalenext').addEventListener('click',()=>{
 /* ---------- first-night tutorial: each step waits for the player to really do it ---------- */
 const TUTORIAL_BITE_SLACK=3; // the first bites wait three times longer, there is a lot to read
 const TUTORIAL=[
-  {text:'Ніч тиха, вода чорна. Натисни «Закинути», щоб кинути поплавок.',target:'#act',done:()=>F.state!=='idle'},
+  {text:'Ніч тиха, вода чорна. Утримуй «Закинути»: стрілка дальності бігає туди-сюди. Відпусти на світлій мітці. Торкнись води, щоб цілитись деінде.',target:'#act',done:()=>F.state!=='idle'&&F.state!=='aim'},
   {text:'Тепер чекай. Коли поплавок пірне й кнопка спалахне, підсікай. Смикнеш раніше, риба втече.',target:'#scene',done:()=>F.state==='bite'||F.state==='reel',fishing:true},
   {text:'Клює! Тисни кнопку зараз.',target:'#act',done:()=>F.state==='reel',fishing:true},
   {text:'Тримай кнопку, щоб тягнути. Стрілка має стояти у світлій зоні. Почервоніла? Відпусти, бо леска лусне.',target:'#meter',done:()=>cardOpen,fishing:true},
@@ -5918,7 +6541,7 @@ const TUTORIAL=[
   {text:'Рибу продають на Ринку. Там же снасті, замовлення скупника й бестіарій.',target:'[data-tab=market]',done:()=>tab==='market'},
   {text:'Продай рибу: торкнись її або «Продати все».',target:'#sellall',done:()=>!S.net.length},
   {text:'А там, під водою, живе Водяник. Його автомат бере більше, ніж дає. Грай лише тим, чого не шкода.',target:'[data-tab=slot]',done:()=>tab==='slot'},
-  {text:'Оце й усе. Кожна ніч має 12 закидів, місяць міняється, а заводь можна колись викупити. Тихої ночі!',target:null,finish:true},
+  {text:'Оце й усе. Кола, бульбашки й сплески на воді видають рибу: влучиш у них, клюне швидше. Наживку купують на Ринку, хліб завжди є. Тихої ночі!',target:null,finish:true},
 ];
 const tut={on:false,step:0,shown:-1};
 
@@ -5987,7 +6610,7 @@ function openSettings(){
 // A fresh game: progress goes, preferences stay.
 function applyNewState(next,message){
   S=next;ensureOrders(S);hud.shown=null;slotReset();save();
-  F.state='idle';cardOpen=false;$('#catch').hidden=true;$('#meter').hidden=true;
+  F.state='idle';F.reel=null;F.father=false;cardOpen=false;$('#catch').hidden=true;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;signals.list=[];
   renderHud();renderLocations();renderMarket();updateAct(true);
   $('#settings').hidden=true;showTab('pond');toast(message);
 }
@@ -6035,7 +6658,7 @@ save();
 installIcons();
 renderMixer();
 if(EMBEDDED_ATLAS)loadAtlas(EMBEDDED_ATLAS).then(()=>{installIcons();sceneReady=false;resize()});
-resize();renderHud();renderLocations();updateAct(true);
+resize();renderHud();renderLocations();updateAct(true);renderBait();
 say(S.stats.caught?'З поверненням на заводь':'Ніч тиха. Закидай.','',2600);
 slotRestoreMsg();
 if(S.pending>0||S.deal)toast('Водяник пам’ятає про незакінчену справу');
