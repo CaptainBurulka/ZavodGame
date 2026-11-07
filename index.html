@@ -344,6 +344,14 @@ main{flex:1;min-height:0;position:relative}
 /* the heat gets a line of its own: it never fits beside the treasure and the mood on a narrow phone */
 #v-slot .pslot-hud{flex-wrap:wrap;row-gap:var(--px)}
 #v-slot .pslot-hud .right{flex-basis:100%;justify-content:center;min-width:0}
+.pmode{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
+.pmode button{height:calc(var(--px)*13);font-size:22px;line-height:1;color:var(--fog);background:var(--night)}
+.pmode button.on{color:var(--void);background:var(--moonS)}
+.pmode button:disabled{color:var(--waterD)}
+#v-slot.shells .slot-only{display:none!important}
+#v-slot:not(.shells) .shells-only{display:none!important}
+#v-slot.shells .pslot-hud .right{display:none}
+#slotcv.tap{cursor:pointer}
 .ppaygrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
 .ppaycell{display:grid;grid-template-columns:calc(var(--px)*12) 1fr;align-items:center;gap:calc(var(--px)*2);padding:var(--px);background:var(--night2)}
 .ppaycell .pcell{width:calc(var(--px)*12);height:calc(var(--px)*12)}
@@ -546,6 +554,7 @@ main{flex:1;min-height:0;position:relative}
     </section>
 
     <section id="v-slot" class="view scroll" hidden>
+      <div class="pmode" id="slotmode"><button data-m="slot" class="on">Автомат</button><button data-m="shells">Мушлі</button></div>
       <div class="pslot-hud">
         <div aria-label="Скарб"><i class="picon ic-coin"></i><b id="jp">0</b></div>
         <div class="center" aria-label="Настрій"><em id="moodlbl" class="pmood"></em></div>
@@ -553,36 +562,49 @@ main{flex:1;min-height:0;position:relative}
       </div>
       <canvas id="slotcv" class="pcanvas"></canvas>
       <div id="slotmsg" class="slotmsg pbubble">Водяник чекає ставку. Монети чи свіжий улов?</div>
-      <div id="giftbox" class="pframe gold ppanel" hidden>
+      <div id="giftbox" class="slot-only pframe gold ppanel" hidden>
         <p class="pdeal" id="gifttxt"></p>
         <div class="pstack" id="giftswap"></div>
         <button class="pbtn" id="giftplace">Додати на барабани</button>
       </div>
-      <div id="pending" class="pframe gold ppanel pwin" hidden>
+      <div id="pending" class="slot-only pframe gold ppanel pwin" hidden>
         <div class="pwin-sum"><span id="divedepth">Виграш на кону</span><b id="winv">0</b><span id="diveinfo"></span></div>
         <div class="pbtn-row"><button class="pbtn ghost" id="take">Забрати</button><button class="pbtn" id="divebtn">Пірнути</button></div>
       </div>
-      <div id="artoffer" class="pframe curse ppanel" hidden>
+      <div id="artoffer" class="slot-only pframe curse ppanel" hidden>
         <h3>Знахідка</h3>
         <div class="partifact" id="offertxt"></div>
         <p class="psub">Кишені повні. Що кинути у воду?</p>
         <div class="pstack" id="offerswap"></div>
         <button class="pbtn ghost" id="offerno">Кинути знахідку</button>
       </div>
-      <div id="deal" class="pframe curse ppanel" hidden>
+      <div id="deal" class="slot-only pframe curse ppanel" hidden>
         <p class="pdeal" id="dealtxt"></p>
         <button class="pbtn" id="dealyes">Погодитись</button>
         <button class="pbtn ghost" id="dealno">Відмовитись</button>
       </div>
-      <div class="pbets" id="bets"></div>
-      <button id="spin" class="pbtn mainact">Крутити</button>
-      <div class="pframe ppanel">
+      <div class="slot-only pbets" id="bets"></div>
+      <button id="spin" class="slot-only pbtn mainact">Крутити</button>
+      <div class="shells-only pstack" id="shellsbox">
+        <p class="psub" id="shmood"></p>
+        <div class="pframe gold ppanel pwin" id="shpot" hidden>
+          <div class="pwin-sum"><span id="shround"></span><b id="shpotv">0</b><span id="shnext"></span></div>
+          <div class="pbtn-row"><button class="pbtn ghost" id="shtake">Забрати</button><button class="pbtn" id="shagain">Ще раз</button></div>
+        </div>
+        <div class="pbets" id="shbets"></div>
+        <button id="shplay" class="pbtn mainact">Грати</button>
+        <div class="pframe ppanel">
+          <h3>Мушлі</h3>
+          <p class="psub" id="shrules"></p>
+        </div>
+      </div>
+      <div class="slot-only pframe ppanel">
         <h3>Як платить</h3>
         <p class="psub" id="paysub"></p>
         <div class="ppaygrid" id="paytable"></div>
         <p class="psub" id="reelmix"></p>
       </div>
-      <div class="pframe ppanel">
+      <div class="slot-only pframe ppanel">
         <h3>Пожертва</h3>
         <p class="psub" id="donatesub"></p>
         <div class="pfishes" id="donatefish"></div>
@@ -592,12 +614,12 @@ main{flex:1;min-height:0;position:relative}
           <div class="pbtn-row"><button class="pbtn ghost" id="donateno">Назад</button><button class="pbtn" id="donateyes">Віддати</button></div>
         </div>
       </div>
-      <div class="pframe curse ppanel">
+      <div class="slot-only pframe curse ppanel">
         <h3>Черепи</h3>
         <p class="psub" id="skulltxt"></p>
         <button class="pbtn ghost" id="skullbtn">Прибрати череп</button>
       </div>
-      <div class="pframe ppanel">
+      <div class="slot-only pframe ppanel">
         <h3>Правила</h3>
         <p class="psub" id="payrules"></p>
       </div>
@@ -1001,6 +1023,17 @@ const CONFIG = {
       },
     },
     artifactSlots: 3,
+    // Мушлі Водяника. Перлина ×pay. rounds — скільки обмінів і секунд на обмін у кожному раунді «Ще раз».
+    // Ситий мішає повільніше (durMul), злий кладе 4 мушлі й платить angryPay. Три вгадані поспіль — ще й наживка.
+    shells: {
+      // Баланс: при ×2 будь-хто, хто вгадує перший раунд частіше ніж у половині випадків і забирає, виходить у плюс.
+      // Тому вже перший раунд складний: модель уважного гравця вгадує ~50%, «ідеального» ~57%.
+      bets: [10, 25, 50, 100], n: 3, pay: 2, angryN: 4, angryPay: 2.5, angrySwapsMul: 1.5, satedDurMul: 1.06, satedSwapsMul: 1.1,
+      rounds: [{ swaps: 15, dur: 0.2 }, { swaps: 16, dur: 0.17 }, { swaps: 18, dur: 0.15 }],
+      showTime: 1, revealTime: 1.1,
+      reward: { moon: 2, live: 1, moth: 1 }, // ваги
+      rewardPack: { moon: 1, live: 4, moth: 5 }, // скільки дають
+    },
     deal: {
       costShare: 0.5,
       minCost: 200,
@@ -2294,6 +2327,90 @@ function dive(S, rng = Math.random) {
   return { result: 'deeper', mul: level.mul };
 }
 
+/* ---------- Vodianyk's shells ---------- */
+const SH = SC.shells;
+// What the mood does to the shells, and why, in words.
+function shellsMood(S) {
+  const mood = moodOf(S);
+  if (mood === 'angry') return { n: SH.angryN, pay: SH.angryPay, durMul: 1, swapsMul: SH.angrySwapsMul, reason: `Водяник злий — сьогодні ${SH.angryN} мушлі, зате перлина платить ×${String(SH.angryPay).replace('.', ',')}` };
+  if (mood === 'sated') return { n: SH.n, pay: SH.pay, durMul: SH.satedDurMul, swapsMul: SH.satedSwapsMul, reason: 'Водяник ситий і лінивий — мішає повільніше' };
+  return { n: SH.n, pay: SH.pay, durMul: 1, reason: '' };
+}
+// The swaps of one round as pairs of positions. The pearl simply follows them: no other rule decides where it is.
+function makeSwaps(n, count, rng = Math.random) {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const a = Math.floor(rng() * n);
+    let b = Math.floor(rng() * (n - 1));
+    if (b >= a) b++;
+    out.push([a, b]);
+  }
+  return out;
+}
+const followPearl = (start, swaps) => swaps.reduce((p, [a, b]) => (p === a ? b : p === b ? a : p), start);
+function dealRound(G, rng) {
+  const R = SH.rounds[G.round - 1];
+  G.start = Math.floor(rng() * G.n);
+  G.swaps = makeSwaps(G.n, Math.round(R.swaps * (G.swapsMul || 1)), rng);
+  G.dur = Math.round(R.dur * G.durMul * 1000) / 1000;
+  G.pearl = followPearl(G.start, G.swaps);
+  G.phase = 'play';
+}
+const canPlayShells = (S, bet) => !S.shells && SH.bets.includes(bet) && S.coins >= bet;
+function startShells(S, bet, rng = Math.random) {
+  if (!canPlayShells(S, bet)) return null;
+  const m = shellsMood(S);
+  S.coins -= bet;
+  S.shells = { stake: bet, pot: bet, round: 1, n: m.n, pay: m.pay, durMul: m.durMul, swapsMul: m.swapsMul || 1 };
+  dealRound(S.shells, rng);
+  return S.shells;
+}
+// The tap. The pearl is where the swaps carried it; nothing moves after this.
+function pickShell(S, slot, rng = Math.random) {
+  const G = S.shells;
+  if (!G || G.phase !== 'play' || slot < 0 || slot >= G.n) return null;
+  const won = slot === G.pearl, before = G.pot;
+  G.picked = slot;
+  if (!won) {
+    G.phase = 'lost';
+    feedMood(S, G.stake);
+    moodAfterSpin(S);
+    S.stats.shellsLost = (S.stats.shellsLost || 0) + 1;
+    return { won, before, pot: 0, pearl: G.pearl };
+  }
+  G.pot = Math.round(G.pot * G.pay);
+  G.phase = 'won';
+  moodAfterSpin(S);
+  const out = { won, before, pot: G.pot, pearl: G.pearl, round: G.round };
+  if (G.round >= SH.rounds.length) {
+    // three in a row: the pot and a rare bait, and the game is over
+    const k = pickWeighted(SH.reward, rng);
+    S.bait.have[k] = (S.bait.have[k] || 0) + SH.rewardPack[k];
+    out.reward = { k, n: SH.rewardPack[k] };
+    out.taken = takeShells(S);
+  }
+  return out;
+}
+const canAgain = S => !!S.shells && S.shells.phase === 'won' && S.shells.round < SH.rounds.length;
+// The whole pot goes back under the shells, faster this time.
+function shellsAgain(S, rng = Math.random) {
+  if (!canAgain(S)) return null;
+  S.shells.round++;
+  dealRound(S.shells, rng);
+  return S.shells;
+}
+function takeShells(S) {
+  const G = S.shells;
+  if (!G) return 0;
+  const coins = G.phase === 'won' ? G.pot : 0;
+  S.coins += coins;
+  if (coins > G.stake * 4) angerMood(S, SC.mood.angerBigWin);
+  S.shells = null;
+  S.stats.shellsWon = (S.stats.shellsWon || 0) + (coins ? 1 : 0);
+  return coins;
+}
+const closeShells = S => { if (S.shells && S.shells.phase === 'lost') S.shells = null; };
+
 /* ---------- the deal ---------- */
 // In the new moon he is gloomy, and gloom makes him generous.
 const dealCost = S => Math.max(SC.deal.minCost, Math.floor(S.coins * SC.deal.costShare * (isNewMoon(S) ? NIGHT.newMoon.dealCostMul : 1)));
@@ -2336,7 +2453,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2363,6 +2480,7 @@ const defaultState = () => ({
   dive: 0,
   strips: startStrips(),
   removed: 0, // skulls bought off the reels: each next one costs more
+  shells: null, // a shell game in play: { stake, pot, round, n, pay, start, swaps, pearl, phase }
   bestiary: {},
   rewarded: [],
   market: {},
@@ -2472,6 +2590,8 @@ const MIGRATIONS = {
     for (let n = 0; n < skullsOff; n++) strips.forEach(st => { const j = st.findIndex(x => x.k === 'skull'); if (j >= 0) st.splice(j, 1); });
     return { ...rest, v: 10, heat: 0, strips, removed: d.removed || 0, lastSpin: null };
   },
+  // v11: the shells. Nothing to carry over.
+  10: d => ({ ...d, v: 11, shells: null }),
 };
 
 function migrate(data) {
@@ -3694,6 +3814,25 @@ defineSprites({
       '............',
     ],
   ] },
+  shell: { fps: 1, frames: [[
+    '.....dddddd.....',
+    '...ddbbbbbbdd...',
+    '..dbMbbMbbMbbd..',
+    '.dbbMbbMbbMbbbd.',
+    '.dbbMbbMbbMbbbd.',
+    'dmbbMbbMbbMbbbmd',
+    'dmmbMbbMbbMbbmmd',
+    'dmmmMmmMmmMmmmmd',
+    '.dddddddddddddd.',
+    '................',
+  ]] },
+  pearl: { fps: 1, frames: [[
+    '.MMM.',
+    'MbMMM',
+    'MMMMM',
+    'MMMMm',
+    '.mmm.',
+  ]] },
   icon_trap: { fps: 1, frames: [[
     '..hhhh..',
     '.hbhbhh.',
@@ -4675,6 +4814,7 @@ class SlotScene {
     this.t = 0;
     // each reel: the three cells it shows, the strip it scrolls through and how long it still turns
     this.reels = [0, 1, 2].map(() => ({ cells: [{ k: 'hook' }, { k: 'moon' }, { k: 'frog' }], strip: [{ k: 'hook' }], off: 0, left: 0 }));
+    this.sh = null;
     this.lit = null; // which middle cells paid
     this.after = null;
     this.emotion = 'neutral';
@@ -4912,6 +5052,7 @@ class SlotScene {
     this.t += dt;
     this.shake = Math.max(0, this.shake - dt);
     for (const r of this.reels) r.left = Math.max(0, r.left - dt);
+    this.advanceShells(dt);
 
     if (this.emotionT > 0) {
       this.emotionT -= dt;
@@ -4930,7 +5071,68 @@ class SlotScene {
     this.bubbles = this.bubbles.filter(b => b.y > WATER_Y);
   }
 
-  // view: { heat: 0..1 of the scale, full, deal, moonPhase, mood, diveLevel }
+  /* ---------- the shells: one game on the sand in front of him ---------- */
+  // Slots are places on the sand; ids are the shells. The pearl lies under one id and moves only with it.
+  shellsSetup(n, pearlSlot) {
+    this.sh = { n, order: [...Array(n).keys()], pearlId: pearlSlot, lift: Array(n).fill(0), aim: Array(n).fill(0), cur: null, queue: [], dur: 0.2 };
+  }
+  shellsBase() { return CABINET.y + 30; }
+  shellX(slot) { const n = this.sh.n, gap = n > 3 ? 22 : 26; return Math.round(this.cx + (slot - (n - 1) / 2) * gap); }
+  shellsLiftPearl(on) { const s = this.sh; s.aim[s.pearlId] = on ? 1 : 0; }
+  shellsLiftSlot(slot) { const s = this.sh; s.aim[s.order[slot]] = 1; }
+  shellsShuffle(swaps, dur) { const s = this.sh; s.queue = swaps.slice(); s.dur = dur; s.cur = null; }
+  shellsBusy() { const s = this.sh; return !!s && (!!s.cur || s.queue.length > 0); }
+  // Which slot a scene point is on, or -1.
+  shellAt(x, y) {
+    const s = this.sh;
+    if (!s) return -1;
+    const by = this.shellsBase();
+    if (y < by - 14 || y > by + 10) return -1;
+    for (let i = 0; i < s.n; i++) if (Math.abs(x - this.shellX(i)) <= 10) return i;
+    return -1;
+  }
+  advanceShells(dt) {
+    const s = this.sh;
+    if (!s) return;
+    for (let i = 0; i < s.n; i++) s.lift[i] += Math.max(-dt * 5, Math.min(dt * 5, s.aim[i] - s.lift[i]));
+    if (!s.cur && s.queue.length) { const [a, b] = s.queue.shift(); s.cur = { a, b, t: 0 }; if (this.onSwap) this.onSwap(); }
+    if (s.cur) {
+      s.cur.t += dt;
+      if (s.cur.t >= s.dur) {
+        const { a, b } = s.cur;
+        [s.order[a], s.order[b]] = [s.order[b], s.order[a]];
+        s.cur = null;
+        if (!s.queue.length && this.onShuffled) this.onShuffled();
+      }
+    }
+  }
+  drawShells() {
+    const S = this.surf, s = this.sh, by = this.shellsBase(), sp = SPRITES.shell, pe = SPRITES.pearl;
+    // a flat stone on the bottom to play on
+    S.dither(this.cx - 50, by + 6, 100, 8, 'wood', 'moonD', 0.25);
+    S.rect(this.cx - 50, by + 6, 100, 1, 'moonS');
+    if (!s) return;
+    const place = [];
+    for (let slot = 0; slot < s.n; slot++) {
+      const id = s.order[slot];
+      let x = this.shellX(slot), y = by, z = 0;
+      if (s.cur && (slot === s.cur.a || slot === s.cur.b)) {
+        const k = Math.min(1, s.cur.t / s.dur), e = k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) * (1 - k);
+        const from = slot, to = slot === s.cur.a ? s.cur.b : s.cur.a, up = slot === s.cur.a;
+        x = Math.round(mix(this.shellX(from), this.shellX(to), e));
+        y = Math.round(by + (up ? -5 : 3) * Math.sin(Math.PI * e));
+        z = up ? -1 : 1;
+      }
+      place.push({ id, x, y, z });
+    }
+    // the pearl sits on the stone under its shell
+    const p = place.find(q => q.id === s.pearlId);
+    if (p && s.lift[s.pearlId] > 0.05) S.drawSprite(pe, 0, p.x - 2, by + 2);
+    place.sort((a, b) => a.z - b.z);
+    for (const q of place) S.drawSprite(sp, 0, q.x - 8, q.y - 6 - Math.round(s.lift[q.id] * 12));
+  }
+
+  // view: { heat: 0..1 of the scale, deal, moonPhase, mood, diveLevel, mode }
   draw(view) {
     if (view.diveLevel > 0) {
       this.drawDive(view.diveLevel);
@@ -4940,6 +5142,7 @@ class SlotScene {
     if (view.moonPhase !== undefined) this.surf.drawSprite(SPRITES[`moon_${view.moonPhase}`], 0, this.w - 20, 2);
     this.drawBubbles();
     this.drawFace(view);
+    if (view.mode === 'shells') { this.drawShells(); return; }
     this.paintCabinet();
     for (let i = 0; i < 3; i++) this.drawReel(i);
     this.drawMarks();
@@ -6042,7 +6245,7 @@ function createAmbience(eng) {
 
 const SFX_NAMES = ['plop', 'nibble', 'bite', 'catch', 'bad', 'tick', 'stop', 'win', 'coin', 'jerk', 'warn', 'dive', 'ghost', 'snap', 'night',
   'signal', 'splash', 'shimmer', 'snag', 'tired', 'clean', 'release', 'father', 'aim',
-  'thunder', 'meow', 'song', 'event', 'stage'];
+  'thunder', 'meow', 'song', 'event', 'stage', 'clack', 'pearl'];
 
 const SN = { D2: 38, D3: 50, D4: 62, E3: 52, F4: 65, A4: 69, D5: 74, E5: 76, F5: 77, A5: 81, D6: 86 };
 
@@ -6085,6 +6288,9 @@ function createSfx(eng, music) {
     song: () => [SN.A4, SN.D5, SN.F5, SN.E5].forEach((m, i) => flute(eng, { bus: 'sfx', midi: m, t: at(i * 0.22), dur: 0.3, gain: v(0.035) })),
     event: () => { duck(); box(SN.D5, 0, 0.06, 0.6); box(SN.A4, 0.12, 0.05, 0.6); str(SN.D3, 0.05, 0.08, 0.8); },
     stage: () => { duck(); str(SN.D2, 0, 0.16, 0.6); for (const dt of [0, 0.12]) box(SN.F5, dt, 0.05, 0.15); },
+    // shell on shell: a short hollow knock
+    clack: () => { str(SN.D4 + 7, 0, 0.07, 0.08, 0); shaker(eng, { bus: 'sfx', t: at(), gain: v(0.025) }); },
+    pearl: () => { duck(); [SN.A5, SN.D6].forEach((m, i) => box(m, i * 0.09, 0.08, 0.9)); box(SN.F5, 0.2, 0.05, 1.2); },
   };
   const out = {};
   for (const k of SFX_NAMES) out[k] = () => { if (live()) sounds[k](); };
@@ -6218,11 +6424,12 @@ function showTab(t){
   // leaving the bridge winds the rod in; a fight that never ended costs no bait
   if(t!=='pond'&&FISHING_BUSY.includes(F.state)){F.state='idle';F.holding=false;F.reel=null;F.father=false;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;say('Вудку змотано')}
   if(t!==tab)dropTips();
+  if(tab==='slot'&&t!=='slot'&&sh.mode==='shells'&&(sh.ui==='show'||sh.ui==='shuffle'))sh.ui='idle';
   tab=t;
   document.querySelectorAll('.ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('#v-pond').hidden=t!=='pond';$('#v-market').hidden=t!=='market';$('#v-slot').hidden=t!=='slot';
   if(t==='market')renderMarket();
-  if(t==='slot'){renderSlot();tip('slot')}
+  if(t==='slot'){if(sh.mode==='shells')enterShells();renderSlot();tip('slot')}
   if(t==='pond'){resize();updateAct(true)}
 }
 document.querySelectorAll('.ptabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
@@ -6260,7 +6467,7 @@ function spriteDataUrl(sprite,silhouette=false){
 function installIcons(){
   let tag=$('#icon-css');
   if(!tag){tag=document.createElement('style');tag.id='icon-css';document.head.append(tag)}
-  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka'};
+  const names={coin:'coin',basket:'icon_basket',sound:'icon_sound','sound-off':'icon_sound_off',gear:'icon_gear','tab-pond':'icon_tab_pond','tab-market':'icon_tab_market','tab-slot':'icon_tab_slot',rod:'icon_rod',bait:'icon_bait',net:'icon_net',lamp:'icon_lamp','star-on':'star_on','star-off':'star_off',flame:'heat_flame',trap:'icon_trap',panas:'panas',mavka:'mavka',shell:'shell'};
   for(const k of CONFIG.fishing.baitOrder)names['bait-'+k]='bait_'+k;
   for(const f of CONFIG.fish)names['fish-'+FISH_SPRITE[f.n]]=FISH_SPRITE[f.n];
   for(const k in SYM_SPRITE)names['sym-'+SYM_SPRITE[k]]=SYM_SPRITE[k];
@@ -7159,7 +7366,7 @@ function slotTick(dt){
   if(!slotSceneReady)return;
   slotScene.advance(dt);
   const h=heatMul(S,currentStake());
-  slotScene.draw({heat:(h-1)/(SC.heat.max-1),deal:S.deal&&!slot.busy,moonPhase:S.night.phase,mood:moodOf(S),diveLevel:S.dive});
+  slotScene.draw({heat:(h-1)/(SC.heat.max-1),deal:S.deal&&!slot.busy,moonPhase:S.night.phase,mood:moodOf(S),diveLevel:sh.mode==='shells'?0:S.dive,mode:sh.mode});
   slotScene.surf.present(slotCtx);
 }
 const currentStake=()=>slot.bet==='net'?netStake(S):slot.bet;
@@ -7284,6 +7491,7 @@ $('#skullbtn').addEventListener('click',()=>{
 
 function renderSlot(){
   slotResize();
+  if(sh.mode==='shells'){renderShells();return}
   $('#jp').textContent=fmt(S.jackpot);
   if(slot.bet!=='net'&&S.coins<slot.bet){const ok=[...SC.bets].reverse().find(v=>v<=S.coins);if(ok)slot.bet=ok}
   if(slot.bet==='net'&&!S.net.length)slot.bet=SC.bets[0];
@@ -7384,6 +7592,103 @@ $('#dealno').addEventListener('click',()=>{const r=refuseDeal(S);
   else if(r.took==='coins')slotMsg(`Садок порожній, тож Водяник витяг у тебе з кишені ${fmt(r.coins)} монет. ${curse}`,'bad');
   else slotMsg(`Брати нема чого. Водяник плюнув у воду й наслав прокляття ×${r.curse}.`,'bad');
   SFX.bad();save();renderHud();renderSlot()});
+
+/* ui/shells.js */
+/* ---------- Vodianyk's shells: watch the pearl, tap the shell ---------- */
+// ui: idle | show | shuffle | pick | reveal. Taps count only in pick.
+const sh={mode:'slot',bet:SC.shells.bets[1],ui:'idle'};
+const SHC=SC.shells;
+const PLACE3=['ліворуч','посередині','праворуч'],PLACE4=['під крайньою лівою мушлею','під другою зліва','під другою справа','під крайньою правою мушлею'];
+const placeWord=(slot,n)=>(n>3?PLACE4:PLACE3)[slot];
+$('#shbets').innerHTML=SHC.bets.map(b=>`<button data-b="${b}">${b}</button>`).join('');
+$('#shrules').textContent=`Водяник показує, під якою мушлею перлина, і перемішує. Стеж і торкнись мушлі. Перлина — ставка ×${SHC.pay}; ні — ставку втрачено. Після виграшу можна «Ще раз»: уся сума на кону ставиться знову, а мушлі мішаються швидше й довше. Три вгадані поспіль — ще й рідкісна наживка. Злий Водяник кладе ${SHC.angryN} мушлі й платить ×${String(SHC.angryPay).replace('.',',')}, ситий мішає повільніше. Перлина завжди там, куди її перенесли мушлі.`;
+function setMode(m){
+  if(sh.ui==='show'||sh.ui==='shuffle'||sh.ui==='reveal')return;
+  sh.mode=m;
+  $('#v-slot').classList.toggle('shells',m==='shells');
+  document.querySelectorAll('#slotmode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  if(m==='shells')enterShells();else slotMsg('Водяник чекає ставку. Монети чи свіжий улов?');
+  renderSlot();
+}
+$('#slotmode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;setMode(b.dataset.m)});
+// Coming to the shells: a game left mid-way waits for its tap, with the shells where the swaps left them.
+function enterShells(){
+  const G=S.shells;
+  if(G&&G.phase==='play'){slotScene.shellsSetup(G.n,G.pearl);sh.ui='pick';slotMsg('Мушлі вже перемішані. Де перлина?','gold');return}
+  if(G&&G.phase==='won'){slotScene.shellsSetup(G.n,G.pearl);slotScene.shellsLiftPearl(true);sh.ui='idle';slotMsg(`На кону ${fmt(G.pot)}. Забрати чи ще раз?`,'gold');return}
+  closeShells(S);
+  const m=shellsMood(S);slotScene.shellsSetup(m.n,Math.floor((m.n-1)/2));sh.ui='idle';
+  slotMsg('Водяник розклав мушлі на камені. Ставиш?');
+}
+function renderShells(){
+  const G=S.shells,m=G?{n:G.n,reason:''}:shellsMood(S);
+  $('#shmood').textContent=G?(G.n>SHC.n?`Водяник злий — ${G.n} мушлі, перлина ×${String(G.pay).replace('.',',')}`:G.durMul>1?'Водяник ситий — мішає повільніше':''):m.reason;
+  $('#shmood').hidden=!$('#shmood').textContent;
+  const won=!!G&&G.phase==='won'&&sh.ui==='idle';
+  $('#shpot').hidden=!won;
+  if(won){
+    $('#shround').textContent=`Раунд ${G.round} з ${SHC.rounds.length} вгадано`;
+    $('#shpotv').textContent=fmt(G.pot);
+    $('#shnext').textContent=G.round<SHC.rounds.length?`Ще раз: ${fmt(G.pot)} → ${fmt(Math.round(G.pot*G.pay))}, мішатиме швидше`:'';
+    $('#shtake').textContent=`Забрати · ${fmt(G.pot)}`;
+    $('#shagain').hidden=G.round>=SHC.rounds.length;
+  }
+  if(!SHC.bets.includes(sh.bet)||S.coins<sh.bet){const ok=[...SHC.bets].reverse().find(v=>v<=S.coins);if(ok)sh.bet=ok}
+  document.querySelectorAll('#shbets button').forEach(b=>{const v=+b.dataset.b;b.classList.toggle('on',sh.bet===v);b.disabled=S.coins<v||!!G||sh.ui!=='idle'});
+  const busy=!!G||sh.ui!=='idle';
+  $('#shbets').hidden=busy;$('#shplay').hidden=busy;
+  $('#shplay').disabled=!canPlayShells(S,sh.bet);
+  $('#shplay').textContent=canPlayShells(S,sh.bet)?`Грати · ${fmt(sh.bet)}`:'Нема чим ставити';
+  document.querySelectorAll('#slotmode button').forEach(b=>{b.disabled=sh.ui==='show'||sh.ui==='shuffle'||sh.ui==='reveal'});
+  slotCv.classList.toggle('tap',sh.ui==='pick');
+}
+// One round on screen: the pearl is shown, the shells go down, the swaps play one by one, then the taps open.
+function runRound(){
+  const G=S.shells;
+  slotScene.shellsSetup(G.n,G.start);
+  sh.ui='show';renderShells();
+  slotMsg(G.round===1?'Дивись: перлина тут.':`Раунд ${G.round}. Перлина знову тут — стеж уважніше.`,'gold');
+  slotScene.shellsLiftPearl(true);SFX.plop();
+  setTimeout(()=>{
+    slotScene.shellsLiftPearl(false);
+    setTimeout(()=>{
+      sh.ui='shuffle';renderShells();slotScene.setEmotion('greedy');slotMsg('Водяник мішає…');
+      slotScene.shellsShuffle(G.swaps,G.dur);
+    },350);
+  },SHC.showTime*1000);
+}
+slotScene.onSwap=()=>SFX.clack();
+slotScene.onShuffled=()=>{if(sh.ui!=='shuffle')return;sh.ui='pick';renderShells();slotMsg('Де перлина? Торкнись мушлі.','gold')};
+$('#shbets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;sh.bet=+b.dataset.b;renderShells()});
+$('#shplay').addEventListener('click',()=>{
+  if(sh.ui!=='idle'||!startShells(S,sh.bet))return;
+  save();renderHud();runRound();
+});
+slotCv.addEventListener('pointerdown',e=>{
+  if(sh.mode!=='shells'||sh.ui!=='pick')return; // taps during the shuffle are ignored
+  const r=slotCv.getBoundingClientRect(),u=r.width/slotCv.width;
+  const slotN=slotScene.shellAt((e.clientX-r.left)/u,(e.clientY-r.top)/u);
+  if(slotN<0)return;
+  const G=S.shells,res=pickShell(S,slotN);if(!res)return;
+  sh.ui='reveal';save();renderHud();renderShells();
+  slotScene.shellsLiftSlot(slotN);
+  if(res.won){
+    SFX.pearl();slotScene.setEmotion('angry');
+    let text=`Перлина тут! ${fmt(res.before)} → ${fmt(res.pot)}`;
+    if(res.reward)text+=`. Три поспіль! Водяник скрипить зубами й віддає ще ${res.reward.n} · ${CONFIG.fishing.baits[res.reward.k].name.toLowerCase()}`;
+    slotMsg(text,'good');
+    if(res.taken!=null){flyCoins($('#slotcv'),Math.ceil(res.taken/20));toast(`+${fmt(res.taken)} монет`)}
+  }else{
+    SFX.bad();slotScene.setEmotion('pleased');
+    setTimeout(()=>slotScene.shellsLiftPearl(true),350);
+    slotMsg(`Порожньо. Перлина була ${placeWord(res.pearl,G.n)}. ${fmt(res.before)} лишились Водяникові.`,'bad');
+    closeShells(S);save();
+  }
+  setTimeout(()=>{sh.ui='idle';renderShells();renderHud()},SHC.revealTime*1000);
+});
+$('#shtake').addEventListener('click',()=>{if(sh.ui!=='idle')return;const w=takeShells(S);if(!w)return;flyCoins($('#shpot'),Math.ceil(w/20));toast(`+${fmt(w)} монет`);save();renderHud();slotMsg('Перлину назад, монети в кишеню. Ще?');enterShellsIdle();renderShells()});
+$('#shagain').addEventListener('click',()=>{if(sh.ui!=='idle'||!shellsAgain(S))return;save();runRound()});
+function enterShellsIdle(){const m=shellsMood(S);slotScene.shellsSetup(m.n,Math.floor((m.n-1)/2))}
 
 /* ui/sound.js */
 /* ---------- sound: tells the music what the game is doing. Called once a frame; the music changes only on its own bar lines ---------- */
