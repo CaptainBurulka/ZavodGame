@@ -85,7 +85,7 @@ button:focus-visible{outline:var(--px) solid var(--moon);outline-offset:var(--px
   padding-top:max(8px,calc(env(safe-area-inset-top,0px)*2));padding-bottom:0}
 main{flex:1;min-height:0;position:relative}
 .view{height:100%;display:flex;flex-direction:column;gap:calc(var(--px)*2)}
-.view.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--px)*4)}
+.view.scroll{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--px)*4)}
 .view>*{flex:none}
 .view>.scene{flex:1}
 .scene{position:relative;min-height:0;overflow:hidden;background:var(--void);touch-action:none}
@@ -340,7 +340,10 @@ main{flex:1;min-height:0;position:relative}
 .pslot-hud em.pmood.hungry{color:var(--gold)}
 .pslot-hud em.pmood.angry{color:var(--red)}
 .pslot-hud .center{text-align:center}
-#heatlbl{font-family:var(--f-text);font-size:22px;line-height:1;white-space:nowrap}
+#heatlbl{font-family:var(--f-text);font-size:22px;line-height:1}
+/* the heat gets a line of its own: it never fits beside the treasure and the mood on a narrow phone */
+#v-slot .pslot-hud{flex-wrap:wrap;row-gap:var(--px)}
+#v-slot .pslot-hud .right{flex-basis:100%;justify-content:center;min-width:0}
 .ppaygrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--px)}
 .ppaycell{display:grid;grid-template-columns:calc(var(--px)*12) 1fr;align-items:center;gap:calc(var(--px)*2);padding:var(--px);background:var(--night2)}
 .ppaycell .pcell{width:calc(var(--px)*12);height:calc(var(--px)*12)}
@@ -7285,7 +7288,7 @@ function renderSlot(){
   if(slot.bet!=='net'&&S.coins<slot.bet){const ok=[...SC.bets].reverse().find(v=>v<=S.coins);if(ok)slot.bet=ok}
   if(slot.bet==='net'&&!S.net.length)slot.bet=SC.bets[0];
   const h=heatMul(S,currentStake());
-  $('#heatlbl').textContent=`Азарт: наступний виграш ×${num(h)}`;
+  $('#heatlbl').textContent=`Наступний виграш ×${num(h)}`;
   const mood=moodOf(S);
   $('#moodlbl').textContent=SC.mood.effects[mood].name;
   $('#moodlbl').className='pmood '+mood;

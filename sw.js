@@ -1,5 +1,5 @@
 // Offline play. The page is fetched fresh whenever there is a network, and served from the cache when there is none.
-const CACHE = 'nichna-zavod-slot2-p1';
+const CACHE = 'nichna-zavod-slot2-p1b';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
