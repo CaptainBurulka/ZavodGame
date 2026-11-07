@@ -356,12 +356,20 @@ main{flex:1;min-height:0;position:relative}
 /* the landing: scene, three tabs, the stall grid, the sell bar */
 .mkscene{position:relative;flex:none;touch-action:manipulation;cursor:pointer}
 .mkmsg{position:absolute;top:calc(var(--px)*2);left:calc(var(--px)*2);right:calc(var(--px)*2);width:fit-content;max-width:calc(100% - var(--px)*4);font-size:20px;line-height:1.05;z-index:2;pointer-events:none}
-.mkmsg.right{left:auto;right:calc(var(--px)*2)}
-.mklbl{position:absolute;transform:translateX(-50%);padding:0 var(--px);font-size:16px;line-height:1.1;color:var(--bone);background:var(--void);white-space:nowrap;pointer-events:none}
-.mklbl.on{color:var(--void);background:var(--gold)}
-.mksign{position:absolute;transform:translateX(-50%);width:max-content;max-width:calc(var(--px)*40);padding:0 var(--px);font-size:16px;line-height:1.05;text-align:center;color:var(--void);background:var(--bone);pointer-events:none}
+.mkmsg{left:auto;right:calc(var(--px)*2);max-width:58%}
+.mkshops{position:absolute;left:0;right:0;bottom:0}
+.mkshop{position:absolute;bottom:var(--px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:1px;padding:var(--px) var(--px) 2px;
+  font-size:16px;line-height:1;color:var(--bone);background:var(--void);box-shadow:0 0 0 1px var(--night2)}
+.mkshop b{font-weight:400;white-space:nowrap}
+.mkshop small{font-size:14px;line-height:1;color:var(--fog);white-space:nowrap}
+.mkshop small.hot{color:var(--gold)}
+.mkshop:active{transform:translateX(-50%) translateY(var(--px))}
+.mkbar{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:calc(var(--px)*3)}
+.mkback{min-height:calc(var(--px)*12);padding:0 calc(var(--px)*3);font-size:22px;line-height:1;color:var(--void);background:var(--moonS);box-shadow:0 var(--px) 0 var(--moonD),0 calc(var(--px)*2) 0 var(--void)}
+.mkback:active{transform:translateY(var(--px));box-shadow:0 var(--px) 0 var(--void)}
+.mkbar b{font-family:var(--f-num);font-weight:400;font-size:14px;line-height:1.3;color:var(--gold)}
+.mkhint{margin:0;text-align:center}
 .mkanchor{position:absolute;width:1px;height:1px;pointer-events:none}
-.mktabs{grid-template-columns:repeat(3,1fr)}
 .mkpane{display:flex;flex-direction:column;gap:calc(var(--px)*2)}
 .mkhead{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--px)*2)}
 .mkhead b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--bone)}
@@ -587,25 +595,22 @@ main{flex:1;min-height:0;position:relative}
     </section>
 
     <section id="v-market" class="view scroll" hidden>
+      <div class="mkbar" id="mkbar" hidden><button class="mkback" id="mkback">‹ Пристань</button><b id="mktitle"></b></div>
       <div class="mkscene" id="mkscene">
         <canvas id="mkcv" class="pcanvas"></canvas>
         <div id="mkmsg" class="mkmsg pbubble" hidden></div>
         <i id="mkscalept" class="mkanchor"></i>
-        <span class="mklbl" data-who="galia">Галя</span><span class="mklbl" data-who="korchmar">Корчмар</span><span class="mklbl" data-who="collector">Колекціонер</span>
-        <span class="mksign" id="mksign" hidden></span>
+        <div class="mkshops" id="mkshops">
+          <button class="mkshop" data-shop="galia"><b>Галя</b><small></small></button>
+          <button class="mkshop" data-shop="korchmar"><b>Корчма</b><small></small></button>
+          <button class="mkshop" data-shop="collector"><b>Колекціонер</b><small></small></button>
+          <button class="mkshop" data-shop="gear"><b>Снасті</b><small></small></button>
+        </div>
       </div>
-      <div class="pmode mktabs" id="mktabs"><button data-m="stall" class="on">Прилавок</button><button data-m="orders">Замовлення</button><button data-m="gear">Снасті</button></div>
 
-      <div class="mkpane" data-pane="stall">
-        <div class="pframe ppanel">
-          <div class="mkhead"><h3>Садок</h3><b id="netsum"></b></div>
-          <p class="psub" id="stallsub"></p>
-          <div class="mkgrid" id="fishlist"></div>
-        </div>
-        <div class="mksellbar">
-          <button class="mkkeep" id="keeptrophies" role="switch" aria-checked="false"><i></i><span>Лишати рідкісних</span></button>
-          <button class="pbtn" id="sellall">Продати все</button>
-        </div>
+      <div class="mkpane" data-pane="hub">
+        <p class="psub mkhint">Торкнись лавку, щоб зайти. Або продай усе Галі одним тапом.</p>
+        <button class="pbtn" id="hubsell">Продати все</button>
         <div class="pframe gold ppanel">
           <h3>Викупити заводь</h3>
           <p class="psub" id="pondinfo"></p>
@@ -619,9 +624,21 @@ main{flex:1;min-height:0;position:relative}
         </div>
       </div>
 
-      <div class="mkpane" data-pane="orders" hidden>
+      <div class="mkpane" data-pane="galia" hidden>
+        <div class="pframe ppanel">
+          <div class="mkhead"><h3>Садок</h3><b id="netsum"></b></div>
+          <p class="psub" id="stallsub"></p>
+          <div class="mkgrid" id="fishlist"></div>
+        </div>
+        <div class="mksellbar">
+          <button class="mkkeep" id="keeptrophies" role="switch" aria-checked="false"><i></i><span>Лишати рідкісних</span></button>
+          <button class="pbtn" id="sellall">Продати все</button>
+        </div>
+      </div>
+
+      <div class="mkpane" data-pane="korchmar" hidden>
         <div class="pframe gold ppanel">
-          <h3>Корчмар</h3>
+          <h3>Замовлення</h3>
           <p class="psub" id="boardsub"></p>
           <div class="mkorders" id="orders"></div>
         </div>
@@ -629,7 +646,7 @@ main{flex:1;min-height:0;position:relative}
 
       <div class="mkpane" data-pane="gear" hidden>
         <div class="pframe ppanel">
-          <h3>Снасті</h3>
+          <h3>Поліпшення</h3>
           <p class="psub">Назавжди. Видно, що саме зміниться.</p>
           <div class="mkupgs" id="upgs"></div>
         </div>
@@ -647,7 +664,7 @@ main{flex:1;min-height:0;position:relative}
 
       <div class="mkpane" data-pane="collector" hidden>
         <div class="pframe deep ppanel">
-          <div class="mkhead"><h3>Колекціонер</h3><em id="collmood"></em></div>
+          <div class="mkhead"><h3>Угода</h3><em id="collmood"></em></div>
           <p class="psub" id="collsub"></p>
           <div class="mkgrid" id="colllist"></div>
           <div class="mkdeal" id="colldeal" hidden></div>
@@ -3597,103 +3614,178 @@ function vodianykSprites() {
   return out;
 }
 
-/* ---------- the landing's buyers: base rows, then a face patched in per mood and blink ---------- */
-const BUYER_ROWS = {
-  galia: [
-    '................',
-    '.....rrrrrr.....',
-    '....rrgrrgrr....',
-    '...rrrrrrrrrr...',
-    '...rrmmmmmmrr...',
-    '...rmmmmmmmmr...',
-    '...rmvmmmmvmr...',
-    '...rmRmmmmRmr...',
-    '...rrmmmmmmrr...',
-    '....rmmRRmmr....',
-    '.....rmmmmr.....',
-    '......rggr......',
-    '....bbbbbbbb....',
-    '...bbrbbbbrbb...',
-    '..bbbbrbbrbbbb..',
-    '..bhbbbrrbbbhb..',
-    '.mbhhbbbbbbhhbm.',
-    '.mmhhhbbbbhhhmm.',
-    '..hhhhbbbbhhhh..',
-    '..hhhhhhhhhhhh..',
-    '..hhhhhhhhhhhh..',
-    '..hhhhhhhhhhhh..',
-  ],
-  korchmar: [
-    '................',
-    '................',
-    '.....mmmmmm.....',
-    '....mMMmmmmm....',
-    '...hmmmmmmmmh...',
-    '...hmvmmmmvmh...',
-    '...hmmmmmmmmh...',
-    '....mmmrrmmm....',
-    '...hhhhmmhhhh...',
-    '....mmmRRmmm....',
-    '.....mmmmmm.....',
-    '...LLLmmmmLLL...',
-    '..LLLLbbbbLLLL..',
-    '.LLLLbbbbbbLLLL.',
-    '.LLLbbbbbbbbLLL.',
-    '.mLLbbbbbbbbLLgb',
-    '.mmLbbbbbbbbLmgg',
-    '..LLbbbbbbbbLLgg',
-    '..LLbbbbbbbbLL..',
-    '..LLbbbbbbbbLL..',
-    '..hhhhhhhhhhhh..',
-    '..hhhh....hhhh..',
-  ],
-  collector: [
-    '.....vvvvvv.....',
-    '.....vvvvvv.....',
-    '.....vvvvvv.....',
-    '.....xxxxxx.....',
-    '...vvvvvvvvvv...',
-    '.....mmmmmm.....',
-    '....mmmmmmmm....',
-    '....mvmmmgvg....',
-    '....mmmmmmgm....',
-    '....mmmmmmmg....',
-    '.....mmmmmmg....',
-    '......mmmm.g....',
-    '....cbbbbbbc....',
-    '...cccbxxbccc...',
-    '..ccccbbbbcccc..',
-    '..cccccbbccccc..',
-    '..cccccxxccccc..',
-    '..cccccccccccc..',
-    '.mcccccxxcccccm.',
-    '.mcccccccccccc..',
-    '..cccccxxccccc..',
-    '..cccccccccccc..',
-    '..cc.cccccc.cc..',
-    '..vv.cc..cc.vv..',
-  ],
-};
-// [x, y, char] patches. Eyes close on a blink; the collector's face follows how the haggling goes.
-const BUYER_BLINK = { galia: [[5, 6, 'd'], [10, 6, 'd']], korchmar: [[5, 5, 'd'], [10, 5, 'd']], collector: [[5, 7, 'd'], [10, 7, 'd']] };
-const COLLECTOR_FACES = {
-  content: [[6, 10, 'R'], [9, 10, 'R'], [7, 11, 'R'], [8, 11, 'R']],
-  thoughtful: [[5, 7, 'd'], [10, 7, 'd'], [5, 6, 'v'], [6, 6, 'v'], [9, 6, 'v'], [10, 6, 'v'], [6, 10, 'R'], [7, 10, 'R'], [8, 10, 'R'], [13, 9, 'm'], [12, 10, 'm']],
-  annoyed: [[4, 6, 'v'], [5, 6, 'v'], [6, 7, 'v'], [9, 7, 'v'], [10, 6, 'v'], [11, 6, 'v'], [4, 8, 'r'], [9, 8, 'r'], [7, 10, 'R'], [8, 10, 'R'], [6, 11, 'R'], [9, 11, 'R']],
-};
-function buyerRows(kind, blink, face) {
-  const g = BUYER_ROWS[kind].map(r => [...r]);
-  const put = ([x, y, ch]) => { if (g[y] && g[y][x] !== undefined) g[y][x] = ch; };
-  (face ? COLLECTOR_FACES[face] : []).forEach(put);
-  if (blink) BUYER_BLINK[kind].forEach(put);
-  return g.map(r => r.join(''));
-}
-function buyerSprites() {
-  const out = {
-    buyer_galia: { fps: 1, frames: [buyerRows('galia', false), buyerRows('galia', true)] },
-    buyer_korchmar: { fps: 1, frames: [buyerRows('korchmar', false), buyerRows('korchmar', true)] },
+/* ---------- the landing's people: 40×40 busts, each with a few moods; frame 1 blinks, frame 2 talks ---------- */
+const PORTRAIT = 40;
+function pen() {
+  const g = Array.from({ length: PORTRAIT }, () => Array(PORTRAIT).fill('.'));
+  const put = (x, y, ch) => { x = Math.round(x); y = Math.round(y); if (g[y] && g[y][x] !== undefined) g[y][x] = ch; };
+  const get = (x, y) => (g[y] && g[y][x]) || '.';
+  const rect = (x, y, w, h, ch) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, ch); };
+  const blob = (cx, cy, rx, ry, ch) => {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) put(x, y, ch);
+    }
   };
-  for (const f of Object.keys(COLLECTOR_FACES)) out[`buyer_collector_${f}`] = { fps: 1, frames: [buyerRows('collector', false, f), buyerRows('collector', true, f)] };
+  // recolour inside a shape: where the pixel is `from` and the test holds
+  const shade = (from, to, test) => { for (let y = 0; y < PORTRAIT; y++) for (let x = 0; x < PORTRAIT; x++) if (g[y][x] === from && test(x, y)) g[y][x] = to; };
+  const paint = (rows, x, y) => rows.forEach((r, ry) => [...r].forEach((ch, rx) => { if (ch !== '.') put(x + rx, y + ry, ch); }));
+  const line = (x0, y0, x1, y1, ch) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) put(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, ch); };
+  return { g, put, get, rect, blob, shade, paint, line, rows: () => g.map(r => r.join('')) };
+}
+
+// Galia: a fishwife in a flowered red headscarf, coral beads, an embroidered blouse and one gold tooth.
+// mood: neutral | laugh. talk opens the mouth.
+function galiaPortrait(mood, blink, talk) {
+  const P = pen(), { put, rect, blob, shade, paint, line } = P;
+  // plump shoulders in an embroidered blouse
+  blob(20, 41, 19, 10, 'b');
+  shade('b', 'o', (x, y) => (x - 20) / 19 + (y - 41) / 30 > 0.62);
+  for (const sx of [4, 27]) for (let i = 0; i < 9; i++) {
+    const x = sx + i, y = 35 + (i % 2);
+    put(x, y, i % 3 === 1 ? 'v' : 'r'); put(x, y + 2, i % 3 === 1 ? 'r' : 'v');
+  }
+  // the scarf: over the head and down over the shoulders like a little cape
+  blob(20, 15, 14, 14, 'r');
+  for (let y = 22; y <= 33; y++) { const half = 12 + Math.floor((y - 22) * 0.6); rect(20 - half, y, half * 2 + 1, 1, 'r'); }
+  rect(18, 33, 5, 1, '.');
+  shade('r', 'R', (x, y) => (x - 20) / 14 + (y - 15) / 34 > 0.5);
+  for (let y = 24; y <= 33; y += 3) { put(20 - 12 - Math.floor((y - 22) * 0.6), y, 'g'); put(20 + 12 + Math.floor((y - 22) * 0.6), y, 'g'); }
+  // flowers on the scarf
+  for (const [x, y] of [[10, 9], [16, 4], [25, 4], [30, 10], [8, 17], [32, 18], [20, 2]]) {
+    put(x, y, 'g'); put(x - 1, y, 'L'); put(x + 1, y, 'L'); put(x, y - 1, 'L'); put(x, y + 1, 'L'); put(x + 1, y + 1, 'F');
+  }
+  // the face
+  blob(20, 19, 10, 11, 'm');
+  shade('m', 'd', (x, y) => (x - 20) / 10 + (y - 19) / 25 > 0.62);
+  // the scarf's edge over the forehead, with a gold fringe
+  rect(10, 8, 21, 2, 'r'); for (let x = 11; x < 30; x += 2) put(x, 10, 'g');
+  // knot under the chin
+  blob(20, 30, 3, 2, 'r'); put(19, 30, 'R'); put(21, 31, 'R');
+  // coral beads, three strands between the scarf's ends
+  for (const dy of [0, 2]) for (let x = 15; x <= 25; x += 2) { const y = 33 + dy + Math.round(((x - 20) / 6) ** 2 * 1.5); put(x, y, 'r'); put(x + 1, y, dy ? 'R' : 'r'); }
+  put(20, 36, 'g');
+  // brows, cheeks, nose, a mole
+  const browY = mood === 'laugh' ? 13 : 14;
+  rect(14, browY, 4, 1, 'h'); rect(23, browY, 4, 1, 'h'); put(13, browY + 1, 'h'); put(27, browY + 1, 'h');
+  paint(['.rr.', 'rrrr'], 12, 21); paint(['.rr.', 'rrrr'], 25, 21);
+  put(20, 20, 'd'); put(20, 21, 'd'); put(21, 21, 'd');
+  // eyes
+  if (blink || mood === 'laugh') { paint(['.v.', 'v.v'], 14, 17); paint(['.v.', 'v.v'], 23, 17); }
+  else { paint(['vv', 'vM'], 15, 17); paint(['vv', 'Mv'], 24, 17); put(14, 17, 'd'); put(26, 17, 'd'); }
+  // mouth: a grin with one gold tooth; laughing or talking, it opens
+  if (mood === 'laugh' || talk) {
+    paint(['R.....R', 'RbbgbbR', 'RvvvvvR', '.RrrrR.'], 17, 23);
+  } else {
+    paint(['R.....R', '.RbgbR.', '..RRR..'], 17, 23);
+  }
+  return P.rows();
+}
+
+// The innkeeper: bald and shiny, a red nose, a moustache like a pair of oars, a towel and a mug.
+// mood: neutral | happy.
+function korchmarPortrait(mood, blink, talk) {
+  const P = pen(), { put, rect, blob, shade, paint, line } = P;
+  // body: shirt, dark waistcoat, apron
+  blob(20, 41, 19, 11, 'b');
+  rect(4, 33, 8, 7, 'R'); rect(28, 33, 8, 7, 'R');
+  shade('b', 'o', (x, y) => (x - 20) / 19 + (y - 42) / 30 > 0.6);
+  rect(15, 35, 10, 5, 'M'); put(17, 37, 'o'); put(22, 38, 'o'); put(18, 38, 'o');
+  // towel over the left shoulder
+  for (let y = 30; y < 40; y++) { put(7, y, 'b'); put(8, y, 'b'); put(9, y, y % 3 ? 'b' : 'r'); }
+  // a thick neck and a big round head
+  rect(13, 26, 15, 5, 'd'); rect(13, 26, 9, 4, 'm');
+  blob(20, 16, 12, 13, 'm');
+  shade('m', 'd', (x, y) => (x - 20) / 12 + (y - 16) / 30 > 0.6);
+  blob(15, 7, 3, 2, 'M'); put(13, 9, 'M');
+  // ears and the last of his hair
+  blob(7, 17, 2, 3, 'm'); blob(33, 17, 2, 3, 'd');
+  for (let y = 10; y < 14; y++) { put(8, y, 'h'); put(9, y + 1, 'h'); put(32, y, 'h'); put(31, y + 1, 'h'); }
+  // a double chin
+  line(15, 28, 25, 28, 'd');
+  // bushy brows and small eyes
+  const by = mood === 'happy' ? 11 : 12;
+  rect(12, by, 6, 2, 'h'); rect(23, by, 6, 2, 'h');
+  if (blink || mood === 'happy') { paint(['.v.', 'v.v'], 14, 15); paint(['.v.', 'v.v'], 24, 15); }
+  else { paint(['v', 'v'], 15, 15); paint(['v', 'v'], 25, 15); put(16, 15, 'M'); put(26, 15, 'M'); }
+  // the nose
+  paint(['.rrr.', 'rrMrr', 'rrrrR', '.RrR.'], 18, 17);
+  // jolly cheeks
+  paint(['.rr', 'rrr'], 11, 19); paint(['rr.', 'rrr'], 27, 19);
+  // the moustache: thick under the nose, waxed tips curling up
+  paint([
+    '.......hhhhhhhhh.......',
+    '....hhhhhhhvhhhhhhh....',
+    '..hhhhhhhh...hhhhhhhh..',
+    '.hhhh............hhhh..',
+    'hhh................hhh.',
+  ].reverse(), 9, 19);
+  put(9, 18, 'h'); put(10, 17, 'h'); put(31, 18, 'h'); put(30, 17, 'h'); put(11, 17, 'v'); put(29, 17, 'v');
+  // mouth under it
+  if (talk || mood === 'happy') paint(['RvvvR', '.RrR.'], 18, 24);
+  else rect(18, 24, 5, 1, 'R');
+  // a mug of kvass in his right hand
+  rect(29, 30, 7, 9, 'g'); rect(29, 30, 7, 1, 'M'); rect(28, 29, 9, 2, 'b'); put(30, 28, 'b'); put(33, 28, 'b');
+  for (let y = 32; y < 38; y += 2) put(31, y, 'L');
+  rect(36, 32, 2, 1, 'd'); rect(37, 32, 1, 5, 'd'); rect(36, 36, 2, 1, 'd');
+  blob(31, 39, 3, 2, 'm');
+  return P.rows();
+}
+
+// The collector: a top hat, a long face, a monocle on a chain, waxed moustache, goatee and a silk cravat.
+// mood: content | thoughtful | annoyed (the monocle drops out).
+function collectorPortrait(mood, blink, talk) {
+  const P = pen(), { put, rect, blob, shade, paint, line } = P;
+  // a narrow dark coat with violet lapels
+  blob(20, 43, 16, 11, 'c');
+  line(14, 33, 18, 40, 'x'); line(26, 33, 22, 40, 'x'); line(15, 33, 19, 40, 'x'); line(25, 33, 21, 40, 'x');
+  // high collar and cravat with a pin
+  rect(16, 30, 8, 3, 'b'); put(15, 31, 'b'); put(24, 31, 'b');
+  blob(20, 34, 3, 2, 'X'); put(20, 34, 'g');
+  // a long face
+  blob(20, 20, 8, 11, 'm');
+  shade('m', 'd', (x, y) => (x - 20) / 8 + (y - 20) / 30 > 0.55);
+  put(14, 22, 'd'); put(14, 23, 'd'); put(26, 22, 'd'); // hollow cheeks
+  // the top hat
+  rect(13, 0, 14, 10, 'v'); rect(13, 7, 14, 2, 'x'); rect(9, 10, 22, 2, 'v');
+  rect(14, 1, 1, 6, 'N');
+  // brows: one arched when content, both knitted when annoyed
+  if (mood === 'annoyed') { line(14, 14, 18, 16, 'v'); line(26, 14, 22, 16, 'v'); }
+  else if (mood === 'thoughtful') { rect(14, 14, 4, 1, 'v'); rect(22, 14, 4, 1, 'v'); }
+  else { line(14, 15, 18, 15, 'v'); line(22, 14, 25, 13, 'v'); }
+  // eyes; the monocle sits on his right one
+  const look = mood === 'thoughtful' ? -1 : 0;
+  if (blink) { rect(15, 17, 3, 1, 'd'); rect(22, 17, 3, 1, 'd'); }
+  else { put(16, 17 + look, 'v'); put(17, 17 + look, 'v'); put(23, 17 + look, 'v'); put(24, 17 + look, 'v'); put(24, 16 + look, 'M'); }
+  if (mood === 'annoyed') {
+    // popped out, swinging on its chain
+    line(26, 21, 27, 30, 'g'); blob(27, 32, 2, 2, 'g'); put(27, 32, 'M'); put(27, 33, 's');
+    rect(14, 20, 3, 1, 'r'); rect(24, 20, 3, 1, 'r');
+  } else {
+    blob(23.5, 17, 3, 3, 'g'); put(23, 16, 'l'); put(24, 17, 'v'); put(23, 17, 'v'); put(22, 15, 'M'); put(25, 16, 'l');
+    line(26, 19, 28, 30, 'g');
+  }
+  // a long nose
+  rect(21, 17, 1, 5, 'd'); put(20, 22, 'd'); put(22, 22, 'd');
+  // a waxed moustache with curled ends, and a pointed goatee
+  line(15, 25, 19, 24, 'v'); line(21, 24, 25, 25, 'v'); put(14, 24, 'v'); put(26, 24, 'v'); put(14, 23, 'v'); put(26, 23, 'v');
+  if (talk) paint(['RvR', '.R.'], 19, 26);
+  else if (mood === 'annoyed') paint(['.R.', 'R.R'], 19, 26);
+  else if (mood === 'content') paint(['R..R', '.RR.'], 18, 26);
+  else rect(19, 26, 3, 1, 'R');
+  line(20, 28, 20, 31, 'v'); put(19, 28, 'v'); put(21, 28, 'v');
+  // thinking: a gloved finger at his lip
+  if (mood === 'thoughtful') { paint(['..b.', '..b.', '.bbb', 'bbbb', 'bbbb', '.bb.'], 14, 25); put(16, 30, 'o'); put(15, 29, 'o'); }
+  return P.rows();
+}
+
+const PORTRAIT_MOODS = { galia: ['neutral', 'laugh'], korchmar: ['neutral', 'happy'], collector: ['content', 'thoughtful', 'annoyed'] };
+const PORTRAIT_FN = { galia: galiaPortrait, korchmar: korchmarPortrait, collector: collectorPortrait };
+function portraitSprites() {
+  const out = {};
+  for (const [who, moods] of Object.entries(PORTRAIT_MOODS)) for (const m of moods) {
+    const f = PORTRAIT_FN[who];
+    out[`portrait_${who}_${m}`] = { fps: 1, frames: [f(m, false, false), f(m, true, false), f(m, false, true)] };
+  }
   return out;
 }
 
@@ -3724,7 +3816,7 @@ for (let p = 0; p < 8; p++) moonSprites[`moon_${p}`] = { fps: 1, frames: [moonPh
 
 defineSprites({
   ...moonSprites,
-  ...buyerSprites(),
+  ...portraitSprites(),
 
   fisher_wait: { fps: 1.5, frames: [
     fisherPose({ arms: [[ARM_REST, 18, 14]] }),
@@ -5767,229 +5859,329 @@ class SlotScene {
 }
 
 /* render/market.js */
-// The landing at dawn: far bank with building plots, water, plank deck, lanterns, fog and three buyers.
+// The landing at dawn. The pier is the menu: four shopfronts, tap one to step inside.
+// Inside, the keeper's portrait stands behind the counter of their own shop.
 const MARKET_SCENE_H = 62;
-const MK_HORIZON = 21, MK_DECK = 38;
-// Positions on a 120-wide layout; wider screens centre it.
-const MK_SPOTS = {
-  galia: { x: 9, y: MK_DECK + 6 - 22, w: 16, h: 22 },
-  korchmar: { x: 54, y: MK_DECK + 9 - 22, w: 16, h: 22 },
-  collector: { x: 92, y: MK_DECK + 9 - 24, w: 16, h: 24 },
-};
-const MK_COUNTER = { x: 2, y: MK_DECK + 4, w: 42, h: 9 };
-const MK_SCALE = { x: 34, y: MK_DECK - 3 };
+const MK_HORIZON = 21, MK_DECK = 40;
+const SHOPS = ['galia', 'korchmar', 'collector', 'gear'];
+const SHOP_W = 27;
+const shopX = i => 2 + i * (SHOP_W + 2);
+const SHOP_TOP = 14, SHOP_BASE = MK_DECK + 7;
+const COUNTER_Y = 48;
+const WEIGH_TIME = 0.9;
 // Plots on the far bank for the landing's buildings (phase two fills them).
 const MK_PLOTS = [8, 30, 54, 78, 100];
-const WEIGH_TIME = 0.9;
 
 class MarketScene {
   constructor({ calm = false } = {}) {
     this.calm = calm;
     this.t = 0;
-    this.weigh = null; // { sprite, t }
+    this.weigh = null;
     this.pops = [];
-    this.blinks = { galia: 1.3, korchmar: 2.7, collector: 0.6 };
-    this.blinkT = { galia: 0, korchmar: 0, collector: 0 };
+    this.blinkT = 0; this.nextBlink = 1.5;
+    this.talkT = 0; this.moodT = 0; this.mood = null;
     this.surf = null;
+    this.backs = {};
   }
 
   resize(w, h) {
     this.w = w; this.h = h;
     this.ox = Math.floor((w - 120) / 2);
     this.surf = new Surface(w, h);
-    this.back = new Surface(w, h);
-    this.paintBack();
+    this.backs = {};
+    for (const k of ['hub', ...SHOPS]) { const b = new Surface(w, h); this.backs[k] = b; this['paint_' + k](b); }
+    // the shopfronts on their own transparent layer, over the moving water and fog
+    this.front = new Surface(w, h);
+    this.paint_fronts(this.front);
+    this.frontSprite = { w, h, frames: [this.front.buf] };
   }
 
-  // Scene box of a buyer, in scene pixels (for taps and the labels over the canvas).
-  box(kind) { const b = MK_SPOTS[kind]; return { x: b.x + this.ox, y: b.y, w: b.w, h: b.h }; }
-  scaleAt() { return { x: MK_SCALE.x + this.ox, y: MK_SCALE.y }; }
-  hit(x, y) {
-    for (const k of Object.keys(MK_SPOTS)) { const b = this.box(k); if (x >= b.x - 3 && x <= b.x + b.w + 3 && y >= b.y - 2 && y <= MK_DECK + 12) return k; }
-    if (x >= MK_COUNTER.x + this.ox && x <= MK_COUNTER.x + this.ox + MK_COUNTER.w && y >= MK_DECK - 8) return 'galia';
+  /* ---------- the pier ---------- */
+  shopBox(i) { return { x: shopX(i) + this.ox, y: SHOP_TOP, w: SHOP_W, h: SHOP_BASE - SHOP_TOP }; }
+  hit(x, y, view) {
+    if (view !== 'hub') return view === 'gear' ? null : 'face';
+    for (let i = 0; i < SHOPS.length; i++) { const b = this.shopBox(i); if (x >= b.x && x < b.x + b.w && y >= b.y - 2 && y <= MK_DECK + 20) return SHOPS[i]; }
     return null;
   }
+  scaleAt() { return { x: this.ox + 98, y: COUNTER_Y - 3 }; }
 
-  paintBack() {
-    const S = this.back, { w, h } = this;
-    // dawn: night at the top, fog, then the lamp-orange band at the horizon
-    // dawn: night above, a violet band, then orange at the horizon
+  skyAndWater(S) {
+    const { w, h } = this;
     const bands = [['night', 'night2'], ['night2', 'curseD'], ['curseD', 'lamp']];
     for (let y = 0; y < MK_HORIZON; y++) {
       const k = (y / MK_HORIZON) * bands.length, i = Math.min(bands.length - 1, Math.floor(k));
       S.dither(0, y, w, 1, bands[i][0], bands[i][1], i === 2 ? (k - i) * 0.8 : k - i);
     }
     for (const [x, y] of [[6, 2], [19, 5], [33, 1], [47, 4], [70, 2], [88, 6], [104, 3], [117, 1]]) S.px(x + this.ox, y, 'moonS');
-    // the sun just up behind the far bank
-    const sx = this.ox + 86;
-    S.ditherCircle(sx, MK_HORIZON - 2, 14, 'gold', 0.7, 0.55);
+    const sx = this.ox + 60;
+    S.ditherCircle(sx, MK_HORIZON - 2, 16, 'gold', 0.7, 0.55);
     S.ellipse(sx, MK_HORIZON - 1, 5, 5, 'gold', true);
     S.ellipse(sx, MK_HORIZON - 2, 3, 3, 'moon', true);
-    // far bank
     for (let x = 0; x < w; x++) {
       const top = MK_HORIZON - Math.round(1 + Math.sin(x * 0.11) * 0.8 + Math.sin(x * 0.37) * 0.5);
       S.rect(x, top, 1, MK_HORIZON + 3 - top, 'night');
     }
-    // water
-    for (let y = MK_HORIZON + 2; y < MK_DECK; y++) {
-      const k = (y - MK_HORIZON - 2) / (MK_DECK - MK_HORIZON - 2);
-      S.dither(0, y, w, 1, 'waterM', 'waterD', k);
-    }
-    // deck: planks with seams, staggered joins and nails
+    for (let y = MK_HORIZON + 2; y < MK_DECK; y++) S.dither(0, y, w, 1, 'waterM', 'waterD', (y - MK_HORIZON - 2) / (MK_DECK - MK_HORIZON - 2));
     S.rect(0, MK_DECK, w, h - MK_DECK, 'wood');
     for (let y = MK_DECK, r = 0; y < h; y += 4, r++) {
       S.rect(0, y, w, 1, 'void');
       for (let x = (r * 13) % 23; x < w; x += 23) { S.rect(x, y, 1, 4, 'void'); S.px(x + 2, y + 2, 'moonD'); }
     }
-    S.dither(0, MK_DECK + 1, w, 3, null, 'lamp', 0.15);
     S.dither(0, h - 6, w, 6, null, 'void', 0.35);
   }
 
-  // The empty plots: stakes and a string, waiting for a building.
-  drawPlots(built) {
-    const S = this.surf;
-    MK_PLOTS.forEach((px, i) => {
-      const x = px + this.ox, base = MK_HORIZON + 1;
-      if (built && built[i]) return; // phase two paints the building here
-      S.rect(x, base - 3, 1, 3, 'wood'); S.rect(x + 9, base - 3, 1, 3, 'wood');
-      S.rect(x + 1, base - 3, 8, 1, 'moonD');
-    });
+  // A sign board hanging from the eaves, with a picture on it.
+  sign(S, x, y, w, draw) {
+    S.rect(x, y, w, 7, 'wood'); S.rect(x, y, w, 1, 'moonD'); S.rect(x, y + 6, w, 1, 'void');
+    S.px(x + 2, y - 1, 'moonD'); S.px(x + w - 3, y - 1, 'moonD');
+    draw(x + Math.floor(w / 2), y + 3);
   }
 
+  paint_hub(S) { this.skyAndWater(S); }
+  paint_fronts(S) {
+    const base = SHOP_BASE;
+    // Galia's fish stall: posts, a striped awning, a counter with fish on ice
+    { const x = shopX(0) + this.ox, top = SHOP_TOP + 6;
+      S.rect(x + 1, top, 2, base - top, 'wood'); S.rect(x + SHOP_W - 3, top, 2, base - top, 'wood');
+      for (let i = 0; i < SHOP_W; i++) { S.rect(x + i, top, 1, 5, Math.floor(i / 3) % 2 ? 'bone' : 'red'); if (i % 3 === 1) S.px(x + i, top + 5, Math.floor(i / 3) % 2 ? 'bone' : 'red'); }
+      S.rect(x, top - 1, SHOP_W, 1, 'redD');
+      S.rect(x + 3, top + 6, SHOP_W - 6, base - top - 14, 'night');
+      for (let i = 0; i < 3; i++) { S.rect(x + 6 + i * 6, top + 7, 1, 3, 'moonD'); S.drawSprite(SPRITES.fish_roach, 0, x + 1 + i * 6, top + 10); }
+      S.rect(x, base - 8, SHOP_W, 8, 'wood'); S.rect(x, base - 8, SHOP_W, 1, 'moonD');
+      S.dither(x + 1, base - 10, SHOP_W - 2, 2, null, 'shimmer', 0.5); S.rect(x + 4, base - 11, 6, 2, 'waterL'); S.rect(x + 14, base - 11, 7, 2, 'moonS');
+      this.sign(S, x + 6, SHOP_TOP - 1, 15, (cx, cy) => { S.rect(cx - 4, cy - 1, 7, 3, 'shimmer'); S.px(cx + 3, cy - 1, 'shimmer'); S.px(cx + 3, cy + 1, 'shimmer'); S.px(cx - 3, cy - 1, 'void'); });
+    }
+    // the tavern: a timber house, a pitched roof, a warm window and a door
+    { const x = shopX(1) + this.ox, top = SHOP_TOP + 9;
+      for (let i = 0; i <= 9; i++) S.rect(x + 13 - i - 1, top - 9 + i, (i + 1) * 2 + 1, 1, i % 3 ? 'redD' : 'red');
+      S.rect(x, top, SHOP_W, base - top, 'wood');
+      for (let y = top + 3; y < base; y += 3) S.rect(x, y, SHOP_W, 1, 'void');
+      S.rect(x + 3, top + 4, 8, 7, 'void'); S.rect(x + 4, top + 5, 6, 5, 'lamp'); S.rect(x + 4, top + 5, 6, 2, 'gold'); S.rect(x + 7, top + 5, 1, 5, 'void');
+      S.rect(x + 15, top + 7, 8, base - top - 7, 'void'); S.rect(x + 16, top + 8, 6, base - top - 8, 'night2'); S.px(x + 21, top + 15, 'gold');
+      S.rect(x + 13, top - 4, 1, 3, 'moonD');
+      this.sign(S, x + 7, top - 2, 13, (cx, cy) => { S.rect(cx - 2, cy - 2, 4, 4, 'gold'); S.rect(cx - 2, cy - 2, 4, 1, 'bone'); S.px(cx + 2, cy, 'moonD'); });
+    }
+    // the collector's curiosity shop: dark violet, an arched glowing window with a fish under glass
+    { const x = shopX(2) + this.ox, top = SHOP_TOP + 3;
+      S.rect(x, top, SHOP_W, base - top, 'curseD');
+      S.rect(x, top, SHOP_W, 2, 'magic'); for (let i = 1; i < SHOP_W; i += 3) S.px(x + i, top + 2, 'magic');
+      S.rect(x + 1, top - 2, SHOP_W - 2, 2, 'void');
+      S.ellipse(x + 13, top + 10, 8, 5, 'magicL', true); S.rect(x + 5, top + 10, 17, 9, 'magicL');
+      S.dither(x + 5, top + 6, 17, 13, null, 'magic', 0.35);
+      S.drawSprite(SPRITES.fish_moon, 0, x + 6, top + 10);
+      S.rect(x + 4, top + 19, 19, 1, 'void'); S.rect(x + 13, top + 5, 1, 14, 'curseD');
+      S.rect(x + 9, top + 21, 9, base - top - 21, 'void'); S.px(x + 16, top + 25, 'gold');
+      this.sign(S, x + 6, SHOP_TOP - 3, 15, (cx, cy) => { S.ellipse(cx, cy, 2, 2, 'gold'); S.px(cx, cy, 'void'); S.line(cx + 2, cy + 2, cx + 4, cy + 3, 'gold'); });
+    }
+    // the tackle shed: planks, rods leaning against it, a net drying
+    { const x = shopX(3) + this.ox, top = SHOP_TOP + 8;
+      S.rect(x + 1, top - 3, SHOP_W - 2, 3, 'moonD'); S.rect(x, top - 1, SHOP_W, 1, 'void');
+      S.rect(x + 1, top, SHOP_W - 2, base - top, 'wood');
+      for (let i = x + 4; i < x + SHOP_W; i += 4) S.rect(i, top, 1, base - top, 'void');
+      S.rect(x + 9, top + 6, 9, base - top - 6, 'void'); S.rect(x + 10, top + 7, 7, base - top - 7, 'night');
+      S.dither(x + 2, top + 2, 7, 9, null, 'fog', 0.5);
+      for (const [dx, h] of [[20, 26], [23, 22], [25, 28]]) { S.line(x + dx, base - 1, x + dx - 3, base - h, 'moon'); S.px(x + dx - 3, base - h, 'red'); }
+      this.sign(S, x + 5, SHOP_TOP - 1, 15, (cx, cy) => { S.rect(cx, cy - 2, 1, 4, 'bone'); S.px(cx - 1, cy + 2, 'bone'); S.px(cx - 2, cy + 1, 'bone'); });
+    }
+  }
+
+  /* ---------- inside the shops ---------- */
+  room(S, wall, wall2, seam) {
+    const { w, h } = this;
+    S.rect(0, 0, w, h, wall);
+    for (let x = (this.ox % 6 + 6) % 6; x < w; x += 6) { S.rect(x, 0, 1, h, seam); S.dither(x + 1, 0, 2, h, null, wall2, 0.3); }
+  }
+  counter(S, top, face, edge) {
+    const { w, h } = this;
+    S.rect(0, top, w, h - top, face);
+    S.rect(0, top, w, 2, edge); S.rect(0, top + 2, w, 1, 'void');
+    for (let x = 4; x < w; x += 10) S.rect(x, top + 3, 1, h - top - 3, 'void');
+  }
+  paint_galia(S) {
+    this.room(S, 'wood', 'night', 'void');
+    // a striped awning with a scalloped edge
+    for (let x = 0; x < this.w; x++) { const red = Math.floor((x - this.ox) / 5) % 2; S.rect(x, 0, 1, 7, red ? 'red' : 'bone'); if ((x - this.ox) % 5 !== 0) S.px(x, 7, red ? 'red' : 'bone'); }
+    S.rect(0, 0, this.w, 1, 'redD');
+    // a string of dried fish and a garlic braid
+    const ox = this.ox;
+    S.line(ox + 50, 12, ox + 118, 14, 'moonD');
+    for (let i = 0; i < 6; i++) { const x = ox + 54 + i * 11, y = 13 + Math.round(i / 3); S.rect(x, y, 1, 2, 'moonD'); S.rect(x - 1, y + 2, 3, 6, 'moonS'); S.rect(x - 1, y + 2, 1, 6, 'moonD'); S.px(x, y + 8, 'moonD'); S.px(x - 1, y + 9, 'moonD'); S.px(x + 1, y + 9, 'moonD'); }
+    for (let i = 0; i < 4; i++) S.ellipse(ox + 112, 18 + i * 4, 2, 2, 'bone', true);
+    this.counter(S, COUNTER_Y, 'wood', 'moonD');
+    // ice and fish on the counter
+    S.dither(ox + 44, COUNTER_Y - 2, 40, 2, null, 'shimmer', 0.6); S.rect(ox + 44, COUNTER_Y - 1, 40, 1, 'bone');
+    S.drawSprite(SPRITES.fish_crucian, 0, ox + 46, COUNTER_Y - 8); S.drawSprite(SPRITES.fish_perch, 0, ox + 62, COUNTER_Y - 9, true);
+  }
+  paint_korchmar(S) {
+    this.room(S, 'wood', 'void', 'void');
+    const ox = this.ox;
+    S.ditherCircle(ox + 70, 12, 26, 'lamp', 0.45, 0.8);
+    // shelves of bottles and jugs
+    for (const sy of [14, 28]) {
+      S.rect(ox + 50, sy, 70, 2, 'moonD'); S.rect(ox + 50, sy + 2, 70, 1, 'void');
+      for (let i = 0; i < 8; i++) {
+        const x = ox + 53 + i * 8, kind = (i + sy) % 3;
+        if (kind === 0) { S.rect(x, sy - 6, 3, 6, 'reed'); S.rect(x + 1, sy - 8, 1, 2, 'reed'); S.px(x, sy - 5, 'frogL'); }
+        else if (kind === 1) { S.ellipse(x + 2, sy - 3, 3, 3, 'lamp', true); S.rect(x + 1, sy - 7, 3, 2, 'lamp'); S.px(x + 1, sy - 4, 'gold'); }
+        else { S.rect(x, sy - 5, 4, 5, 'bone'); S.rect(x, sy - 5, 4, 1, 'moonD'); }
+      }
+    }
+    // a lamp hanging from a hook
+    S.rect(ox + 70, 0, 1, 4, 'void'); S.drawSprite(SPRITES.lantern_2, 0, ox + 67, 4);
+    // a barrel with a tap
+    S.rect(ox + 104, 33, 14, 15, 'wood'); S.rect(ox + 104, 36, 14, 1, 'void'); S.rect(ox + 104, 44, 14, 1, 'void'); S.rect(ox + 105, 33, 12, 1, 'lamp');
+    S.rect(ox + 102, 40, 2, 2, 'moonD');
+    this.counter(S, COUNTER_Y, 'wood', 'lamp');
+    for (const x of [50, 60, 88]) { S.rect(ox + x, COUNTER_Y - 6, 5, 6, 'gold'); S.rect(ox + x, COUNTER_Y - 7, 5, 1, 'bone'); S.rect(ox + x + 5, COUNTER_Y - 5, 1, 3, 'moonD'); }
+  }
+  paint_collector(S) {
+    const { w, h } = this, ox = this.ox;
+    // a velvet curtain in folds
+    S.rect(0, 0, w, h, 'curseD');
+    for (let x = 0; x < w; x += 7) { S.dither(x, 0, 3, h, null, 'night', 0.6); S.rect(x + 4, 0, 1, h, 'magic'); }
+    S.rect(0, 0, w, 3, 'magic'); for (let x = 1; x < w; x += 4) S.px(x, 3, 'gold');
+    // jars with curiosities on a shelf, and candles
+    S.rect(ox + 50, 26, 70, 2, 'moonD'); S.rect(ox + 50, 28, 70, 1, 'void');
+    for (let i = 0; i < 5; i++) {
+      const x = ox + 54 + i * 13;
+      S.rect(x, 15, 9, 11, 'waterD'); S.rect(x, 15, 9, 1, 'bone'); S.rect(x + 1, 14, 7, 1, 'wood');
+      S.dither(x + 1, 16, 7, 9, null, 'waterL', 0.4);
+      S.drawSprite(i % 2 ? SPRITES.fish_bone : SPRITES.fish_roach, 0, x - 3, 17);
+    }
+    // a glass case with a pinned fish on the counter
+    this.counter(S, COUNTER_Y, 'night', 'magic');
+    S.rect(ox + 48, COUNTER_Y - 12, 30, 12, 'bone'); S.rect(ox + 49, COUNTER_Y - 11, 28, 11, 'night2');
+    S.dither(ox + 49, COUNTER_Y - 11, 28, 11, null, 'waterL', 0.25);
+    S.drawSprite(SPRITES.fish_sterlet, 0, ox + 55, COUNTER_Y - 9);
+    S.rect(ox + 50, COUNTER_Y - 10, 6, 1, 'bone');
+  }
+  paint_gear(S) {
+    this.room(S, 'wood', 'night', 'void');
+    const ox = this.ox;
+    // rods racked on the wall, a net drying, hooks on a board
+    for (let i = 0; i < 5; i++) { const x = ox + 8 + i * 9; S.line(x, 44, x + 10, 6, 'moon'); S.px(x + 10, 6, 'red'); S.rect(x - 1, 40, 3, 3, 'void'); }
+    S.dither(ox + 60, 4, 30, 24, null, 'fog', 0.35);
+    for (let x = ox + 60; x < ox + 90; x += 4) S.line(x, 4, x + 3, 28, 'moonD');
+    S.rect(ox + 96, 8, 20, 14, 'moonD'); S.rect(ox + 97, 9, 18, 12, 'wood');
+    for (let i = 0; i < 6; i++) { const x = ox + 99 + (i % 3) * 6, y = 11 + Math.floor(i / 3) * 5; S.rect(x, y, 1, 3, 'bone'); S.px(x - 1, y + 3, 'bone'); }
+    S.drawSprite(SPRITES.lantern_2, 0, ox + 92, 26);
+    this.counter(S, COUNTER_Y, 'wood', 'moonD');
+    S.rect(ox + 20, COUNTER_Y - 4, 16, 4, 'wood'); S.rect(ox + 20, COUNTER_Y - 4, 16, 1, 'lamp');
+    for (const x of [22, 26, 30]) S.px(ox + x, COUNTER_Y - 3, 'frogL');
+  }
+
+  /* ---------- moving parts ---------- */
   drawWater() {
-    const S = this.surf, t = this.calm ? 0 : this.t, sx = this.ox + 86;
-    // the sun's road on the water, flickering
+    const S = this.surf, t = this.calm ? 0 : this.t, sx = this.ox + 60;
     for (let y = MK_HORIZON + 3; y < MK_DECK - 1; y += 2) {
       const half = 2 + Math.floor((y - MK_HORIZON) / 3), shift = Math.floor(Math.sin(t * 2 + y) * 1.5);
       for (let x = sx - half; x <= sx + half; x += 4) if (((x + y + Math.floor(t * 3)) % 5) < 2) S.rect(x + shift, y, 2, 1, (x + y) % 2 ? 'gold' : 'lamp');
     }
-    for (let i = 0; i < 6; i++) {
-      const y = MK_HORIZON + 4 + i * 2, x = ((i * 37 + Math.floor(t * (4 + i))) % (this.w + 20)) - 10;
-      S.rect(x, y, 4 + (i % 3), 1, 'shimmer');
+    for (let i = 0; i < 6; i++) { const y = MK_HORIZON + 4 + i * 2, x = ((i * 37 + Math.floor(t * (4 + i))) % (this.w + 20)) - 10; S.rect(x, y, 4 + (i % 3), 1, 'shimmer'); }
+  }
+  drawFog() {
+    if (this.calm) return;
+    for (let i = 0; i < 3; i++) {
+      const span = this.w + 60, x = ((i * 47 + this.t * (2 + i * 0.7)) % span) - 30;
+      this.surf.ditherCircle(x, MK_HORIZON + 4 + i * 5, 22, 'fog', 0.3, 0.18);
     }
   }
-
-  drawLantern(x, poleTop) {
-    const S = this.surf, flick = this.calm ? 0 : Math.sin(this.t * 7 + x) * 0.1;
-    S.ditherCircle(x + 3, poleTop + 4, 6, 'lamp', 0.3 + flick, 0.9);
-    S.rect(x + 3, poleTop + 7, 1, MK_DECK + 4 - poleTop - 7, 'void');
-    S.drawSprite(SPRITES.lantern_2, 0, x, poleTop);
+  drawPlots(built) {
+    const S = this.surf;
+    MK_PLOTS.forEach((px, i) => {
+      if (built && built[i]) return;
+      const x = px + this.ox, base = MK_HORIZON + 1;
+      S.rect(x, base - 3, 1, 3, 'wood'); S.rect(x + 9, base - 3, 1, 3, 'wood');
+    });
+  }
+  // A lit window flickers a little; a closed shop's window is dark.
+  drawHubLights(view) {
+    const S = this.surf, f = this.calm ? 0 : Math.floor(this.t * 3) % 7 === 0;
+    const x = shopX(1) + this.ox, top = SHOP_TOP + 9;
+    if (f) S.rect(x + 4, top + 7, 6, 3, 'gold');
+    if (view.collector === 'gone') { const c = shopX(2) + this.ox, t2 = SHOP_TOP + 3; S.dither(c + 5, t2 + 6, 17, 13, null, 'night', 0.7); }
   }
 
-  drawBuyer(kind, view) {
-    const S = this.surf, b = this.box(kind);
-    const sp = kind === 'collector' ? SPRITES[`buyer_collector_${view.collector === 'gone' ? 'content' : view.collector}`] : SPRITES[`buyer_${kind}`];
-    const breathe = this.calm ? 0 : Math.floor((this.t * 0.8 + b.x * 0.07) % 2);
-    S.drawSprite(sp, this.blinkT[kind] > 0 ? 1 : 0, b.x, b.y + breathe);
+  // view: { shop: 'hub'|'galia'|..., collector: mood, talking: bool, built }
+  draw(view) {
+    const S = this.surf, shop = view.shop || 'hub';
+    S.copyFrom(this.backs[shop]);
+    if (shop === 'hub') {
+      this.drawPlots(view.built);
+      this.drawWater();
+      this.drawFog();
+      S.drawSprite(this.frontSprite, 0, 0, 0);
+      this.drawHubLights(view);
+      return;
+    }
+    this.drawKeeper(shop, view);
+    if (shop === 'galia') this.drawScale();
+    if (shop === 'gear') S.drawSprite(SPRITES.cat, frameAt(SPRITES.cat, this.calm ? 0 : this.t * 0.4), this.ox + 70, COUNTER_Y - 8);
   }
 
-  // The collector's place when he has gone off: a post with a sign.
-  drawSign() {
-    const S = this.surf, b = this.box('collector'), x = b.x + 2, y = MK_DECK - 12;
-    S.rect(x + 5, y + 6, 2, 15, 'wood');
-    S.rect(x, y, 12, 7, 'wood');
-    S.rect(x + 1, y + 1, 10, 5, 'bone');
-    for (const [dx, dy, w] of [[2, 2, 7], [2, 4, 5]]) S.rect(x + dx, y + dy, w, 1, 'moonD');
+  drawKeeper(shop, view) {
+    const S = this.surf;
+    if (shop === 'gear') return;
+    if (shop === 'collector' && view.collector === 'gone') {
+      // an empty shop: a sign on the counter
+      const x = this.ox + 20, y = COUNTER_Y - 14;
+      S.rect(x + 7, y + 8, 2, 6, 'wood'); S.rect(x, y, 16, 9, 'wood'); S.rect(x + 1, y + 1, 14, 7, 'bone');
+      S.rect(x + 3, y + 3, 10, 1, 'moonD'); S.rect(x + 3, y + 5, 7, 1, 'moonD');
+      this.redrawCounter(shop);
+      return;
+    }
+    const mood = shop === 'collector' ? view.collector : this.moodT > 0 ? this.mood : null;
+    const name = `portrait_${shop}_${mood || PORTRAIT_MOODS[shop][0]}`, sp = SPRITES[name] || SPRITES[`portrait_${shop}_${PORTRAIT_MOODS[shop][0]}`];
+    const breathe = this.calm ? 0 : Math.floor((this.t * 0.7) % 2);
+    const talking = this.talkT > 0 && !this.calm && Math.floor(this.t * 7) % 2 === 0;
+    const frame = this.blinkT > 0 ? 1 : talking ? 2 : 0;
+    const x = this.ox + 6, y = COUNTER_Y - 39 + breathe;
+    S.drawOutline(sp, frame, x, y, 'void');
+    S.drawSprite(sp, frame, x, y);
+    this.redrawCounter(shop);
+  }
+  // The counter stands in front of the keeper: copy its rows back from the shop's picture.
+  redrawCounter(shop) {
+    const back = this.backs[shop], S = this.surf, from = (COUNTER_Y - (shop === 'galia' ? 2 : 0)) * S.w;
+    S.buf.set(back.buf.subarray(from, from + S.w * (S.h - COUNTER_Y + (shop === 'galia' ? 2 : 0))), from);
   }
 
-  drawBoard() {
-    // the innkeeper's order board: three papers on a post, and his barrel
-    const S = this.surf, x = this.ox + 42, y = MK_DECK - 16;
-    S.rect(x + 4, y + 8, 2, 16, 'wood');
-    S.rect(x, y, 10, 9, 'wood');
-    S.rect(x, y, 10, 1, 'moonD');
-    [[1, 2], [4, 1], [7, 3]].forEach(([dx, dy]) => S.rect(x + dx, y + dy, 2, 4, 'bone'));
-    const bx = this.ox + 71, by = MK_DECK + 1;
-    S.rect(bx, by, 9, 10, 'wood');
-    S.rect(bx, by + 2, 9, 1, 'void'); S.rect(bx, by + 7, 9, 1, 'void');
-    S.rect(bx + 1, by, 7, 1, 'lamp');
-  }
-
-  drawCounter() {
-    const S = this.surf, { y, w, h } = MK_COUNTER, x = MK_COUNTER.x + this.ox;
-    S.rect(x, y, w, h, 'wood');
-    S.rect(x, y, w, 2, 'moonD');
-    S.rect(x, y + 2, w, 1, 'void');
-    for (let px = x + 5; px < x + w; px += 9) S.rect(px, y + 3, 1, h - 3, 'void');
-    S.rect(x, y + h - 1, w, 1, 'void');
-    // a basket of greens at Galia's elbow
-    S.rect(x + 2, y - 3, 6, 3, 'wood'); S.rect(x + 3, y - 4, 4, 1, 'frog'); S.px(x + 5, y - 5, 'frogL');
-  }
-
-  // The scale: a beam that tips while a fish is weighed.
   drawScale() {
     const S = this.surf, { x, y } = this.scaleAt(), wg = this.weigh;
     let tilt = 0;
-    if (wg) {
-      const k = wg.t / WEIGH_TIME;
-      tilt = k < 0.25 ? 0 : Math.round(Math.sin((k - 0.25) * 14) * 2.5 * Math.max(0, 1 - k));
-      if (k >= 0.25 && k < 0.35) tilt = 2;
-    }
-    S.rect(x, y, 1, 8, 'moonD');
-    S.rect(x - 2, y + 7, 5, 1, 'moonD');
-    S.line(x - 7, y - tilt, x + 7, y + tilt, 'gold');
+    if (wg) { const k = wg.t / WEIGH_TIME; tilt = k < 0.25 ? 0 : k < 0.35 ? 2 : Math.round(Math.sin((k - 0.25) * 14) * 2.5 * Math.max(0, 1 - k)); }
+    S.rect(x, y - 6, 1, 9, 'moonD'); S.rect(x - 3, y + 2, 7, 1, 'moonD');
+    S.line(x - 8, y - 6 - tilt, x + 8, y - 6 + tilt, 'gold');
     const pan = (px, py) => { S.rect(px - 4, py + 3, 9, 1, 'moonD'); S.px(px - 3, py + 2, 'moonD'); S.px(px + 3, py + 2, 'moonD'); };
-    pan(x - 7, y - tilt); pan(x + 7, y + tilt);
+    pan(x - 8, y - 6 - tilt); pan(x + 8, y - 6 + tilt);
     if (wg && wg.sprite) {
-      const k = wg.t / WEIGH_TIME, drop = k < 0.25 ? Math.round((1 - k / 0.25) * 10) : 0;
-      if (k < 0.85) {
-        const sp = wg.sprite, fx = x - 7 - (sp.w >> 1), fy = y - tilt + 4 - sp.h - drop;
-        S.drawOutline(sp, 0, fx, fy, 'void');
-        S.drawSprite(sp, 0, fx, fy);
-      }
+      const k = wg.t / WEIGH_TIME, drop = k < 0.25 ? Math.round((1 - k / 0.25) * 12) : 0;
+      if (k < 0.85) { const sp = wg.sprite, fx = x - 8 - (sp.w >> 1), fy = y - 6 - tilt + 3 - sp.h - drop; S.drawOutline(sp, 0, fx, fy, 'void'); S.drawSprite(sp, 0, fx, fy); }
     }
     for (const p of this.pops) S.drawSprite(SPRITES.coin, 0, p.x, p.y);
   }
 
-  drawFog() {
-    if (this.calm) return;
-    const S = this.surf;
-    for (let i = 0; i < 4; i++) {
-      const span = this.w + 60, x = ((i * 47 + this.t * (2 + i * 0.7)) % span) - 30, y = MK_HORIZON + 2 + i * 6;
-      S.ditherCircle(x, y, 22, 'fog', 0.32, 0.18);
-    }
-  }
-
-  // A fish lands on the scale; coins jump from the pan once it has settled.
-  weighFish(name) {
-    this.weigh = { sprite: name ? fishSpriteFor(name) : null, t: this.calm ? WEIGH_TIME * 0.8 : 0, popped: false };
-  }
+  weighFish(name) { this.weigh = { sprite: name ? fishSpriteFor(name) : null, t: this.calm ? WEIGH_TIME * 0.8 : 0, popped: false }; }
+  talk(sec = 1.6) { this.talkT = sec; }
+  feel(mood, sec = 1.8) { this.mood = mood; this.moodT = sec; }
 
   advance(dt) {
     this.t += dt;
-    for (const k of Object.keys(this.blinks)) {
-      this.blinkT[k] = Math.max(0, this.blinkT[k] - dt);
-      this.blinks[k] -= dt;
-      if (this.blinks[k] <= 0) { this.blinkT[k] = 0.14; this.blinks[k] = 2 + Math.random() * 2.5; }
-    }
+    this.talkT = Math.max(0, this.talkT - dt);
+    this.moodT = Math.max(0, this.moodT - dt);
+    this.blinkT = Math.max(0, this.blinkT - dt);
+    this.nextBlink -= dt;
+    if (this.nextBlink <= 0) { this.blinkT = 0.14; this.nextBlink = 2 + Math.random() * 2.5; }
     if (this.weigh) {
       this.weigh.t += dt;
       const { x, y } = this.scaleAt();
       if (!this.weigh.popped && this.weigh.t >= WEIGH_TIME * 0.55) {
         this.weigh.popped = true;
-        for (let i = 0; i < 3; i++) this.pops.push({ x: x - 10 + i * 3, y: y - 4, vy: -26 - i * 6, life: 0.6 });
+        for (let i = 0; i < 3; i++) this.pops.push({ x: x - 12 + i * 3, y: y - 10, vy: -26 - i * 6, life: 0.6 });
       }
       if (this.weigh.t >= WEIGH_TIME) this.weigh = null;
     }
     this.pops = this.pops.filter(p => { p.life -= dt; p.vy += 90 * dt; p.y += p.vy * dt; return p.life > 0; });
-  }
-
-  // view: { collector: 'content'|'thoughtful'|'annoyed'|'gone', built: [bool] }
-  draw(view) {
-    const S = this.surf;
-    S.copyFrom(this.back);
-    this.drawPlots(view.built);
-    this.drawWater();
-    this.drawFog();
-    this.drawLantern(this.ox - 1, MK_DECK - 20);
-    this.drawLantern(this.ox + 81, MK_DECK - 20);
-    this.drawLantern(this.ox + 113, MK_DECK - 20);
-    this.drawBoard();
-    this.drawBuyer('korchmar', view);
-    if (view.collector === 'gone') this.drawSign(); else this.drawBuyer('collector', view);
-    this.drawBuyer('galia', view);
-    this.drawCounter();
-    this.drawScale();
   }
 }
 
@@ -7262,10 +7454,10 @@ function showTab(t){
   if(t!=='pond'&&FISHING_BUSY.includes(F.state)){F.state='idle';F.holding=false;F.reel=null;F.father=false;$('#meter').hidden=true;$('#power').hidden=true;$('#snagbox').hidden=true;say('Вудку змотано')}
   if(t!==tab)dropTips();
   if(tab==='slot'&&t!=='slot'&&sh.mode==='shells'&&(sh.ui==='show'||sh.ui==='shuffle'))sh.ui='idle';
-  tab=t;
+  const prevTab=tab;tab=t;
   document.querySelectorAll('.ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('#v-pond').hidden=t!=='pond';$('#v-market').hidden=t!=='market';$('#v-slot').hidden=t!=='slot';
-  if(t==='market')renderMarket();
+  if(t==='market')openShop(prevTab!=='market'?'hub':mk.view);
   if(t==='slot'){if(sh.mode==='shells')enterShells();renderSlot();tip('slot')}
   if(t==='pond'){resize();updateAct(true)}
 }
@@ -8046,9 +8238,9 @@ function eventsTick(now){
 const UPG=CONFIG.upgrades;
 const artArm={id:null,t:0};
 const pondArm={on:false,t:0};
-const mk={pane:'stall',sel:null,refuseArm:null,refuseT:0};
+const mk={view:'hub',sel:null,refuseArm:null,refuseT:0};
 const MK_MOOD={content:'задоволений',thoughtful:'задумливий',annoyed:'роздратований',gone:'пішов'};
-const PANE_OF={galia:'stall',korchmar:'orders',collector:'collector'};
+const SHOP_TITLE={galia:'Рибна ятка Галі',korchmar:'Корчма',collector:'Крамниця дивин',gear:'Снасті'};
 
 const mkCv=$('#mkcv'),mkCtx=mkCv.getContext('2d');
 const mkScene=new MarketScene({calm:REDUCED_MOTION});
@@ -8062,29 +8254,33 @@ function mkResize(){
   mkCv.style.width=l.w*l.scale+'px';mkCv.style.height=l.h*l.scale+'px';mkCv.style.marginLeft=ml+'px';
   $('#mkscene').style.height=l.h*l.scale+'px';
   if(!(mkCv.width===l.w&&mkCv.height===l.h&&mkReady)){mkCv.width=l.w;mkCv.height=l.h;mkScene.resize(l.w,l.h);mkReady=true}
-  // labels and anchors sit over the canvas in scene pixels
-  const at=(el,x,y)=>{el.style.left=ml+x*l.scale+'px';el.style.top=y*l.scale+'px'};
-  document.querySelectorAll('.mklbl').forEach(el=>{const b=mkScene.box(el.dataset.who);at(el,b.x+b.w/2,MK_DECK+15)});
-  const sb=mkScene.box('collector');at($('#mksign'),Math.min(sb.x+sb.w/2,mkScene.w-21),MK_DECK-18);
-  const sc=mkScene.scaleAt();at($('#mkscalept'),sc.x-7,sc.y-2);
+  // the shop labels sit under their shopfronts; the coin anchor over the scale
+  document.querySelectorAll('.mkshop').forEach((el,i)=>{const b=mkScene.shopBox(i);el.style.left=ml+(b.x+b.w/2)*l.scale+'px'});
+  const sc=mkScene.scaleAt(),pt=$('#mkscalept');pt.style.left=ml+(sc.x-8)*l.scale+'px';pt.style.top=(sc.y-8)*l.scale+'px';
 }
 new ResizeObserver(mkResize).observe($('#v-market'));
 function mkTick(dt){
   if(!mkReady)return;
   mkScene.advance(dt);
-  mkScene.draw({collector:collectorMood(S),built:null});
+  mkScene.draw({shop:mk.view,collector:collectorMood(S),built:null});
   mkScene.surf.present(mkCtx);
 }
-$('#mkscene').addEventListener('click',e=>{
+$('#mkcv').addEventListener('click',e=>{
   const r=mkCv.getBoundingClientRect();if(!r.width)return;
-  const who=mkScene.hit((e.clientX-r.left)/mkScale,(e.clientY-r.top)/mkScale);
-  if(who){setPane(PANE_OF[who]);SFX.tap&&SFX.tap()}
+  const who=mkScene.hit((e.clientX-r.left)/mkScale,(e.clientY-r.top)/mkScale,mk.view);
+  if(!who)return;
+  if(who==='face')keeperChat();else openShop(who);
 });
+$('#mkshops').addEventListener('click',e=>{const b=e.target.closest('.mkshop');if(b)openShop(b.dataset.shop)});
+$('#mkback').addEventListener('click',()=>openShop('hub'));
 
 /* ---------- what the buyers say ---------- */
 let mkMsgT;
+// The keeper speaks only inside their own shop; the bubble sits right of the portrait.
 function mkSay(t,who='galia',ms=2600){
-  const el=$('#mkmsg');el.textContent=t;el.hidden=false;el.classList.toggle('right',who==='collector');
+  if(mk.view!==who)return;
+  const el=$('#mkmsg');el.textContent=t;el.hidden=false;
+  mkScene.talk(Math.min(2.2,0.5+t.length*0.03));
   clearTimeout(mkMsgT);mkMsgT=setTimeout(()=>{el.hidden=true},ms);
 }
 const pickLine=a=>a[Math.floor(Math.random()*a.length)];
@@ -8099,16 +8295,46 @@ const galiaLine=f=>pickLine(!f?GALIA.all:f.junk?GALIA.junk:f.price>=100?GALIA.bi
 const KORCH={give:['Оце діло! Юшка буде на славу.','Гості вже ложками стукають — неси ще.','Добра риба. Плачу як домовились.'],done:['Замовлення закрите! Ось тобі з моєї комори.','Дякую, рибалко. Тримай наживку, лови ще.'],refuse:['Не виходить? Та й бог з ним, вигадаю інше.']};
 const COLL={offer:['Гм. Пристойний екземпляр.','Цікаво… Дуже цікаво.','Під лупою — непогано.'],up1:['Ви мене грабуєте… Гаразд.','Ох. Ну хай буде так.'],up2:['Це вже нахабство. І ні копійки більше.','Останнє слово. Більше не торгуюсь.'],left:['Що?! Я вам не базарна баба! Бувайте.','Досить. Піду подихаю туманом.'],sold:['Чудово. Піде під скло в мою колекцію.','Угоду укладено. Приємно мати справу.'],empty:['Нема нічого, вартого моєї уваги. Принесіть рідкісне.']};
 
-/* ---------- panes ---------- */
-function setPane(p){
-  mk.pane=p;
-  document.querySelectorAll('#mktabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===p));
-  document.querySelectorAll('.mkpane').forEach(el=>{el.hidden=el.dataset.pane!==p});
-  document.querySelectorAll('.mklbl').forEach(el=>el.classList.toggle('on',PANE_OF[el.dataset.who]===p));
+/* ---------- the pier and the shops ---------- */
+function openShop(v){
+  const was=mk.view;mk.view=v;
+  $('#mkbar').hidden=v==='hub';$('#mkshops').hidden=v!=='hub';
+  $('#mktitle').textContent=SHOP_TITLE[v]||'';
+  document.querySelectorAll('.mkpane').forEach(el=>{el.hidden=el.dataset.pane!==v});
+  $('#mkmsg').hidden=true;
   renderMarket();
-  if(p==='collector'&&!collectorHere(S))mkSay(`Табличка: «Пішов ображений. Повернуся за ${S.collector.away} закидів».`,'collector');
+  if(v!==was&&v!=='hub'){$('#v-market').scrollTop=0;greet(v)}
 }
-$('#mktabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setPane(b.dataset.m)});
+// What the keeper says when you walk in, or when you tap them.
+const HELLO={
+  galia:['Заходь, заходь! Що там у тебе в садку?','О, рибалка! Свіже? Давай подивлюсь.','Галя чесна: скільки риба варта, стільки й дам.'],
+  korchmar:['Гості юшки хочуть, а риби нема. Виручай!','Сідай, кваску? Ні? Тоді до справ.','Неси, що в замовленнях, — не скривджу.'],
+  collector:['А-а, рибалка. Принесли щось… гідне?','Моя колекція чекає на справжній екземпляр.','Звичайна риба мене не цікавить. Лише рідкісна.'],
+  gear:['Мурко спить на прилавку. Гроші кидай у скриньку — він стежить.','Мур-р. (Кіт приглядає за крамницею.)'],
+};
+function greet(v){
+  if(v==='collector'&&!collectorHere(S)){mkSay(`Табличка: «Пішов ображений. Повернуся за ${S.collector.away} закидів».`,v,3000);return}
+  mkSay(pickLine(HELLO[v]),v);
+}
+function keeperChat(){const v=mk.view;if(v==='collector'&&!collectorHere(S))return greet(v);mkSay(pickLine(HELLO[v]),v)}
+
+// The pier's labels: what waits in each shop.
+function renderShops(){
+  const st={};
+  const n=S.net.length,v=sellAllValue(S);
+  st.galia=n?[`садок ${n} · ${fmt(v)}`,true]:['садок порожній',false];
+  const can=S.board.filter(o=>orderTakes(S,o).length).length;
+  st.korchmar=can?[`можна здати: ${can}`,true]:['3 замовлення',false];
+  const t=S.net.filter(isTrophy).length;
+  st.collector=!collectorHere(S)?[`пішов · ${S.collector.away} зак.`,false]:t?[`рідкісних: ${t}`,true]:['чекає рідкісне',false];
+  const up=Object.entries(UPG).some(([k,u])=>S.lv[k]<u.cost.length&&S.coins>=u.cost[S.lv[k]]);
+  st.gear=up?['можна оновити',true]:['вудка, наживка',false];
+  document.querySelectorAll('.mkshop').forEach(el=>{const [t2,hot]=st[el.dataset.shop];const sm=el.querySelector('small');sm.textContent=t2;sm.classList.toggle('hot',hot)});
+  const picks=sellAllPicks(S),b=$('#hubsell');
+  b.disabled=!picks.length;
+  b.textContent=!n?'Садок порожній':!picks.length?'Лише рідкісні — неси Колекціонеру':picks.length<n?`Продати ${picks.length} Галі за ${fmt(v)}`:`Продати все Галі за ${fmt(v)}`;
+}
+$('#hubsell').addEventListener('click',()=>sellAllHere($('#hubsell')));
 
 const kgText=f=>`${f.w.toFixed(f.w<10?2:1).replace('.',',')} кг`;
 const starRow=f=>`<span class="mkstars">${f.junk||f.item?'':[1,2,3].map(k=>`<i class="picon ic-star-${k<=(f.q||0)?'on':'off'}"></i>`).join('')}</span>`;
@@ -8135,19 +8361,23 @@ function renderStall(){
 function galiaSell(i){
   const f=S.net[i];if(!f)return;
   sellFish(S,i);
-  mkScene.weighFish(f.junk&&!f.item?f.n:f.n);flyCoins($('#mkscalept'),Math.min(4,1+Math.floor(f.price/40)));
+  mkScene.weighFish(f.n);flyCoins($('#mkscalept'),Math.min(4,1+Math.floor(f.price/40)));
+  if(f.price>=15||Math.random()<0.3)mkScene.feel('laugh',1.2);
   mkSay(galiaLine(f));
   save();renderHud();renderMarket();
 }
 $('#fishlist').addEventListener('click',e=>{const c=e.target.closest('.mkfish');if(c)galiaSell(+c.dataset.i)});
 $('#keeptrophies').addEventListener('click',()=>{S.keepTrophies=!S.keepTrophies;save();renderMarket();toast(S.keepTrophies?'«Продати все» лишає рідкісних для Колекціонера':'«Продати все» продає й рідкісних')});
-$('#sellall').addEventListener('click',()=>{
+function sellAllHere(el){
   const picks=sellAllPicks(S);if(!picks.length)return;
   const top=picks.map(i=>S.net[i]).sort((a,b)=>b.price-a.price)[0];
-  flyCoins($('#mkscalept'),picks.length);
-  const r=sellAll(S);mkScene.weighFish(top.n);
-  toast(`+${fmt(r.coins)} монет${r.kept?` · ${r.kept} рідк. лишились`:''}`);mkSay(galiaLine(null));
-  save();renderHud();renderMarket()});
+  flyCoins(mk.view==='galia'?$('#mkscalept'):el,picks.length);
+  const r=sellAll(S);
+  if(mk.view==='galia'){mkScene.weighFish(top.n);mkScene.feel('laugh',1.6);mkSay(galiaLine(null))}
+  toast(`Галя: +${fmt(r.coins)} монет${r.kept?` · ${r.kept} рідк. лишились`:''}`);
+  save();renderHud();renderMarket();
+}
+$('#sellall').addEventListener('click',()=>sellAllHere($('#sellall')));
 
 /* ---------- the innkeeper ---------- */
 function renderOrders(){
@@ -8171,6 +8401,7 @@ $('#orders').addEventListener('click',e=>{
   if(g&&!g.disabled){
     const i=+g.dataset.o,r=fillOrder(S,i);if(!r.count)return;
     flyCoins(g,Math.min(6,r.count+1));
+    mkScene.feel('happy',1.8);
     if(r.done){toast(`Замовлення виконано: +${fmt(r.coins)} і ${FCU.baits[r.done.bait.k].name.toLowerCase()} ×${r.done.bait.v}`);SFX.win();mkSay(pickLine(KORCH.done),'korchmar')}
     else{toast(`Корчмар: +${fmt(r.coins)}`);mkSay(pickLine(KORCH.give),'korchmar')}
     save();renderHud();renderMarket();
@@ -8282,9 +8513,7 @@ $('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
 function renderMarket(){
   tip('landing');
   renderStall();renderStallExtras();renderOrders();renderCollector();renderGear();
-  const gone=!collectorHere(S),sign=$('#mksign');
-  sign.hidden=!gone;if(gone)sign.textContent=`Пішов ображений. Повернеться за ${S.collector.away} закидів`;
-  document.querySelector('.mklbl[data-who="collector"]').hidden=gone;
+  renderShops();
 }
 
 /* ui/board.js */
@@ -8836,7 +9065,7 @@ const TUTORIAL=[
   {text:'Тримай кнопку, щоб тягнути. Стрілка має стояти у світлій зоні. Почервоніла? Відпусти, бо леска лусне.',target:'#meter',done:()=>cardOpen,fishing:true},
   {text:'Перший улов! Натисни «У садок».',target:'#cok',done:()=>!cardOpen},
   {text:'Рибу продають на Ринку, на пристані. Там же снасті, замовлення Корчмаря й бестіарій.',target:'[data-tab=market]',done:()=>tab==='market'},
-  {text:'Продай рибу: торкнись її або «Продати все».',target:'#sellall',done:()=>!S.net.length},
+  {text:'Це пристань: чотири лавки, торкнись будь-яку. А зараз просто продай усе Галі.',target:'#hubsell',done:()=>!S.net.length},
   {text:'А там, під водою, живе Водяник. Його автомат бере більше, ніж дає. Грай лише тим, чого не шкода.',target:'[data-tab=slot]',done:()=>tab==='slot'},
   {text:'Оце й усе. Кола, бульбашки й сплески на воді видають рибу: влучиш у них, клюне швидше. Наживку купують на Ринку, хліб завжди є. Тихої ночі!',target:null,finish:true},
 ];
