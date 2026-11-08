@@ -1503,6 +1503,15 @@ const CONFIG = {
       hum: { gain: 0.09, cutoff: 160 },
       market: 0.4, // на ринку природа тихіша
       fade: 2,
+      creak: { every: [2.6, 4.2], gain: 0.035 }, // млинове колесо
+      bell: { every: [28, 55], gain: 0.03 }, // дзвін з-під води
+      // Як часто звучить кожне в різних місцях: 1 — як є, 2 — удвічі частіше, 0 — ніколи.
+      places: {
+        zavod: { crickets: 1, frogs: 1.6, water: 0.6, owl: 1, creak: 0, bell: 0 },
+        ruslo: { crickets: 0.4, frogs: 0.5, water: 1.2, owl: 1.8, creak: 0, bell: 0 },
+        vyr: { crickets: 0.3, frogs: 0, water: 2.5, owl: 0.4, creak: 1, bell: 0 },
+        pleso: { crickets: 0.25, frogs: 0.3, water: 0.5, owl: 0, creak: 0, bell: 1 },
+      },
     },
   },
 };
@@ -4525,6 +4534,61 @@ defineSprites({
   mill_wheel: { fps: 4, frames: [0, 1, 2, 3].map(i => millWheelFrame((i / 4) * (Math.PI / 4))) },
 
   reed: { fps: 6, frames: [reedFrame(0), reedFrame(1), reedFrame(2), reedFrame(1)] },
+  // the old bed's grey heron: watching, then stabbing at the water
+  heron: { fps: 1, frames: [[
+    '....oo...',
+    'ddooov...',
+    '.....o...',
+    '....o....',
+    '....o....',
+    '.....o...',
+    '...oooo..',
+    '..ooooooo',
+    '..oooodoo',
+    '...ooddd.',
+    '....oo...',
+    '....d....',
+    '....d....',
+    '....d....',
+    '...dd....',
+  ], [
+    '.........',
+    '.........',
+    '.........',
+    '.........',
+    '.........',
+    '.........',
+    '...oooo..',
+    '..ooooooo',
+    '.ooooodoo',
+    'oo..oddd.',
+    'd...oo...',
+    'd...d....',
+    '....d....',
+    '....d....',
+    '...dd....',
+  ]] },
+  // a boat sunk by the stern, its bow still out of the water
+  boat_sunk: { fps: 1, frames: [[
+    '.................k..',
+    '...............kkh..',
+    '............kkhhhv..',
+    '........kkkhhhvvv...',
+    '....kkkhhhhvvvv.....',
+    'kkkkhhhhvvvv........',
+  ]] },
+  // the pond's frog on its lily pad; the second frame puffs its throat
+  frog_sit: { fps: 1, frames: [[
+    '.F...F.',
+    'fvf.fvf',
+    'fffffff',
+    '.fEEEf.',
+  ], [
+    '.F...F.',
+    'fvf.fvf',
+    'fffffff',
+    'bbEEEf.',
+  ]] },
   lily_pad: { fps: 1, frames: [[
     '..eeEEe..',
     '.eEEEfEe.',
@@ -5447,6 +5511,8 @@ const LOCATION_ART = {
     haze: 'night',
     water: [['waterM', 'waterD'], ['waterD', 'tealD'], ['tealD', 'night'], ['night', 'night']],
     forest: ['tree_a', 'tree_b', 'tree_a'],
+    landmark: 'willow', ground: 'bridge', stars: 1, waver: 0.35, dashes: 0.5,
+    life: ['frog', 'fireflies'], events: ['frogJump'],
     clouds: { n: 2, ink: 'night', edge: 'night2', speed: 0.6 },
     props: [
       { name: 'lily_pad', x: 0.09, y: 0.62 },
@@ -5460,11 +5526,13 @@ const LOCATION_ART = {
   },
   ruslo: {
     pal: ['void', 'night', 'mossD', 'moss', 'fog', 'waterD', 'waterM', 'reedD', 'reed', 'wood', 'moonD', 'moonS'],
-    sky: ['void', 'night', 'night'],
-    haze: 'mossD', // in fog the far bank is paler than the near one
+    sky: ['void', 'night', 'mossD'],
+    haze: 'moss', // in fog the far bank is paler than the near one
     water: [['moss', 'mossD'], ['mossD', 'waterD'], ['waterD', 'night'], ['night', 'void']],
     forest: ['tree_willow', 'tree_willow', 'tree_a'],
-    mist: { ink: 'moss', dots: 'fog', speed: 2.2 },
+    landmark: 'deadwood', ground: 'spit', nearTrees: false, stars: 0.45, waver: 0.8, dashes: 1, current: 3,
+    life: ['heron', 'drift'], events: ['potercha'],
+    mist: { ink: 'moss', dots: 'fog', speed: 2.2, low: true },
     props: [
       { name: 'stone', x: 0.3, y: 0.74 },
     ],
@@ -5479,6 +5547,8 @@ const LOCATION_ART = {
     haze: 'plum',
     water: [['curseD', 'plum'], ['plum', 'night'], ['night', 'void'], ['void', 'void']],
     forest: ['tree_ruin', 'tree_a', 'tree_ruin'],
+    landmark: 'mill', ground: 'dam', stars: 0.3, waver: 1.6, dashes: 1,
+    life: ['foam'], events: ['bats', 'eyes'],
     clouds: { n: 5, ink: 'plum', edge: 'curseD', speed: 1.4 },
     props: [
       { name: 'stone', x: 0.03, y: 0.56 },
@@ -5494,9 +5564,12 @@ const LOCATION_ART = {
   pleso: {
     pal: ['void', 'night', 'night2', 'plum', 'curseD', 'magic', 'magicL', 'reedD', 'reed', 'wood', 'moonD'],
     sky: ['void', 'night', 'curseD'],
-    haze: 'plum',
+    haze: 'night',
     water: [['night2', 'curseD'], ['curseD', 'night'], ['night', 'void'], ['void', 'void']],
     forest: ['tree_ruin', 'tree_willow', 'tree_ruin'],
+    landmark: 'tower', ground: 'steps', nearTrees: false, stars: 0.6, waver: 0.25, dashes: 0.3,
+    moonTint: { moon: 'rust', moonS: 'redD', moonD: 'plum' }, // a red moon behind the clouds
+    life: ['candle'], events: ['faces'],
     clouds: { n: 3, ink: 'plum', edge: 'curseD', speed: 0.8 },
     mist: { ink: 'curseD', dots: 'magic', speed: 1.2 },
     props: [
@@ -5504,11 +5577,14 @@ const LOCATION_ART = {
       { name: 'lily_pad', x: 0.38, y: 0.78 },
     ],
     reeds: true,
-    moonGlow: 'curseD',
+    moonGlow: 'plum',
     dash: ['curseD', 'plum'],
-    glint: ['magicL', 'magic'],
+    glint: ['rust', 'redD'],
   },
 };
+// Rare living details: one at a time, LIFE_GAP seconds apart, never near the float in a bite or a fight.
+const LIFE_GAP = [5, 15];
+const LIFE_LEN = { frogJump: 1.2, potercha: 7, bats: 4, eyes: 2.4, faces: 4 };
 // The lantern does not glow steadily: its radius steps through this list, about seven steps a second.
 const LAMP_FLICKER = [0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 2];
 const LAMP_FLICKER_RATE = 7;
@@ -5598,6 +5674,156 @@ function floatPosition(view, geo, t, tip = rodTip(geo, view.spot || geo.target))
   }
 }
 
+/* render/places.js */
+// Each place's landmark and ground, painted once. A landmark is a list of { surf, x, y } pieces standing on
+// the water: the bottom row of each piece is its waterline, so its reflection starts right under it.
+
+function paintWillow() {
+  const S = new Surface(46, 40), cx = 22;
+  S.ellipse(cx, 11, 19, 9, 'void', true);
+  S.ellipse(cx - 9, 14, 10, 6, 'void', true);
+  S.ellipse(cx + 10, 13, 10, 6, 'void', true);
+  // the long hanging strands, shorter toward the edges, with gaps the moon shows through
+  for (let x = 3; x < 43; x++) {
+    const len = Math.round(24 * (1 - Math.abs(x - cx) / 22) ** 0.6) + (x % 3);
+    for (let y = 14; y < Math.min(38, 14 + len); y++) if ((x * 7 + y * 3) % 11 && (x % 2 || y < 24)) S.px(x, y, (x + y) % 3 ? 'void' : 'reedD');
+  }
+  // trunk, leaning toward the water
+  for (let y = 16; y < 40; y++) { const x = cx - 3 - Math.floor((y - 16) / 8); S.rect(x, y, 3, 1, 'void'); S.px(x + 2, y, 'reedD'); }
+  // the moon catches the crown's upper rim
+  for (let x = 0; x < S.w; x++) for (let y = 0; y < S.h; y++) if (S.buf[y * S.w + x]) { S.px(x, y, x % 3 ? 'reedD' : 'waterD'); break; }
+  return S;
+}
+
+function paintDeadTree(h, lean, seed) {
+  const S = new Surface(18, h);
+  const top = 2, base = h - 1, x0 = 8;
+  S.line(x0, base, x0 + lean, top, 'void');
+  S.line(x0 - 1, base, x0 - 1 + Math.round(lean / 2), Math.round(h * 0.45), 'void'); // a thick, rotten stem
+  S.line(x0 + 1, base, x0 + 1 + lean, top + 2, 'moss'); // the side the moon sees
+  S.line(x0 - 1, base, x0 - 1 + lean, top + 6, 'void');
+  // a few bare branches
+  [[0.35, -1, 7], [0.55, 1, 6], [0.75, -1, 5], [0.88, 1, 3]].forEach(([k, dir, len], i) => {
+    if ((seed >> i) & 1 && i) return;
+    const y = Math.round(base - (base - top) * k), x = x0 + Math.round(lean * k);
+    S.line(x, y, x + dir * len, y - len + 1, 'void');
+  });
+  return S;
+}
+
+function paintMill() {
+  const S = new Surface(34, 44), base = 44;
+  S.rect(2, 20, 27, base - 20, 'night');
+  for (let y = 22; y < base; y += 3) S.rect(2, y, 27, 1, 'plum'); // boards
+  for (let y = 0; y < 16; y++) S.rect(15 - y - 1, 4 + y, 2 * y + 3, 1, y === 15 ? 'plum' : 'void'); // a steep roof
+  for (let y = 4; y < 20; y++) S.px(14 - (y - 4), y, 'plum'); // its moonlit edge
+  S.rect(22, 4, 3, 9, 'void'); // chimney
+  S.rect(19, base - 11, 5, 11, 'void'); // door
+  S.rect(13, 9, 3, 3, 'void'); // the loft hatch
+  return S;
+}
+const MILL_WINDOW = { x: 7, y: 26, w: 3, h: 4 };
+
+function paintTower() {
+  const S = new Surface(16, 48), x0 = 3, top = 22;
+  S.rect(x0, top, 10, 48 - top, 'night');
+  S.rect(x0 + 8, top, 2, 48 - top, 'void');
+  S.rect(x0, top, 1, 48 - top, 'curseD'); // the moon's side
+  S.rect(x0 + 3, top + 4, 4, 6, 'void'); S.rect(x0 + 4, top + 3, 2, 1, 'void'); // the belfry's arch
+  S.px(x0 + 4, top + 6, 'moonD'); S.px(x0 + 5, top + 6, 'moonD'); S.px(x0 + 4, top + 7, 'moonD'); // the bell still hanging there
+  S.rect(x0 + 3, top + 16, 2, 5, 'void'); S.px(x0 + 3, top + 15, 'void');
+  S.rect(x0 - 1, top - 1, 12, 1, 'void');
+  // the onion dome
+  [2, 4, 6, 8, 10, 10, 10, 8, 6, 4].forEach((wd, i) => {
+    const x = 8 - (wd >> 1), y = 10 + i;
+    S.rect(x, y, wd, 1, 'night');
+    S.px(x, y, 'curseD'); if (wd > 4) S.px(x + 1, y, 'magic');
+  });
+  S.rect(8, 3, 1, 7, 'moonD'); S.rect(6, 5, 5, 1, 'moonD'); // the cross, bent
+  S.px(9, 2, 'moonD');
+  return S;
+}
+
+// The landmark pieces of a place, in scene coordinates.
+function paintLandmarks(key, g) {
+  const { w, horizon } = g, waterH = g.bridgeY - horizon, at = (S, u, v) => ({ surf: S, x: Math.round(u * w - S.w / 2), y: Math.round(horizon + v * waterH) - S.h });
+  switch (LOCATION_ART[key].landmark) {
+    case 'willow': { const S = paintWillow(); return [{ surf: S, x: -8, y: horizon + 1 - S.h }]; }
+    case 'deadwood': return [
+      at(paintDeadTree(42, 3, 1), 0.3, 0.14), at(paintDeadTree(30, -2, 2), 0.86, 0.1), at(paintDeadTree(22, 1, 0), 0.5, 0.05),
+      at(spriteSurface(SPRITES.boat_sunk), 0.1, 0.24),
+    ];
+    case 'mill': { const S = paintMill(); return [{ surf: S, x: w - 54, y: horizon + 1 - S.h, window: true }]; }
+    case 'tower': return [at(paintTower(), 0.36, 0.12)];
+    default: return [];
+  }
+}
+
+function spriteSurface(sprite, frame = 0) {
+  const S = new Surface(sprite.w, sprite.h);
+  S.drawSprite(sprite, frame, 0, 0);
+  return S;
+}
+
+// The ground the fisher sits on, into the transparent fore layer. Where it dips below the bridge line
+// the water is carried down to meet it.
+function paintGround(B, key, g) {
+  const { w, h, bridgeY } = g, kind = LOCATION_ART[key].ground;
+  const water = (x, top) => { for (let y = bridgeY; y < top; y++) B.px(x, y, y === top - 1 ? 'waterD' : 'night'); };
+  if (kind === 'spit') {
+    // a sand spit: high under the fisher, sinking into the water to the left
+    for (let x = 0; x < w; x++) {
+      const top = bridgeY + Math.max(0, Math.round((w * 0.52 - x) / w * 14)) + ((x * 7) % 5 === 0 ? 1 : 0);
+      water(x, top);
+      B.rect(x, top, 1, h - top, 'moonD');
+      B.px(x, top, 'fog');
+    }
+    B.dither(0, bridgeY + 2, w, h - bridgeY - 2, null, 'moss', 0.4);
+    B.dither(0, h - 6, w, 6, null, 'mossD', 0.55);
+    for (let x = 3; x < w; x += 6) B.px(x, h - 3 - (x * 5) % 6, (x * 3) % 4 ? 'fog' : 'void'); // pebbles
+    return;
+  }
+  if (kind === 'dam') {
+    // a log beam on stones, wet and shining
+    B.rect(0, bridgeY, w, h - bridgeY, 'void');
+    B.rect(0, bridgeY, w, 3, 'wood'); B.rect(0, bridgeY, w, 1, 'woodL');
+    for (let x = w % 11; x < w; x += 11) B.rect(x, bridgeY, 1, 3, 'plum');
+    seededList(Math.ceil(w / 6), 41, r => [r(), r(), r()]).forEach(([a, b, c], i) => {
+      const x = Math.floor(i * 6 + a * 3), y = bridgeY + 6 + Math.floor(b * (h - bridgeY - 8)), rx = 3 + Math.floor(c * 2);
+      B.ellipse(x, y, rx, 2, 'night', true);
+      B.rect(x - rx + 1, y - 2, rx, 1, 'moonD');
+    });
+    return;
+  }
+  if (kind === 'steps') {
+    // stone steps going down into the black water, toward the left
+    const tops = [[0.62, 0], [0.32, 3], [0, 6]];
+    for (let x = 0; x < w; x++) {
+      const top = bridgeY + tops.find(([k]) => x >= w * k)[1];
+      water(x, top);
+      B.rect(x, top, 1, h - top, 'night2');
+      B.px(x, top, 'fog');
+      if (x % 8 === 0) B.rect(x, top + 1, 1, h - top - 1, 'void');
+    }
+    for (const [k, dy] of tops) { const x = Math.floor(w * k); if (x) B.rect(x, bridgeY + dy, 1, h, 'void'); }
+    for (let y = bridgeY + 1; y < h; y += 4) B.rect(0, y + 2, w, 1, 'void');
+    B.dither(0, bridgeY + 4, Math.floor(w * 0.62), h, null, 'reedD', 0.3); // moss on the wet lower steps
+    B.dither(0, h - 5, w, 5, null, 'void', 0.45);
+    return;
+  }
+  // the wooden bridge
+  B.rect(0, bridgeY, w, BRIDGE_H, 'wood');
+  B.rect(0, bridgeY, w, 1, 'moonD');
+  B.dither(0, bridgeY + 1, w, BRIDGE_H - 1, null, 'void', 0.12);
+  B.dither(0, h - 5, w, 5, null, 'void', 0.45);
+  for (let x = w % 9; x < w; x += 9) { B.rect(x, bridgeY + 1, 1, BRIDGE_H - 1, 'void'); B.px(x + 2, bridgeY + 2, 'woodL'); }
+  for (const px of [Math.floor(w * 0.06), w - 6]) {
+    B.rect(px, bridgeY - 7, 4, 7, 'wood');
+    B.rect(px, bridgeY - 7, 1, 7, 'moonD');
+    B.rect(px, bridgeY - 8, 4, 1, 'moonS');
+  }
+}
+
 const HIT_STOP = 0.08;
 
 class PondScene {
@@ -5669,7 +5895,7 @@ class PondScene {
       F.drawSilhouette(tree, 0, x, horizon - tree.h - 3, art.haze);
       top = Math.min(top, horizon - tree.h - 3);
     }
-    for (let x = -3, i = 0; x < w; x += 16, i++) {
+    if (art.nearTrees !== false) for (let x = -3, i = 0; x < w; x += 16, i++) {
       const tree = SPRITES[art.forest[i % art.forest.length]];
       F.drawSprite(tree, 0, x, horizon - tree.h);
       top = Math.min(top, horizon - tree.h);
@@ -5704,18 +5930,12 @@ class PondScene {
       });
       for (let i = 0; i < M.w; i += 7) M.px(i, 10 + (i * 13) % 6, m.dots);
     }
-    // fore: the bridge, over the water's edge
-    const B = this.fore = new Surface(w, h);
-    B.rect(0, bridgeY, w, BRIDGE_H, 'wood');
-    B.rect(0, bridgeY, w, 1, 'moonD');
-    B.dither(0, bridgeY + 1, w, BRIDGE_H - 1, null, 'void', 0.12);
-    B.dither(0, h - 5, w, 5, null, 'void', 0.45);
-    for (let x = w % 9; x < w; x += 9) B.rect(x, bridgeY + 1, 1, BRIDGE_H - 1, 'void');
-    for (const px of [Math.floor(w * 0.06), w - 6]) {
-      B.rect(px, bridgeY - 7, 4, 7, 'wood');
-      B.rect(px, bridgeY - 7, 1, 7, 'moonD');
-      B.rect(px, bridgeY - 8, 4, 1, 'moonS');
-    }
+    // fore: the ground the fisher sits on; and the landmark standing on the water
+    this.fore = new Surface(w, h);
+    paintGround(this.fore, key, g);
+    this.mids = paintLandmarks(key, g);
+    this.life = { next: this.t + 3, ev: null, n: 0 };
+    this.moonInk = null;
   }
 
   // Distinct inks in the place's background layers: the sub-palette check of the dev tools.
@@ -5735,7 +5955,135 @@ class PondScene {
   // Sideways offset of reflection row k (0 at the waterline): whole pixels, wider further from the bank.
   waver(k) {
     const t = this.calm ? 0 : Math.floor(this.t * 6) / 6;
-    return Math.round(Math.sin(k * 0.9 + t * 2.4) * (0.4 + k * 0.12));
+    return Math.round(Math.sin(k * 0.9 + t * 2.4) * (0.4 + k * 0.12) * (this.art.waver ?? 1));
+  }
+
+  whirlCentre() {
+    const g = this.geo;
+    return { x: Math.floor(g.w * 0.45), y: g.horizon + Math.floor((g.bridgeY - g.horizon) * 0.55) };
+  }
+
+  // The mill's window: warm, flickering in steps, lighting its wall and laying a broken column on the water.
+  drawWindows() {
+    const S = this.surf, g = this.geo, t = this.calm ? 0 : this.t;
+    for (const m of this.mids) {
+      if (!m.window) continue;
+      const W = MILL_WINDOW, x = m.x + W.x, y = m.y + W.y, step = LAMP_FLICKER[Math.floor(t * 5) % LAMP_FLICKER.length];
+      S.relight(x + 1, y + 1, 9 - step, 0.8, 1.6);
+      S.rect(x, y, W.w, W.h, step === 2 ? 'lamp' : 'gold');
+      S.px(x + 1, y + 1, 'moon');
+      S.rect(x + 1, y, 1, W.h, 'wood'); // the window's cross bar
+      for (let k = 0; k < 12; k += 2) {
+        const yy = g.horizon + 2 + k, dx = this.waver(k + 1);
+        if ((k + Math.floor(t * 4)) % 6 === 4) continue;
+        S.rect(x + dx, yy, k < 6 ? 2 : 1, 1, k < 4 ? 'gold' : 'lamp');
+      }
+    }
+  }
+
+  // Things that live here: the steady ones every frame, the rare ones one at a time with long pauses.
+  drawLife(view) {
+    const S = this.surf, g = this.geo, t = this.t, art = this.art, L = this.life, waterH = g.bridgeY - g.horizon;
+    const T = this.calm ? t * 0.5 : t;
+    const pad = art.props.filter(p => p.name === 'lily_pad')[L.pad || 0];
+    for (const k of art.life || []) {
+      if (k === 'frog' && pad && !(L.ev && L.ev.kind === 'frogJump')) {
+        const x = Math.floor(g.w * pad.x) + 1, y = g.horizon + Math.floor(waterH * pad.y) - 3;
+        S.drawSprite(SPRITES.frog_sit, Math.floor(T * 1.3) % 7 === 0 ? 1 : 0, x, y);
+      }
+      if (k === 'fireflies') for (let i = 0; i < 5; i++) {
+        const on = Math.sin(T * 1.7 + i * 2.3) > 0.3;
+        if (!on) continue;
+        const x = (i < 3 ? 4 + i * 5 : g.w - 14 + (i - 3) * 6) + Math.round(Math.sin(T * 0.6 + i) * 3), y = g.bridgeY - 14 - (i * 5) % 9 + Math.round(Math.cos(T * 0.5 + i));
+        S.relight(x, y, 2, 1, 1.4);
+        S.px(x, y, 'frogL');
+      }
+      if (k === 'heron') {
+        const x = Math.floor(g.w * 0.76), y = g.horizon + Math.floor(waterH * 0.36) - SPRITES.heron.h;
+        const fr = Math.floor(T / 4) % 3 === 2 && (T % 4) < 1 ? 1 : 0; // now and then it stabs at the water
+        S.drawSprite(SPRITES.heron, fr, x, y);
+        S.rect(x + 2, y + SPRITES.heron.h, 5, 1, 'mossD');
+      }
+      if (k === 'drift') for (let i = 0; i < 3; i++) {
+        const x = Math.round((i * 47 + T * (art.current || 2)) % (g.w + 10)) - 5, y = g.horizon + Math.floor(waterH * (0.25 + i * 0.22));
+        if (!this.isQuiet(x, x + 2, y)) { S.rect(x, y, 2, 1, i % 2 ? 'wood' : 'moss'); }
+      }
+      if (k === 'foam') for (let x = 0; x < g.w; x += 3) {
+        if (((x * 7 + Math.floor(T * 6)) % 5) < 2) S.px(x + (Math.floor(T * 6) % 2), g.bridgeY - 1, x % 2 ? 'fog' : 'bone');
+      }
+      if (k === 'candle') {
+        const x = Math.round((g.w * 0.15 + T * 1.2) % (g.w + 16)) - 8, y = g.horizon + Math.floor(waterH * 0.42);
+        if (this.isQuiet(x - 6, x + 6, y)) continue;
+        const fl = this.calm ? 0 : LAMP_FLICKER[Math.floor(t * 6) % LAMP_FLICKER.length];
+        S.relight(x, y - 3, 8 - fl, 0.6, 1.5);
+        S.rect(x - 1, y, 3, 1, 'wood'); S.rect(x, y - 3, 1, 3, 'bone');
+        S.px(x, y - 4, fl === 2 ? 'lamp' : 'gold'); if (!fl) S.px(x, y - 5, 'moon');
+        S.px(x, y + 2, 'gold'); S.px(x, y + 4, 'lamp'); // its trembling reflection
+      }
+    }
+    // rare details
+    if (!L.ev && t >= L.next && (art.events || []).length) {
+      const kind = art.events[L.n++ % art.events.length], ev = this.placeEvent(kind, view);
+      if (ev) L.ev = { kind, t0: t, ...ev };
+      else L.next = t + 2; // try again soon, somewhere free
+    }
+    const ev = L.ev;
+    if (!ev) return;
+    const k = (t - ev.t0) / LIFE_LEN[ev.kind];
+    if (k >= 1) { if (ev.kind === 'frogJump') L.pad = 1 - (L.pad || 0); L.ev = null; L.next = t + LIFE_GAP[0] + ((L.n * 7919) % 100) / 100 * (LIFE_GAP[1] - LIFE_GAP[0]); return; }
+    if (ev.kind === 'frogJump') {
+      const x = Math.round(ev.x + (ev.x2 - ev.x) * k), y = Math.round(ev.y + (ev.y2 - ev.y) * k - Math.sin(Math.PI * k) * 10);
+      S.drawSprite(SPRITES.frog_sit, 0, x, y);
+      if (k > 0.92 && !ev.plop) { ev.plop = true; this.addRing(ev.x2 + 3, ev.y2 + 4, 7); }
+    } else if (ev.kind === 'potercha') {
+      for (let i = 0; i < 3; i++) {
+        const x = ev.x + Math.round(Math.sin(k * 5 + i * 2) * 10 + i * 6), y = ev.y + Math.round(Math.cos(k * 4 + i) * 2) - i;
+        if (Math.sin(t * 6 + i * 3) < -0.6 || this.isQuiet(x, x, y)) continue;
+        S.relight(x, y, 5, 0.8, 1.6);
+        S.px(x, y, i % 2 ? 'shimmer' : 'frogL'); S.px(x, y - 1, 'moon'); S.px(x + 1, y, 'shimmer');
+      }
+    } else if (ev.kind === 'bats') {
+      for (let i = 0; i < 3; i++) {
+        const x = Math.round(-6 + k * (g.w + 12) + i * 7), y = ev.y + Math.round(Math.sin(k * 14 + i * 2) * 3) + i * 3, up = Math.floor(t * 10 + i) % 2;
+        S.px(x, y, 'void'); S.px(x - 1, y - up, 'void'); S.px(x + 1, y - up, 'void'); S.px(x - 2, y - 1 + up, 'void'); S.px(x + 2, y - 1 + up, 'void');
+      }
+    } else if (ev.kind === 'eyes') {
+      if (Math.floor(k * 10) === 6) return; // a blink
+      const { x, y } = ev;
+      S.ditherCircle(x + 1, y, 7, 'void', 1.4, 0.5); // something dark under the whirl
+      S.rect(x - 2, y, 2, 1, 'gold'); S.rect(x + 3, y, 2, 1, 'gold');
+      S.px(x - 1, y - 1, 'redD'); S.px(x + 4, y - 1, 'redD');
+    } else if (ev.kind === 'faces') {
+      // a pale face rising under the surface and sinking again
+      const lv = Math.sin(Math.PI * k) * 2, { x, y } = ev;
+      S.ditherCircle(x, y, 4, 'fog', lv, 1.3);
+      S.ditherCircle(x, y - 1, 3, 'bone', lv - 0.9, 1.2);
+      if (lv > 0.9) { S.px(x - 1, y - 1, 'void'); S.px(x + 1, y - 1, 'void'); S.rect(x - 1, y + 2, 3, 1, 'void'); S.px(x, y + 1, 'moonD'); }
+    }
+  }
+
+  // Where a rare detail may show up now; null when the float is in a bite or a fight right there.
+  placeEvent(kind, view) {
+    const g = this.geo, waterH = g.bridgeY - g.horizon, busy = view.state === 'bite' || view.state === 'reel', f = this.lastFloat;
+    const free = (x, y, r = 24) => !busy || !f || Math.hypot(x - f.x, y - f.y) > r;
+    const rnd = ((this.life.n * 2654435761) >>> 0) / 4294967296;
+    let p = null;
+    if (kind === 'frogJump') {
+      const pads = this.art.props.filter(q => q.name === 'lily_pad');
+      if (pads.length < 2) return null;
+      const a = pads[this.life.pad || 0], b = pads[1 - (this.life.pad || 0)];
+      p = { x: Math.floor(g.w * a.x) + 1, y: g.horizon + Math.floor(waterH * a.y) - 3, x2: Math.floor(g.w * b.x) + 1, y2: g.horizon + Math.floor(waterH * b.y) - 3 };
+      if (busy) return null;
+    } else if (kind === 'potercha') p = { x: Math.floor(g.w * (0.1 + rnd * 0.5)), y: g.horizon + Math.floor(waterH * (0.15 + rnd * 0.3)) };
+    else if (kind === 'bats') p = { x: 0, y: g.moon.y + 4 + Math.floor(rnd * 10) }; // across the moon, where they show
+    else if (kind === 'eyes') { const c = this.whirlCentre(); p = { x: c.x - 1, y: c.y }; }
+    else if (kind === 'faces') p = { x: Math.floor(g.w * (0.1 + rnd * 0.6)), y: g.horizon + Math.floor(waterH * (0.3 + rnd * 0.4)) };
+    if (!p || (kind !== 'bats' && !free(p.x, p.y))) return null;
+    return p;
+  }
+
+  drawMids() {
+    for (const m of this.mids) this.surf.blit(m.surf, m.x, m.y);
   }
 
   drawFar() {
@@ -5752,12 +6100,18 @@ class PondScene {
   drawMist() {
     const g = this.geo;
     if (this.mist) this.surf.blitWrap(this.mist, this.calm ? 0 : this.t * this.art.mist.speed, g.horizon - 12);
+    // the old bed's fog lies in layers: a second, slower band over the middle of the water
+    if (this.mist && this.art.mist.low) this.surf.blitWrap(this.mist, (this.calm ? 0 : this.t * this.art.mist.speed * 0.6) + 37, g.horizon + Math.floor((g.bridgeY - g.horizon) * 0.3));
   }
 
   // The banks in the water: the treelines and the mill wheel mirrored, a step darker, every row wavering.
   drawReflections(view) {
     const S = this.surf, g = this.geo, F = this.far, t = this.calm ? 0 : this.t;
     for (let k = 0; k < this.reflH; k++) S.blitRow(F, g.horizon - 1 - k, g.horizon + k, this.waver(k), DARKER);
+    for (const m of this.mids) {
+      const axis = m.y + m.surf.h;
+      for (let k = 0; k < Math.min(m.surf.h, g.bridgeY - axis); k++) S.blitRow(m.surf, m.surf.h - 1 - k, axis + k, m.x + this.waver(k + 2), DARKER);
+    }
     if (this.art.wheel) {
       const wheel = SPRITES.mill_wheel, fr = frameAt(wheel, this.t), x = g.w - wheel.w + 6, axis = g.horizon - 20 + wheel.h;
       const px = wheel.frames[fr];
@@ -5882,8 +6236,8 @@ class PondScene {
   }
 
   drawSky() {
-    const S = this.surf, t = this.t;
-    for (const st of this.stars) {
+    const S = this.surf, t = this.t, n = Math.round(this.stars.length * (this.art.stars ?? 1));
+    for (const st of this.stars.slice(0, n)) {
       const v = Math.sin(t * 1.5 + st.p);
       if (v > -0.5) S.px(st.x, st.y, v > 0.5 && st.bright ? 'moon' : 'fog');
     }
@@ -5892,28 +6246,34 @@ class PondScene {
   drawMoon(view) {
     const S = this.surf, g = this.geo, { x, y } = g.moon, phase = view.moonPhase;
     if (phase !== 0) S.ditherCircle(x + 8, y + 8, 20, this.art.moonGlow, 0.7);
-    S.drawSprite(SPRITES[`moon_${phase}`], 0, x, y);
+    const sp = SPRITES[`moon_${phase}`], tint = this.art.moonTint;
+    if (!tint) { S.drawSprite(sp, 0, x, y); return; }
+    const m = new Map(Object.entries(tint).map(([a, b]) => [PACKED[a], PACKED[b]])), px = sp.frames[0];
+    for (let sy = 0; sy < sp.h; sy++) for (let sx = 0; sx < sp.w; sx++) { const ink = px[sy * sp.w + sx]; if (ink) S.put(x + sx, y + sy, m.get(ink) ?? ink); }
   }
 
   drawWater(view) {
     const S = this.surf, g = this.geo, t = this.t, { horizon, bridgeY, w } = g;
     const waterH = bridgeY - horizon, art = this.art;
-    for (const d of this.dashes) {
-      const x = ((d.x + t * d.v) % (w + d.len)) - d.len;
+    const nd = Math.round(this.dashes.length * (art.dashes ?? 1));
+    for (const d of this.dashes.slice(0, nd)) {
+      const x = ((d.x + t * (art.current ? art.current * (0.7 + d.v * 0.1) : d.v)) % (w + d.len)) - d.len;
       if (this.isQuiet(x, x + d.len, d.y)) continue; // no ripples under the float or a signal
       S.rect(x, d.y, d.len, 1, d.y < horizon + waterH * 0.5 ? art.dash[0] : art.dash[1]);
     }
-    // the whirlpool: broken rings that turn, tighter toward the middle
+    // the whirlpool: three spiral arms winding in, foam at the heart
     if (art.whirl) {
-      const cx = Math.floor(w * 0.45), cy = horizon + Math.floor(waterH * 0.55);
-      for (let ring = 1; ring <= 4; ring++) {
-        const rx = ring * 7, ry = ring * 2;
-        for (let a = 0; a < 16; a++) {
-          if ((a + ring) % 3 === 0) continue;
-          const ang = (a / 16) * Math.PI * 2 + t * (1.4 - ring * 0.22);
-          S.px(cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry, ring < 3 ? art.whirl[0] : art.whirl[1]);
+      const { x: cx, y: cy } = this.whirlCentre();
+      for (let arm = 0; arm < 3; arm++) {
+        for (let k = 0; k < 40; k++) {
+          const f = k / 40, r = 2 + f * 26, ang = (arm * Math.PI * 2) / 3 + f * 3.6 - t * 1.3;
+          if ((k + arm) % 4 === 3) continue;
+          const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r * 0.3;
+          if (this.isQuiet(x, x, y)) continue;
+          S.px(x, y, f < 0.3 ? art.whirl[0] : art.whirl[1]);
         }
       }
+      for (let i = 0; i < 4; i++) if (Math.sin(t * 3 + i * 2) > 0.2) S.px(cx + Math.round(Math.cos(t * 2 + i) * 3), cy + (i % 2), i % 2 ? 'fog' : 'bone');
     }
     // The moon's torn column; a new moon has none.
     if (view.moonPhase !== 0) {
@@ -6324,7 +6684,10 @@ class PondScene {
     this.drawFar();
     this.drawReflections(view);
     this.drawMist();
+    this.drawMids();
+    this.drawWindows();
     this.drawWater(view);
+    this.drawLife(view);
     this.drawSignals(view);
     this.drawAim(view);
     this.drawLampGlints(view);
@@ -8222,9 +8585,9 @@ const AMBIENCE_MODES = ['off', 'pond', 'market', 'under'];
 function createAmbience(eng) {
   let rng = seededRng(CONFIG.music.seed + 1);
   const r = (a, b) => a + rng() * (b - a);
-  const st = { mode: 'off', attached: false };
+  const st = { mode: 'off', attached: false, place: 'zavod' };
   let L = null, hum = null;
-  const next = { crickets: 0, frogs: 0, water: 0, owl: 0, bubbles: 0 };
+  const next = { crickets: 0, frogs: 0, water: 0, owl: 0, bubbles: 0, creak: 0, bell: 0 };
 
   const dest = layer => ({ out: layer.out, wet: layer.wet });
 
@@ -8320,17 +8683,48 @@ function createAmbience(eng) {
     hum = null;
   }
 
-  const SOUNDS = { crickets: [cricket, 'nature'], frogs: [frog, 'nature'], water: [water, 'nature'], owl: [owl, 'nature'] };
+  // The mill wheel: a wooden groan sliding down.
+  function creak(t) {
+    if (!eng.canVoice(RESERVE)) return;
+    const P = AM.creak, c = eng.ctx, o = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain(), p = panner(c, r(0.3, 0.7));
+    o.type = 'sawtooth';
+    const f = r(150, 190);
+    o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * 0.72, t + 0.35);
+    bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = 4;
+    o.connect(bp).connect(g);
+    (p ? g.connect(p) : g).connect(L.nature.out);
+    const end = envelope(g.gain, t, { attack: 0.05, peak: P.gain, release: 0.3 });
+    o.start(t); o.stop(end + 0.02);
+    eng.track(o, p ? [bp, g, p] : [bp, g]);
+  }
+
+  // A sunken bell: a low bell's partials under a lowpass, mostly reverb.
+  function bell(t) {
+    if (!eng.canVoice(RESERVE)) return;
+    const P = AM.bell, c = eng.ctx, lp = c.createBiquadFilter(), g = c.createGain(), p = panner(c, r(-0.6, 0.2));
+    lp.type = 'lowpass'; lp.frequency.value = 900;
+    const out = p ? (g.connect(p), p) : g;
+    out.connect(L.nature.out);
+    const wet = c.createGain(); wet.gain.value = 2; out.connect(wet).connect(L.nature.wet);
+    lp.connect(g);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(P.gain, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 4);
+    const parts = [1, 2.76, 5.4].map((m, i) => { const o = c.createOscillator(), og = c.createGain(); o.frequency.value = 110 * m; og.gain.value = [1, 0.45, 0.2][i]; o.connect(og).connect(lp); o.start(t); o.stop(t + 4.1); return [o, og]; });
+    eng.track(parts[0][0], [...parts.slice(1).map(q => q[0]), ...parts.map(q => q[1]), lp, g, wet, ...(p ? [p] : [])]);
+  }
+
+  const SOUNDS = { crickets: [cricket, 'nature'], frogs: [frog, 'nature'], water: [water, 'nature'], owl: [owl, 'nature'], creak: [creak, 'nature'], bell: [bell, 'nature'] };
 
   const player = {
     schedule(from, to) {
       if (!L) return;
       const nature = st.mode === 'pond' || st.mode === 'market';
+      const mul = (AM.places && AM.places[st.place]) || {};
       for (const [k, [play]] of Object.entries(SOUNDS)) {
+        const m = mul[k] ?? 1, gap = () => r(AM[k].every[0], AM[k].every[1]) / Math.max(0.05, m);
         if (!next[k] || next[k] < from - 1) next[k] = from + r(0, AM[k].every[1]); // first one, or after a pause
         while (next[k] < to) {
-          if (nature) play(next[k]);
-          next[k] += r(AM[k].every[0], AM[k].every[1]);
+          if (nature && m > 0 && (st.mode === 'pond' || k !== 'creak')) play(next[k]);
+          next[k] += gap();
         }
       }
       if (!next.bubbles || next.bubbles < from - 1) next.bubbles = from + r(0, AM.bubbles.every[1]);
@@ -8360,6 +8754,7 @@ function createAmbience(eng) {
       const m = st.mode; st.mode = 'off'; setMode(m);
     },
     setMode,
+    setPlace(place) { st.place = place; },
     get mode() { return st.mode; },
     reseed(n) { rng = seededRng(n + 1); },
     player,
@@ -10375,6 +10770,7 @@ function soundTick(){
   const m=musicState();
   MUSIC.setState(m);
   AMBIENCE.setMode(AMBIENCE_FOR[m]);
+  AMBIENCE.setPlace(S.location);
   if(F.reel&&F.state==='reel')MUSIC.setTension(F.reel.tension);
   MUSIC.setMood(moodOf(S));
 }
