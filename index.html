@@ -370,8 +370,10 @@ main{flex:1;min-height:0;position:relative}
 .mkbar b{font-family:var(--f-num);font-weight:400;font-size:14px;line-height:1.3;color:var(--gold)}
 .mkhint{margin:0;text-align:center}
 .pbtn.ghost.hot{--ink:var(--gold);box-shadow:calc(var(--px)*-1) 0 var(--void),var(--px) 0 var(--void),0 calc(var(--px)*-1) var(--void),0 var(--px) var(--gold),calc(var(--px)*-1) var(--px) var(--void),var(--px) var(--px) var(--void),0 calc(var(--px)*2) var(--void)}
-.mkfish .mkdem{font-size:14px;line-height:1;color:var(--red)}
-.mktag.land{background:var(--frogL);left:0;right:auto;top:auto;bottom:0}
+.mkfish .mkdem{font-family:var(--f-text);font-size:16px;color:var(--red)}
+.mktags{display:flex;justify-content:center;align-items:center;gap:2px;height:calc(var(--px)*6);margin-top:auto}
+.mktags i{font-style:normal;padding:0 2px;font-size:14px;line-height:1.1;color:var(--void);background:var(--lamp)}
+.mktags i.l{background:var(--frogL)}
 .mkbld.built{box-shadow:inset 0 0 0 var(--px) var(--gold),0 var(--px) 0 var(--void)}
 .mkbld .mkrew{color:var(--frogL)}
 .mkbundle{display:flex;flex-direction:column;gap:var(--px);padding:var(--px) 0;border-top:var(--px) solid var(--night)}
@@ -386,7 +388,7 @@ main{flex:1;min-height:0;position:relative}
 .mkhead{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--px)*2)}
 .mkhead b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--bone)}
 .mkhead em{font-style:normal;font-size:20px;color:var(--moonS)}
-.mkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--px)*2)}
+.mkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:calc(var(--px)*2)}
 .mkfish{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:var(--px);min-width:0;min-height:calc(var(--px)*33);padding:calc(var(--px)*2) var(--px) var(--px);
   background:var(--night2);box-shadow:inset 0 0 0 var(--px) var(--edge,transparent),0 var(--px) 0 var(--void);color:var(--bone)}
 .mkfish:active{transform:translateY(var(--px));box-shadow:inset 0 0 0 var(--px) var(--edge,transparent)}
@@ -928,7 +930,9 @@ const CONFIG = {
   // Колекціонер: лише рідкісна й вище (minTier), по одній, за priceMul від ціни. Кожен торг — ще haggleStep від ціни,
   // але з шансом offend[крок] він ображається й іде на away закидів; риба лишається в тебе. Більше торгів, ніж offend, нема.
   market: {
-    collector: { minTier: 'rare', priceMul: 1.3, haggleStep: 0.25, offend: [0.25, 0.5], away: [10, 15] },
+    // Фаза 3: головна вигода Колекціонера — він не знижує попит у Галі; тому 110% і короткі образи.
+    // Сим (середній гравець, год): без торгу +15–22% до «тільки Галя», з одним торгом +24–30%, сам торг +5–9%.
+    collector: { minTier: 'rare', priceMul: 1.1, haggleStep: 0.2, offend: [0.25, 0.5], away: [4, 6] },
     // Попит у Галі, у відсотках: кожна продана рибина виду знімає perSale (не нижче min), кожен закид повертає perCast усім видам.
     // Сим-перевірка (Фаза 2): короткий захід ≈99%, 2 хв ≈98%, фарм хлібом 60 закидів ≈91%, мотилем ≈87%.
     demand: { min: 70, perSale: 3, perCast: 0.5 },
@@ -967,6 +971,7 @@ const CONFIG = {
   // refuseEvery: від одного замовлення можна відмовитись раз на стільки закидів.
   board: {
     refuseEvery: 10,
+    herePref: 0.8, // частка рядків замовлення з риби того місця, де ти зараз
     sizes: {
       short: { name: 'Мале', bonus: 0.2, items: [{ tiers: ['common'], qty: [2, 3] }], bait: { worm: 5 } },
       mid: { name: 'Середнє', bonus: 0.3, items: [{ tiers: ['uncommon', 'common'], qty: [1, 2], stars: { 2: 0.4 } }, { tiers: ['common'], qty: [1, 2], chance: 0.5 }], bait: { moth: 4, live: 4 } },
@@ -1572,10 +1577,16 @@ const BD = CONFIG.board;
 // A new order of one size: one or two kinds of fish from places already open.
 function makeOrder(S, len, rng = Math.random) {
   const B = BD.sizes[len], open = openFish(S), items = [];
+  // mostly fish from where you stand now, so an order can be filled in the same sitting
+  const here = (LOC[S.location] || LOC.zavod).fish.filter(n => !FISH[n].junk && open.includes(n));
   for (const it of B.items) {
     if (it.chance != null && rng() >= it.chance) continue;
     let pool = [];
-    for (const t of it.tiers) { pool = open.filter(n => FISH[n].t === t && !items.some(x => x.n === n)); if (pool.length) break; }
+    const from = rng() < BD.herePref ? here : open;
+    for (const src of [from, open]) {
+      for (const t of it.tiers) { pool = src.filter(n => FISH[n].t === t && !items.some(x => x.n === n)); if (pool.length) break; }
+      if (pool.length) break;
+    }
     if (!pool.length) continue;
     const n = pool[Math.floor(rng() * pool.length)];
     const qty = it.qty[0] + Math.floor(rng() * (it.qty[1] - it.qty[0] + 1));
@@ -8732,10 +8743,12 @@ const starRow=f=>`<span class="mkstars">${f.junk||f.item?'':[1,2,3].map(k=>`<i c
 // One card for the net, the same size for every fish. price: what this buyer pays; note: why it differs.
 function fishCard(f,i,price,{tags=true,sel=false,note='',demand=false}={}){
   const tier=f.junk||f.item?'junk':f.t;
-  const tg=tags?(orderWants(S,f)?'<span class="mktag">Корчмар</span>':'')+(isTrophy(f)?'<span class="mktag coll">рідк.</span>':'')+(landingWants(S,f)?'<span class="mktag land">пристань</span>':''):'';
+  const rare=tags&&isTrophy(f)?'<span class="mktag coll">рідк.</span>':'';
+  // who else wants this fish: a row at the bottom, always there, so every card is the same height
+  const who=tags?`<span class="mktags">${orderWants(S,f)?'<i class="k">Корчмар</i>':''}${landingWants(S,f)?'<i class="l">пристань</i>':''}</span>`:'';
   const d=demand?Math.round(demandOf(S,f.n)*100):100;
-  const dem=d<100?`<span class="mkdem">▼ попит ${d}%</span>`:'';
-  return `<button class="mkfish ${tier}${f.golden?' golden':''}${sel?' sel':''}" data-i="${i}" aria-label="${f.n}, ${price} монет">${tg}<span class="mkicon"><i class="picon ${fishIconClass(f.n)}"></i></span><span class="mkname">${f.n}</span>${starRow(f)}<span class="mkw">${kgText(f)}</span><span class="mkp">${fmt(price)}${note}</span>${dem}</button>`;
+  const dem=d<100?` <span class="mkdem">▼${d}%</span>`:'';
+  return `<button class="mkfish ${tier}${f.golden?' golden':''}${sel?' sel':''}" data-i="${i}" aria-label="${f.n}, ${price} монет">${rare}<span class="mkicon"><i class="picon ${fishIconClass(f.n)}"></i></span><span class="mkname">${f.n}</span>${starRow(f)}<span class="mkw">${kgText(f)}</span><span class="mkp">${fmt(price)}${note}${dem}</span>${who}</button>`;
 }
 const fairNote=()=>fairMul(S)>1?` <s>▲${Math.round((fairMul(S)-1)*100)}%</s>`:'';
 
@@ -8744,7 +8757,7 @@ function renderStall(){
   $('#netsum').textContent=`${n}/${cap}`;
   const rare=S.net.filter(isTrophy).length;
   $('#stallsub').textContent=!n?'Порожньо. Риба сама себе не зловить.'
-    :`Галя бере все за ціну риби${fairMul(S)>1?' (зараз ярмарок: ▲'+Math.round((fairMul(S)-1)*100)+'%)':''}. Торкнись рибу — продаси одну. Кожна продана рибина знижує попит на свій вид на ${DM.perSale}% (до ${DM.min}%), кожен закид повертає ${String(DM.perCast).replace('.',',')}%.${rare?' Рідкісних краще нести Колекціонеру.':''}`;
+    :`Галя бере все за ціну риби${fairMul(S)>1?' (зараз ярмарок: ▲'+Math.round((fairMul(S)-1)*100)+'%)':''}. Торкнись рибу — продаси одну. ▼ — попит на вид: −${DM.perSale}% за продаж (не нижче ${DM.min}%), +${String(DM.perCast).replace('.',',')}% за закид.${rare?' Рідкісних краще нести Колекціонеру.':''}`;
   $('#fishlist').innerHTML=S.net.map((f,i)=>fishCard(f,i,salePrice(S,f),{note:fairNote(),demand:true})).join('');
   const k=$('#keeptrophies');k.setAttribute('aria-checked',String(!!S.keepTrophies));
   const picks=sellAllPicks(S),v=sellAllValue(S),b=$('#sellall');
