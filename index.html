@@ -3768,6 +3768,69 @@ const ARM_FORWARD = ['..bmn', '.NNmn', 'NNNmn', 'NNn..'];
 const ARM_PULL = ['...bmn', '..Nmnn', '.NNmn.', 'NNNn..', 'NNn...'];
 const ARM_LEFT_UP = ['.mb...', 'nmb...', 'nmN...', 'nmNN..', '.nNN..', '.nNNN.', '..nNN.', '...nNN'];
 
+/* ---------- the fisher in layers: far arm, body, near arm. Every frame carries its own hand anchor ----------
+   Coordinates are in the drawn sprite (he faces left, toward the water), (0,0) its top-left corner.
+   hand: where the rod's butt sits; rod: the rod's angle in degrees (0 right, 90 up, 180 left);
+   far/near: [shoulder, hand] of each arm. The rod is drawn between the far arm and the body, the near arm over all. */
+const FISHER_POSES = {
+  wait: { fps: 1.5, frames: [
+    { far: [[6, 15], [3, 21]], near: [[17, 15], [5, 21]], hand: [4, 21], rod: 145 },
+    { headDy: 1, bodyDy: 1, far: [[6, 16], [3, 22]], near: [[17, 16], [5, 22]], hand: [4, 22], rod: 146 },
+  ] },
+  aim: { fps: 1, frames: [{ headDx: 1, far: [[6, 15], [16, 9]], near: [[17, 15], [18, 9]], hand: [17, 9], rod: 72 }] },
+  throw: { fps: 1, frames: [{ headDx: -1, far: [[6, 15], [1, 13]], near: [[17, 15], [3, 14]], hand: [2, 13], rod: 165 }] },
+  strike: { fps: 1, frames: [{ headDy: -1, bodyDy: -1, far: [[6, 14], [3, 10]], near: [[17, 14], [5, 10]], hand: [4, 10], rod: 112 }] },
+  pull: { fps: 6, frames: [
+    { headDx: -1, headDy: 1, far: [[6, 15], [2, 17]], near: [[17, 15], [4, 17]], hand: [3, 17], rod: 116 },
+    { headDx: -1, headDy: 2, far: [[6, 16], [2, 18]], near: [[17, 16], [4, 18]], hand: [3, 18], rod: 114 },
+  ] },
+  joy: { fps: 6, frames: [
+    { headDy: -2, far: [[6, 15], [5, 7]], near: [[17, 15], [7, 7]], hand: [6, 7], rod: 98 },
+    { far: [[6, 15], [5, 8]], near: [[17, 15], [7, 8]], hand: [6, 8], rod: 100 },
+  ] },
+  // the pike's candle: the rod lowered to the water
+  lower: { fps: 1, frames: [{ headDy: 1, bodyDy: 1, far: [[6, 16], [1, 22]], near: [[17, 16], [3, 22]], hand: [2, 22], rod: 172 }] },
+  // the catfish's snag: leaning back, pulling
+  strain: { fps: 6, frames: [
+    { headDx: 1, far: [[6, 15], [2, 18]], near: [[17, 15], [4, 19]], hand: [3, 19], rod: 128 },
+    { headDx: 2, far: [[6, 15], [2, 19]], near: [[17, 15], [4, 20]], hand: [3, 20], rod: 126 },
+  ] },
+  // the landing net: one hand up with the rod, the other low with the net
+  net: { fps: 1, frames: [{ far: [[6, 15], [4, 11]], near: [[17, 15], [2, 25]], hand: [4, 11], rod: 118, net: [2, 25] }] },
+};
+const FISHER_LAYERS = ['far', 'body', 'near'];
+function fisherLayer(fr, layer) {
+  const grid = Array.from({ length: FISHER_H }, () => Array(FISHER_W).fill('.'));
+  const put = (x, y, ch) => { if (grid[y] && grid[y][x] !== undefined) grid[y][x] = ch; };
+  const paint = (rows, x, y) => rows.forEach((row, ry) => [...row].forEach((ch, rx) => { if (ch !== '.') put(x + rx, y + ry, ch); }));
+  if (layer === 'body') {
+    paint(HEAD.map(r => [...r].reverse().join('')), fr.headDx || 0, 5 + (fr.headDy || 0));
+    paint(BODY.map(r => [...r].reverse().join('')), 0, 13 + (fr.bodyDy || 0));
+    return grid.map(r => r.join(''));
+  }
+  // a sleeve two pixels thick from shoulder to hand, lit on top; the hand itself
+  const [[sx, sy], [hx, hy]] = fr[layer], n = Math.max(Math.abs(hx - sx), Math.abs(hy - sy)) || 1;
+  for (let i = 0; i <= n; i++) {
+    const x = Math.round(sx + ((hx - sx) * i) / n), y = Math.round(sy + ((hy - sy) * i) / n);
+    put(x, y, layer === 'near' ? 'w' : 'N'); put(x + 1, y, layer === 'near' ? 'N' : 'n'); put(x, y + 1, layer === 'near' ? 'N' : 'n');
+  }
+  put(hx, hy, 'm'); put(hx + 1, hy, 'm'); put(hx, hy + 1, 'd'); put(hx + 1, hy + 1, 'm');
+  if (layer === 'near') put(hx + 1, hy, 'M');
+  return grid.map(r => r.join(''));
+}
+// Sprites per layer, and the old one-piece fisher_* sprites (the finale uses them) as all layers merged.
+function fisherSprites() {
+  const out = {};
+  for (const [name, P] of Object.entries(FISHER_POSES)) {
+    for (const L of FISHER_LAYERS) out[`fisher_${name}_${L}`] = { fps: P.fps, frames: P.frames.map(fr => fisherLayer(fr, L)) };
+    out[`fisher_${name}`] = { fps: P.fps, frames: P.frames.map(fr => {
+      const ls = FISHER_LAYERS.map(L => fisherLayer(fr, L));
+      return ls[0].map((row, y) => [...row].map((ch, x) => [ls[2][y][x], ls[1][y][x], ls[0][y][x]].find(c => c !== '.') || '.').join(''));
+    }) };
+  }
+  return out;
+}
+
 function fisherPose({ headDx = 0, headDy = 0, bodyDy = 0, arms = [] }) {
   const grid = Array.from({ length: FISHER_H }, () => Array(FISHER_W).fill('.'));
   const paint = (rows, x, y) => rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
@@ -4283,25 +4346,7 @@ defineSprites({
   chest: { fps: 1, frames: [CHEST_ROWS] },
   ...portraitSprites(),
 
-  fisher_wait: { fps: 1.5, frames: [
-    fisherPose({ arms: [[ARM_REST, 18, 14]] }),
-    fisherPose({ headDy: 1, arms: [[ARM_REST, 18, 14]] }),
-  ] },
-  fisher_cast: { fps: 6, frames: [
-    fisherPose({ headDx: 1, arms: [[ARM_UP, 18, 7]] }),
-    fisherPose({ headDx: -1, arms: [[ARM_FORWARD, 16, 10]] }),
-  ] },
-  fisher_strike: { fps: 6, frames: [
-    fisherPose({ headDy: -1, bodyDy: -1, arms: [[ARM_UP, 18, 6]] }),
-  ] },
-  fisher_pull: { fps: 6, frames: [
-    fisherPose({ headDx: 1, headDy: 1, arms: [[ARM_PULL, 18, 12]] }),
-    fisherPose({ headDx: 1, headDy: 2, arms: [[ARM_PULL, 18, 13]] }),
-  ] },
-  fisher_joy: { fps: 6, frames: [
-    fisherPose({ headDy: -2, arms: [[ARM_UP, 18, 7], [ARM_LEFT_UP, 0, 7]] }),
-    fisherPose({ arms: [[ARM_UP, 18, 8], [ARM_LEFT_UP, 0, 8]] }),
-  ] },
+  ...fisherSprites(),
 
   // Level 0 has no lantern at all, so there is no lantern_0 sprite.
   lantern_1: { fps: 6, frames: [
@@ -5301,6 +5346,7 @@ function drawCatchArt(surf, fish, seconds) {
 // decoration state (particles, timers). The game talks to it through emit(); nothing flows back.
 
 const BRIDGE_H = 12;
+const FISHER_RIGHT = 41, FISHER_FEET = 26; // the fisher's sprite: this far from the right edge, its top this far above the bridge
 const LIGHT_RADIUS = [0, 14, 20, 26, 32];
 // The rod's look every two levels: [butt shadow, thick part, tip]: hazel, bamboo, fibreglass, carbon, silver.
 const ROD_TIER_INK = [['wood', 'moonD', 'moonS'], ['wood', 'lamp', 'gold'], ['night2', 'waterL', 'shimmer'], ['void', 'night2', 'fog'], ['moonD', 'bone', 'moon']];
@@ -5361,15 +5407,9 @@ const LOCATION_ART = {
     glint: ['magicL', 'magic'],
   },
 };
-const ROD_SEGMENTS = 6, ROD_THICK = 3;
-// Where the rod sits in each fisher frame, relative to the unmirrored sprite.
-const HAND = {
-  fisher_wait: [[22, 17], [22, 17]],
-  fisher_cast: [[21, 7], [18, 10]],
-  fisher_strike: [[21, 6]],
-  fisher_pull: [[21, 12], [21, 13]],
-  fisher_joy: [[21, 7], [21, 8]],
-};
+const ROD_THICK = 2;
+// The rod: segments × segLen pixels long; it bends by at most maxBend radians, reaching it at tension 1/bendPerTension.
+const ROD_SHAPE = { segments: 6, segLen: 5, maxBend: 0.6, bendPerTension: 1 };
 
 function seededList(n, seed, make) {
   let s = seed;
@@ -5385,8 +5425,9 @@ function pondGeometry(w, h) {
   const horizon = Math.floor(h * 0.38);
   const bridgeY = h - BRIDGE_H;
   // the fisher stands to the right, so most of the water lies in front of him
-  const fisherX = Math.floor(w * 0.78) - 12;
-  const fisherY = bridgeY - 26;
+  // relative to the right edge and to the bridge, so every width shows the same picture
+  const fisherX = w - FISHER_RIGHT;
+  const fisherY = bridgeY - FISHER_FEET;
   return {
     w, h, horizon, bridgeY, fisherX, fisherY,
     // where the float comes home, and the water a cast can reach
@@ -5419,8 +5460,8 @@ function castLanding(geo, aim, power) {
 const castTolerance = geo => CONFIG.fishing.signals.hitRadius / Math.hypot(geo.home.x - geo.reach.x0, geo.home.y - geo.reach.y0);
 
 // Where the float is, from the view alone. show says if it sits on the water; null means it hangs on the rod.
-function floatPosition(view, geo, t) {
-  const target = view.spot || geo.target, tip = rodTip(geo, target);
+function floatPosition(view, geo, t, tip = rodTip(geo, view.spot || geo.target)) {
+  const target = view.spot || geo.target;
   switch (view.state) {
     case 'cast': {
       const k = view.castT;
@@ -5627,12 +5668,19 @@ class PondScene {
 
   fisherFrame(view) {
     const t = this.t;
-    if (view.state === 'aim') return { name: 'fisher_cast', frame: 0 };
-    if (view.state === 'cast') return { name: 'fisher_cast', frame: view.castT < 0.35 ? 0 : 1 };
-    if (this.strike > 0) return { name: 'fisher_strike', frame: 0 };
-    if (view.state === 'reel') return { name: 'fisher_pull', frame: frameAt(SPRITES.fisher_pull, t) };
-    if (this.joy > 0) return { name: 'fisher_joy', frame: frameAt(SPRITES.fisher_joy, t) };
-    return { name: 'fisher_wait', frame: frameAt(SPRITES.fisher_wait, t) };
+    const at = name => ({ name, frame: frameAt(SPRITES[`fisher_${name}_body`], this.calm ? 0 : t) });
+    if (view.state === 'aim') return at('aim');
+    if (view.state === 'cast') return view.castT < 0.35 ? at('aim') : at('throw');
+    if (this.strike > 0) return at('strike');
+    if (view.state === 'reel') {
+      const sp = view.sp;
+      if (sp && sp.kind === 'candle' && sp.phase === 'jump') return at('lower');
+      if (sp && sp.kind === 'snagpull') return at('strain');
+      if (sp && sp.kind === 'net') return at('net');
+      return at('pull');
+    }
+    if (this.joy > 0) return at('joy');
+    return at('wait');
   }
 
   drawSky() {
@@ -5800,47 +5848,71 @@ class PondScene {
     }
   }
 
-  drawRodAndFloat(view, pose) {
-    const S = this.surf, g = this.geo, t = this.t;
-    const hand = HAND[pose.name][pose.frame];
-    // the fisher is drawn mirrored, so the rod hand is on the side facing the float and the rod never crosses him
-    const hx = g.fisherX + SPRITES[pose.name].w - 1 - hand[0], hy = g.fisherY + hand[1];
-    const fl = floatPosition(view, g, t);
-    const tension = view.state === 'reel' ? view.tension : 0;
+  // Debug overlay: the fisher's box, his hand anchor, the rod's joints, the float and the lantern.
+  drawDebug(view, pose) {
+    const S = this.surf, g = this.geo, fr = FISHER_POSES[pose.name].frames[pose.frame], box = (x, y, w, h, k) => { S.rect(x, y, w, 1, k); S.rect(x, y + h - 1, w, 1, k); S.rect(x, y, 1, h, k); S.rect(x + w - 1, y, 1, h, k); };
+    box(g.fisherX, g.fisherY, FISHER_W, FISHER_H, 'red');
+    const hx = g.fisherX + fr.hand[0], hy = g.fisherY + fr.hand[1];
+    S.rect(hx - 1, hy, 3, 1, 'gold'); S.rect(hx, hy - 1, 1, 3, 'gold');
+    for (const [x, y] of this.rodPts || []) S.px(x, y, 'frogL');
+    const f = this.lastFloat; if (f) box(f.x - 1, f.y - 1, 5, 9, 'magicL');
+    box(g.lantern.x - 1, g.lantern.y - 10, 9, 10, 'shimmer');
+    box(0, g.horizon, g.w, 1, 'frogL'); box(0, g.bridgeY, g.w, 1, 'frogL');
+  }
 
-    const tip0 = rodTip(g, view.spot || g.target);
-    let tipX = tip0.x, tipY = tip0.y;
-    if (view.state === 'cast' || view.state === 'aim') {
-      // winding up: the rod goes back further the harder the throw
-      const back = view.state === 'aim' ? 0.6 + 0.4 * (view.power || 0) : Math.max(0, 1 - view.castT / 0.35);
-      tipX = mix(tipX, hx + 14, back);
-      tipY = mix(tipY, hy - 44, back);
-    } else if (this.strike > 0) {
-      tipX += 8; tipY -= 10;
-    } else if (this.joy > 0) {
-      tipX += 10; tipY -= 8;
+  // The rod: a chain of equal straight segments from the hand anchor of this very frame. Tension bends it
+  // toward the float, a little more toward the tip; the bend has a limit, and the tip never drops to the float.
+  rodPoints(hx, hy, angle, tension, fl) {
+    const g = this.geo, R = ROD_SHAPE, a0 = (angle * Math.PI) / 180;
+    let bend = 0;
+    if (fl && tension > 0) {
+      const toFloat = Math.atan2(-(fl.y - hy), fl.x - hx);
+      let d = toFloat - a0; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      bend = clampN(d, -R.maxBend, R.maxBend) * Math.min(1, tension * R.bendPerTension);
     }
-    if (fl && view.state === 'reel') {
-      tipX = mix(tipX, fl.x, tension * 0.3);
-      tipY = mix(tipY, fl.y, tension * 0.42);
-    }
-    if (this.shiver > 0) tipX += Math.sin(t * 60) > 0 ? 1 : -1;
+    if (this.shiver > 0 && !this.calm) bend += Math.sin(this.t * 60) > 0 ? 0.03 : -0.03;
+    const build = k => {
+      const pts = [[hx, hy]];
+      let x = hx, y = hy;
+      for (let i = 0; i < R.segments; i++) {
+        const ang = a0 + bend * k * ((i + 1) / R.segments) ** 2;
+        x += Math.cos(ang) * R.segLen; y -= Math.sin(ang) * R.segLen;
+        pts.push([Math.round(x), Math.round(y)]);
+      }
+      return pts;
+    };
+    let pts = build(1);
+    // the tip stays above the float and above the bridge: ease the bend until it does
+    for (let k = 0.75; k > 0 && fl && pts[R.segments][1] > Math.min(fl.y - 4, g.bridgeY - 2); k -= 0.25) pts = build(k);
+    return pts;
+  }
 
-    // the rod bends more the tighter the line
-    const midX = (hx + tipX) / 2 - tension * 3, midY = (hy + tipY) / 2 + 2 + tension * 9;
-    const quad = k => [(1 - k) * (1 - k) * hx + 2 * (1 - k) * k * midX + k * k * tipX, (1 - k) * (1 - k) * hy + 2 * (1 - k) * k * midY + k * k * tipY];
-    // A rod has to read as a solid thing, not as more line: a dark edge, a thick butt, a tapering tip.
-    const pts = [];
-    for (let i = 0; i <= ROD_SEGMENTS; i++) pts.push(quad(i / ROD_SEGMENTS));
-    for (let i = 1; i <= ROD_SEGMENTS; i++) S.line(pts[i - 1][0] + 1, pts[i - 1][1] + 1, pts[i][0] + 1, pts[i][1] + 1, 'void');
-    for (let i = 1; i <= ROD_SEGMENTS; i++) {
+  drawRod(view, pts) {
+    const S = this.surf, rc = ROD_TIER_INK[view.rodTier || 0];
+    // a dark edge first, so the rod reads against both water and sky; then a thick butt and a thin tip
+    for (let i = 1; i < pts.length; i++) S.line(pts[i - 1][0] + 1, pts[i - 1][1] + 1, pts[i][0] + 1, pts[i][1] + 1, 'void');
+    for (let i = 1; i < pts.length; i++) {
       const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
-      const rc = ROD_TIER_INK[view.rodTier || 0];
       if (i <= ROD_THICK) S.line(ax - 1, ay, bx - 1, by, rc[0]);
       S.line(ax, ay, bx, by, i <= ROD_THICK ? rc[1] : rc[2]);
     }
-    // the reel by the hand
-    S.rect(hx - 2, hy - 2, 2, 2, 'fog');
+    S.rect(pts[0][0] - 1, pts[0][1] - 2, 2, 2, 'fog'); // the reel
+  }
+
+  drawRodAndFloat(view, pose) {
+    const S = this.surf, g = this.geo, t = this.t;
+    const fr = FISHER_POSES[pose.name].frames[pose.frame];
+    const hx = g.fisherX + fr.hand[0], hy = g.fisherY + fr.hand[1];
+    const tension = view.state === 'reel' ? view.tension : 0;
+    // where the float would be with the tip at rest: needed to bend the rod toward it
+    const pre = this.rodPoints(hx, hy, fr.rod, 0, null), restTip = { x: pre[pre.length - 1][0], y: pre[pre.length - 1][1] };
+    const fl = floatPosition(view, g, t, restTip);
+    const pts = view.state === 'reel' ? this.rodPoints(hx, hy, fr.rod, tension, fl) : pre;
+    this.rodPts = pts;
+    this.drawRod(view, pts);
+    const tipX = pts[pts.length - 1][0], tipY = pts[pts.length - 1][1];
+    // the landing net's handle, held low in the other hand
+    if (fr.net && view.sp && view.sp.kind === 'net' && fl) S.line(g.fisherX + fr.net[0], g.fisherY + fr.net[1], fl.x + 1 + view.sp.ring, fl.y + 6, 'wood');
 
     if (!fl) {
       // line hangs from the tip, float dangles
@@ -5998,9 +6070,13 @@ class PondScene {
     this.drawReeds();
     this.drawLight(view);
     this.drawFlies(view);
-    const pose = this.fisherFrame(view);
-    S.drawSprite(SPRITES[pose.name], pose.frame, g.fisherX, g.fisherY, true);
+    // far arm, rod (with its line and float), body, near arm: the rod never covers his head or back
+    const pose = this.fisherFrame(view), fx = g.fisherX, fy = g.fisherY, L = n => SPRITES[`fisher_${pose.name}_${n}`];
+    S.drawOutline(L('far'), pose.frame, fx, fy, 'void'); S.drawSprite(L('far'), pose.frame, fx, fy);
     this.drawRodAndFloat(view, pose);
+    S.drawSprite(L('body'), pose.frame, fx, fy);
+    S.drawOutline(L('near'), pose.frame, fx, fy, 'void'); S.drawSprite(L('near'), pose.frame, fx, fy);
+    if (view.debug) this.drawDebug(view, pose);
     this.drawLantern(view);
     this.drawParticles();
     this.drawWeather(view);
@@ -8794,7 +8870,7 @@ function renderCue(){
 
 $('#act').addEventListener('pointerdown',press);
 // for automated checks only: open the page with #test
-if(location.hash==='#test')window.__T={get S(){return S},F,startSpecial,specialPlan,fight(n,kind){F.fish=fishByName(n);F.zone='deep';F.father=false;F.state='bite';F.biteShown=true;F.spot=aimPx();hook();F.reel.prog=0.9;if(kind)startSpecial(kind)}};
+if(location.hash.includes('test'))window.__T={get S(){return S},F,startSpecial,specialPlan,fight(n,kind){F.fish=fishByName(n);F.zone='deep';F.father=false;F.state='bite';F.biteShown=true;F.spot=aimPx();hook();F.reel.prog=0.9;if(kind)startSpecial(kind)}};
 $('#scene').addEventListener('pointerdown',e=>{
   if(e.target.closest('.pcard,.psnag'))return;
   // the cat: a tap on it sends it off, and casts nothing
@@ -9063,6 +9139,7 @@ const DEV_SAMPLE_MS=30000,DEV_WINDOW_MS=600000;
 const earnedTotal=()=>Object.values((S.stats.ledger&&S.stats.ledger.in)||{}).reduce((a,b)=>a+b,0);
 const spentTotal=()=>Object.values((S.stats.ledger&&S.stats.ledger.out)||{}).reduce((a,b)=>a+b,0);
 let devNext=0;
+const DEBUG_VIEW={anchors:false};
 function playTick(dt){
   if(document.visibilityState!=='visible'||!S)return;
   S.playMs=(S.playMs||0)+dt*1000;
@@ -9089,12 +9166,15 @@ function renderDev(){
     <span>Снасті (вудка/садок/ліхтар)</span><b>${S.lv.rod}/${S.lv.net}/${S.lv.lamp}</b>
     <h4>Звідки прийшли</h4>${rows(L.in)||'<span>—</span><b></b>'}
     <h4>Куди пішли</h4>${rows(L.out)||'<span>—</span><b></b>'}
-  </div><p class="psub">Час рахується, лише коли гра на екрані. Журнал веде гра з версії 20 сейва.</p>`;
+  </div><p class="psub">Час рахується, лише коли гра на екрані. Журнал веде гра з версії 20 сейва.</p>
+  <button class="pbtn ghost" id="devanchors">${DEBUG_VIEW.anchors?'Сховати':'Показати'} якорі й межі спрайтів</button>`;
 }
 // Five quick taps on the game's name in the settings open it.
 let devTaps=[];
 $('#gamename').addEventListener('click',()=>{const t=Date.now();devTaps=devTaps.filter(x=>t-x<2500);devTaps.push(t);if(devTaps.length>=5){devTaps=[];renderDev();$('#devpanel').hidden=false}});
 $('#devclose').addEventListener('click',()=>{$('#devpanel').hidden=true});
+$('#devbody').addEventListener('click',e=>{if(e.target.id==='devanchors'){DEBUG_VIEW.anchors=!DEBUG_VIEW.anchors;renderDev()}});
+if(location.hash.includes('anchors'))DEBUG_VIEW.anchors=true;
 
 function loop(now){
   // the first frame's timestamp can come a hair before the script's own clock: time never runs backwards here
@@ -9108,6 +9188,7 @@ function loop(now){
     scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:tackleTier(S.lv.lamp),rodTier:tackleTier(S.lv.rod),fogSee:artifactFx(S).fogSee,moonPhase:S.night.phase,location:S.location,
       ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:signals.list,traps:trapView(),event:eventOn(S),
       glow:F.state==='waiting'&&artifactFx(S).biteGlow>0&&F.t>=F.wait-artifactFx(S).biteGlow,
+      debug:DEBUG_VIEW.anchors,
       bite:F.state==='bite'?{style:F.biteStyle,lead:!F.biteShown,t:F.biteT,pre:F.pre,win:F.win,dir:F.biteDir}:null,
       sp:F.state==='reel'&&F.sp?{...F.sp,off:F.sp.kind==='net'?netFishOff(F.sp):0,ring:F.sp.kind==='net'?netRing(F.sp):0,fish:F.fish?F.fish.n:''}:null});
     scene.surf.present(ctx);
