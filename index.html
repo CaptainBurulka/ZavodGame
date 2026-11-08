@@ -3633,85 +3633,131 @@ function pen() {
   return { g, put, get, rect, blob, shade, paint, line, rows: () => g.map(r => r.join('')) };
 }
 
+// Light comes from the upper left (the lantern and the sun): every shape gets a lit rim and a shaded side.
+// lit(from, to, cx, cy, rx, ry, k): recolour the upper-left part of a shape; dark(...): the lower-right part.
+function shading(P) {
+  const lit = (from, to, cx, cy, rx, ry, k) => P.shade(from, to, (x, y) => (x - cx) / rx + (y - cy) / ry < -k);
+  const dark = (from, to, cx, cy, rx, ry, k) => P.shade(from, to, (x, y) => (x - cx) / rx + (y - cy) / ry > k);
+  return { lit, dark };
+}
+
 // Galia: a fishwife in a flowered red headscarf, coral beads, an embroidered blouse and one gold tooth.
 // mood: neutral | laugh. talk opens the mouth.
 function galiaPortrait(mood, blink, talk) {
-  const P = pen(), { put, rect, blob, shade, paint, line } = P;
-  // plump shoulders in an embroidered blouse
+  const P = pen(), { put, get, rect, blob, shade, paint, line } = P, { lit, dark } = shading(P);
+  // plump shoulders in a linen blouse, folds on the shaded side
   blob(20, 41, 19, 10, 'b');
-  shade('b', 'o', (x, y) => (x - 20) / 19 + (y - 41) / 30 > 0.62);
-  for (const sx of [4, 27]) for (let i = 0; i < 9; i++) {
+  dark('b', 'o', 20, 41, 19, 30, 0.5);
+  dark('o', 'd', 20, 41, 19, 30, 1.05);
+  line(31, 35, 33, 39, 'd'); line(8, 35, 7, 39, 'o');
+  // cross-stitch bands on the shoulders
+  for (const sx of [3, 27]) for (let i = 0; i < 10; i++) {
     const x = sx + i, y = 35 + (i % 2);
-    put(x, y, i % 3 === 1 ? 'v' : 'r'); put(x, y + 2, i % 3 === 1 ? 'r' : 'v');
+    put(x, y, i % 3 === 1 ? 'v' : 'r'); put(x, y + 2, i % 3 === 1 ? 'r' : 'v'); put(x, y + 1, i % 3 === 2 ? 'R' : get(x, y + 1));
   }
-  // the scarf: over the head and down over the shoulders like a little cape
+  // the scarf over the head and down over the shoulders like a little cape
   blob(20, 15, 14, 14, 'r');
   for (let y = 22; y <= 33; y++) { const half = 12 + Math.floor((y - 22) * 0.6); rect(20 - half, y, half * 2 + 1, 1, 'r'); }
-  rect(18, 33, 5, 1, '.');
-  shade('r', 'R', (x, y) => (x - 20) / 14 + (y - 15) / 34 > 0.5);
-  for (let y = 24; y <= 33; y += 3) { put(20 - 12 - Math.floor((y - 22) * 0.6), y, 'g'); put(20 + 12 + Math.floor((y - 22) * 0.6), y, 'g'); }
-  // flowers on the scarf
-  for (const [x, y] of [[10, 9], [16, 4], [25, 4], [30, 10], [8, 17], [32, 18], [20, 2]]) {
-    put(x, y, 'g'); put(x - 1, y, 'L'); put(x + 1, y, 'L'); put(x, y - 1, 'L'); put(x, y + 1, 'L'); put(x + 1, y + 1, 'F');
+  rect(17, 33, 7, 1, '.');
+  dark('r', 'R', 20, 15, 14, 34, 0.45);
+  lit('r', 'L', 20, 15, 14, 18, 0.95);
+  // folds of the cloth
+  line(11, 24, 8, 32, 'R'); line(13, 26, 11, 32, 'R'); line(29, 24, 32, 32, 'R'); line(27, 27, 29, 32, 'R');
+  line(9, 25, 6, 31, 'L');
+  // the gold fringe along the cape
+  for (let y = 24; y <= 33; y += 2) { put(20 - 12 - Math.floor((y - 22) * 0.6), y, 'g'); put(20 + 12 + Math.floor((y - 22) * 0.6), y, 'g'); }
+  // flowers on the scarf: gold hearts, red-orange petals, green leaves
+  for (const [x, y] of [[10, 9], [16, 4], [25, 4], [30, 10], [8, 17], [32, 18], [20, 1], [11, 28], [29, 28]]) {
+    const sh = (x - 20) / 14 + (y - 15) / 34 > 0.45;
+    put(x, y, 'g'); for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) put(x + dx, y + dy, sh ? 'r' : 'L');
+    put(x + 1, y + 1, 'F'); put(x - 1, y + 1, 'f');
   }
   // the face
   blob(20, 19, 10, 11, 'm');
-  shade('m', 'd', (x, y) => (x - 20) / 10 + (y - 19) / 25 > 0.62);
-  // the scarf's edge over the forehead, with a gold fringe
-  rect(10, 8, 21, 2, 'r'); for (let x = 11; x < 30; x += 2) put(x, 10, 'g');
-  // knot under the chin
-  blob(20, 30, 3, 2, 'r'); put(19, 30, 'R'); put(21, 31, 'R');
-  // coral beads, three strands between the scarf's ends
-  for (const dy of [0, 2]) for (let x = 15; x <= 25; x += 2) { const y = 33 + dy + Math.round(((x - 20) / 6) ** 2 * 1.5); put(x, y, 'r'); put(x + 1, y, dy ? 'R' : 'r'); }
-  put(20, 36, 'g');
-  // brows, cheeks, nose, a mole
-  const browY = mood === 'laugh' ? 13 : 14;
-  rect(14, browY, 4, 1, 'h'); rect(23, browY, 4, 1, 'h'); put(13, browY + 1, 'h'); put(27, browY + 1, 'h');
-  paint(['.rr.', 'rrrr'], 12, 21); paint(['.rr.', 'rrrr'], 25, 21);
-  put(20, 20, 'd'); put(20, 21, 'd'); put(21, 21, 'd');
-  // eyes
-  if (blink || mood === 'laugh') { paint(['.v.', 'v.v'], 14, 17); paint(['.v.', 'v.v'], 23, 17); }
-  else { paint(['vv', 'vM'], 15, 17); paint(['vv', 'Mv'], 24, 17); put(14, 17, 'd'); put(26, 17, 'd'); }
-  // mouth: a grin with one gold tooth; laughing or talking, it opens
-  if (mood === 'laugh' || talk) {
-    paint(['R.....R', 'RbbgbbR', 'RvvvvvR', '.RrrrR.'], 17, 23);
-  } else {
-    paint(['R.....R', '.RbgbR.', '..RRR..'], 17, 23);
+  dark('m', 'd', 20, 19, 10, 25, 0.6);
+  lit('m', 'M', 20, 19, 10, 13, 0.95);
+  // the scarf's edge over the forehead, a gold fringe, and the shadow it casts
+  rect(10, 8, 21, 2, 'r'); rect(10, 8, 6, 1, 'L'); rect(25, 8, 6, 2, 'R');
+  for (let x = 11; x < 30; x += 2) put(x, 10, 'g');
+  for (let x = 12; x < 29; x += 2) put(x, 11, 'd');
+  // under the chin
+  for (let x = 16; x <= 24; x++) put(x, 29, 'd');
+  // the knot, lit on top
+  blob(20, 31, 3, 2, 'r'); put(19, 30, 'L'); put(20, 30, 'L'); put(21, 32, 'R'); put(22, 31, 'R');
+  // coral beads, two strands, each bead with a glint
+  for (const dy of [0, 2]) for (let x = 15; x <= 25; x += 2) {
+    const y = 33 + dy + Math.round(((x - 20) / 6) ** 2 * 1.5);
+    put(x, y, dy ? 'R' : 'r'); put(x + 1, y, 'R'); if (!dy && x < 24) put(x, y - 1, get(x, y - 1) === '.' ? '.' : get(x, y - 1));
+    if (x % 4 === 3) put(x, y, 'L');
   }
+  put(20, 36, 'g'); put(20, 37, 'L');
+  // brows
+  const by = mood === 'laugh' ? 13 : 14;
+  rect(14, by, 4, 1, 'h'); rect(23, by, 4, 1, 'h'); put(13, by + 1, 'h'); put(27, by + 1, 'h'); put(14, by, 'L');
+  // eyes: lid, pupil with a glint, a soft line under; closed they are two arcs
+  if (blink || mood === 'laugh') { paint(['.hh.', 'h..h'], 14, 16); paint(['.hh.', 'h..h'], 23, 16); put(15, 18, 'd'); put(16, 18, 'd'); put(24, 18, 'd'); put(25, 18, 'd'); }
+  else {
+    paint(['hhhh', 'bvvd', '.vM.', '.dd.'], 14, 15); paint(['hhhh', 'dvvb', '.Mv.', '.dd.'], 23, 15);
+  }
+  // round red cheeks with a lit apple
+  paint(['.r.r', 'r.r.', '.r.r'], 12, 20); paint(['r.r.', '.r.r', 'R.R.'], 25, 20);
+  // the nose: lit bridge, shaded tip, nostrils
+  put(19, 18, 'M'); put(19, 19, 'M'); put(20, 20, 'd'); put(19, 21, 'M'); put(20, 21, 'm'); put(21, 21, 'd'); put(19, 22, 'h'); put(21, 22, 'h');
+  // laugh lines
+  put(15, 23, 'd'); put(15, 24, 'd'); put(25, 23, 'd'); put(25, 24, 'd');
+  // mouth: a grin with one gold tooth; laughing or talking, it opens
+  if (mood === 'laugh' || talk) paint(['R.....R', 'RbbgbbR', 'RvvvvvR', '.RrrrR.'], 17, 24);
+  else paint(['R.....R', '.RbgbR.', '..RrR..'], 17, 24);
+  put(20, 28, 'M');
   return P.rows();
 }
 
 // The innkeeper: bald and shiny, a red nose, a moustache like a pair of oars, a towel and a mug.
 // mood: neutral | happy.
 function korchmarPortrait(mood, blink, talk) {
-  const P = pen(), { put, rect, blob, shade, paint, line } = P;
-  // body: shirt, dark waistcoat, apron
+  const P = pen(), { put, get, rect, blob, shade, paint, line } = P, { lit, dark } = shading(P);
+  // a linen shirt with rolled sleeves
   blob(20, 41, 19, 11, 'b');
-  rect(4, 33, 8, 7, 'R'); rect(28, 33, 8, 7, 'R');
-  shade('b', 'o', (x, y) => (x - 20) / 19 + (y - 42) / 30 > 0.6);
-  rect(15, 35, 10, 5, 'M'); put(17, 37, 'o'); put(22, 38, 'o'); put(18, 38, 'o');
-  // towel over the left shoulder
-  for (let y = 30; y < 40; y++) { put(7, y, 'b'); put(8, y, 'b'); put(9, y, y % 3 ? 'b' : 'r'); }
-  // a thick neck and a big round head
-  rect(13, 26, 15, 5, 'd'); rect(13, 26, 9, 4, 'm');
+  dark('b', 'o', 20, 41, 19, 30, 0.5);
+  line(2, 36, 6, 33, 'o'); line(36, 36, 33, 33, 'd');
+  // a dark red waistcoat with brass buttons
+  rect(4, 32, 8, 8, 'R'); rect(28, 32, 8, 8, 'R');
+  line(11, 32, 11, 39, 'r'); line(4, 33, 4, 39, 'r'); rect(33, 33, 3, 7, 'v');
+  for (const y of [34, 37]) { put(10, y, 'g'); put(29, y, 'g'); put(29, y + 1, 'L'); }
+  // apron with its strings and old stains
+  rect(14, 34, 12, 6, 'M'); rect(22, 34, 4, 6, 'b'); line(14, 34, 12, 31, 'd'); line(25, 34, 27, 31, 'd');
+  put(17, 37, 'o'); put(18, 38, 'o'); put(22, 37, 'o'); put(16, 38, 'L');
+  // a striped towel over the left shoulder
+  for (let y = 29; y < 40; y++) { put(6, y, 'b'); put(7, y, y % 4 === 1 ? 'r' : 'b'); put(8, y, y % 4 === 1 ? 'r' : 'b'); put(9, y, 'o'); }
+  line(6, 29, 9, 29, 'M');
+  // a thick neck, shaded under the jaw
+  rect(13, 26, 15, 5, 'd'); rect(13, 26, 9, 4, 'm'); rect(14, 30, 12, 1, 'h');
+  // a big round head: a shine on the dome, the far side in shadow
   blob(20, 16, 12, 13, 'm');
-  shade('m', 'd', (x, y) => (x - 20) / 12 + (y - 16) / 30 > 0.6);
-  blob(15, 7, 3, 2, 'M'); put(13, 9, 'M');
-  // ears and the last of his hair
-  blob(7, 17, 2, 3, 'm'); blob(33, 17, 2, 3, 'd');
+  dark('m', 'd', 20, 16, 12, 30, 0.58);
+  lit('m', 'M', 20, 16, 12, 16, 1);
+  blob(15, 7, 3, 2, 'M'); put(13, 9, 'M'); put(14, 6, 'b'); put(15, 6, 'b');
+  // forehead wrinkles
+  line(15, 8, 25, 8, 'd'); put(14, 9, 'd'); put(26, 9, 'd'); line(16, 10, 24, 10, 'd');
+  // ears with a shaded hollow, and the last of his hair
+  blob(7, 17, 2, 3, 'm'); blob(33, 17, 2, 3, 'd'); put(7, 17, 'd'); put(7, 18, 'd'); put(33, 17, 'h'); put(6, 15, 'M');
   for (let y = 10; y < 14; y++) { put(8, y, 'h'); put(9, y + 1, 'h'); put(32, y, 'h'); put(31, y + 1, 'h'); }
-  // a double chin
+  put(8, 10, 'L'); put(9, 11, 'L');
+  // a double chin and grey stubble
   line(15, 28, 25, 28, 'd');
-  // bushy brows and small eyes
+  for (let y = 26; y <= 27; y++) for (let x = 15; x <= 25; x++) if ((x + y) % 3 === 0 && get(x, y) === 'm') put(x, y, 'd');
+  // bushy brows, lit on top
   const by = mood === 'happy' ? 11 : 12;
-  rect(12, by, 6, 2, 'h'); rect(23, by, 6, 2, 'h');
+  rect(12, by, 6, 2, 'h'); rect(23, by, 6, 2, 'h'); rect(12, by, 3, 1, 'L'); rect(23, by, 2, 1, 'L');
+  // small eyes with heavy bags
   if (blink || mood === 'happy') { paint(['.v.', 'v.v'], 14, 15); paint(['.v.', 'v.v'], 24, 15); }
-  else { paint(['v', 'v'], 15, 15); paint(['v', 'v'], 25, 15); put(16, 15, 'M'); put(26, 15, 'M'); }
-  // the nose
-  paint(['.rrr.', 'rrMrr', 'rrrrR', '.RrR.'], 18, 17);
+  else { paint(['vM', 'vv'], 15, 15); paint(['vM', 'vv'], 25, 15); put(14, 15, 'd'); put(27, 15, 'd'); }
+  rect(14, 17, 4, 1, 'd'); rect(24, 17, 4, 1, 'd');
   // jolly cheeks
-  paint(['.rr', 'rrr'], 11, 19); paint(['rr.', 'rrr'], 27, 19);
-  // the moustache: thick under the nose, waxed tips curling up
+  paint(['.r.', 'r.r'], 11, 19); paint(['.r.', 'R.R'], 27, 19);
+  // the nose: a red bulb with a glint
+  paint(['.rrr.', 'rrMrr', 'rLrrR', '.RrR.'], 18, 17); put(19, 18, 'b');
+  // the moustache: thick under the nose, waxed tips curling up; lit along the top
   paint([
     '.......hhhhhhhhh.......',
     '....hhhhhhhvhhhhhhh....',
@@ -3720,61 +3766,82 @@ function korchmarPortrait(mood, blink, talk) {
     'hhh................hhh.',
   ].reverse(), 9, 19);
   put(9, 18, 'h'); put(10, 17, 'h'); put(31, 18, 'h'); put(30, 17, 'h'); put(11, 17, 'v'); put(29, 17, 'v');
+  for (const [x, y] of [[10, 19], [11, 20], [13, 21], [15, 21], [16, 22], [18, 22]]) put(x, y, 'L');
+  line(17, 24, 23, 24, 'd');
   // mouth under it
   if (talk || mood === 'happy') paint(['RvvvR', '.RrR.'], 18, 24);
   else rect(18, 24, 5, 1, 'R');
-  // a mug of kvass in his right hand
-  rect(29, 30, 7, 9, 'g'); rect(29, 30, 7, 1, 'M'); rect(28, 29, 9, 2, 'b'); put(30, 28, 'b'); put(33, 28, 'b');
+  // a mug of kvass in his right hand: lit rim, shaded side, foam, a hand round it
+  rect(29, 30, 7, 9, 'g'); rect(29, 30, 1, 9, 'M'); rect(34, 30, 2, 9, 'L');
   for (let y = 32; y < 38; y += 2) put(31, y, 'L');
+  rect(28, 28, 9, 3, 'b'); put(29, 27, 'b'); put(32, 27, 'b'); put(33, 27, 'b'); put(30, 28, 'M'); put(34, 29, 'o'); put(31, 29, 'M');
   rect(36, 32, 2, 1, 'd'); rect(37, 32, 1, 5, 'd'); rect(36, 36, 2, 1, 'd');
-  blob(31, 39, 3, 2, 'm');
+  blob(31, 39, 3, 2, 'm'); put(30, 38, 'd'); put(32, 38, 'd'); put(29, 39, 'M');
   return P.rows();
 }
 
 // The collector: a top hat, a long face, a monocle on a chain, waxed moustache, goatee and a silk cravat.
 // mood: content | thoughtful | annoyed (the monocle drops out).
 function collectorPortrait(mood, blink, talk) {
-  const P = pen(), { put, rect, blob, shade, paint, line } = P;
-  // a narrow dark coat with violet lapels
+  const P = pen(), { put, get, rect, blob, shade, paint, line } = P, { lit, dark } = shading(P);
+  // a narrow frock coat: lit left shoulder, the right falling into the dark
   blob(20, 43, 16, 11, 'c');
-  line(14, 33, 18, 40, 'x'); line(26, 33, 22, 40, 'x'); line(15, 33, 19, 40, 'x'); line(25, 33, 21, 40, 'x');
+  dark('c', 'n', 20, 43, 16, 30, 0.45);
+  lit('c', 'x', 20, 43, 16, 20, 0.95);
+  // a shirt front with studs between violet lapels
+  rect(18, 34, 5, 6, 'b'); rect(21, 34, 2, 6, 'o'); put(20, 37, 'v'); put(20, 39, 'v');
+  line(14, 33, 18, 40, 'x'); line(15, 33, 19, 40, 'X'); line(26, 33, 22, 40, 'x'); line(25, 33, 21, 40, 'x');
+  // a pocket square and a watch chain
+  put(10, 37, 'X'); put(11, 37, 'X'); put(10, 36, 'b'); line(13, 38, 17, 40, 'g'); put(15, 39, 'L');
   // high collar and cravat with a pin
-  rect(16, 30, 8, 3, 'b'); put(15, 31, 'b'); put(24, 31, 'b');
-  blob(20, 34, 3, 2, 'X'); put(20, 34, 'g');
-  // a long face
+  rect(16, 30, 8, 3, 'b'); put(15, 31, 'b'); put(24, 31, 'b'); rect(21, 31, 3, 2, 'o');
+  blob(20, 34, 3, 2, 'X'); put(21, 35, 'x'); put(22, 34, 'x'); put(20, 34, 'g'); put(19, 33, 'b');
+  // a neck in the collar's shadow
+  rect(17, 28, 7, 3, 'd');
+  // a long face: lit cheekbone, the right side in shadow, hollows under the cheekbones
   blob(20, 20, 8, 11, 'm');
-  shade('m', 'd', (x, y) => (x - 20) / 8 + (y - 20) / 30 > 0.55);
-  put(14, 22, 'd'); put(14, 23, 'd'); put(26, 22, 'd'); // hollow cheeks
-  // the top hat
-  rect(13, 0, 14, 10, 'v'); rect(13, 7, 14, 2, 'x'); rect(9, 10, 22, 2, 'v');
-  rect(14, 1, 1, 6, 'N');
+  dark('m', 'd', 20, 20, 8, 60, 0.5);
+  lit('m', 'M', 20, 20, 8, 14, 0.85);
+  put(14, 22, 'd'); put(14, 23, 'd'); put(15, 24, 'd'); put(25, 22, 'h'); put(26, 23, 'h');
+  // grey sideburns
+  for (let y = 13; y <= 20; y++) { put(12, y, 'o'); put(28, y, y % 2 ? 'o' : 'd'); }
+  put(13, 13, 'o'); put(27, 13, 'o');
+  // the top hat: a sheen on the crown, a violet band, a long brim
+  rect(13, 0, 14, 10, 'v'); rect(14, 1, 1, 6, 'N'); rect(15, 1, 1, 3, 'N'); rect(25, 0, 2, 10, 'n');
+  rect(13, 7, 14, 2, 'x'); rect(13, 7, 14, 1, 'X'); rect(24, 7, 3, 2, 'c');
+  rect(9, 10, 22, 2, 'v'); rect(10, 10, 9, 1, 'N');
+  // the brim's shadow over the brow
+  for (let x = 13; x <= 27; x++) if (x % 2) put(x, 12, 'd');
   // brows: one arched when content, both knitted when annoyed
   if (mood === 'annoyed') { line(14, 14, 18, 16, 'v'); line(26, 14, 22, 16, 'v'); }
-  else if (mood === 'thoughtful') { rect(14, 14, 4, 1, 'v'); rect(22, 14, 4, 1, 'v'); }
+  else if (mood === 'thoughtful') { rect(14, 14, 4, 1, 'v'); rect(22, 14, 4, 1, 'v'); put(17, 13, 'v'); }
   else { line(14, 15, 18, 15, 'v'); line(22, 14, 25, 13, 'v'); }
-  // eyes; the monocle sits on his right one
+  // eyes in their sockets; the monocle sits on his right one
   const look = mood === 'thoughtful' ? -1 : 0;
-  if (blink) { rect(15, 17, 3, 1, 'd'); rect(22, 17, 3, 1, 'd'); }
-  else { put(16, 17 + look, 'v'); put(17, 17 + look, 'v'); put(23, 17 + look, 'v'); put(24, 17 + look, 'v'); put(24, 16 + look, 'M'); }
+  rect(15, 16, 3, 1, 'd');
+  if (blink) { rect(15, 17, 3, 1, 'h'); rect(22, 17, 3, 1, 'h'); }
+  else { put(15, 17 + look, 'b'); put(16, 17 + look, 'v'); put(17, 17 + look, 'v'); put(22, 17 + look, 'b'); put(23, 17 + look, 'v'); put(24, 17 + look, 'v'); put(16, 18, 'd'); put(17, 18, 'd'); }
   if (mood === 'annoyed') {
     // popped out, swinging on its chain
-    line(26, 21, 27, 30, 'g'); blob(27, 32, 2, 2, 'g'); put(27, 32, 'M'); put(27, 33, 's');
-    rect(14, 20, 3, 1, 'r'); rect(24, 20, 3, 1, 'r');
+    line(26, 21, 27, 30, 'g'); blob(27, 32, 2, 2, 'g'); put(27, 32, 'l'); put(26, 31, 'M'); put(28, 33, 'L');
+    rect(14, 20, 3, 1, 'r'); rect(24, 20, 3, 1, 'R');
   } else {
-    blob(23.5, 17, 3, 3, 'g'); put(23, 16, 'l'); put(24, 17, 'v'); put(23, 17, 'v'); put(22, 15, 'M'); put(25, 16, 'l');
-    line(26, 19, 28, 30, 'g');
+    blob(23.5, 17, 3, 3, 'g'); put(26, 18, 'L'); put(25, 19, 'L'); put(23, 20, 'L');
+    put(23, 16, 'l'); put(25, 16, 'l'); put(22, 18, 'l'); put(24, 18, 'l'); if (!blink) { put(23, 17 + look, 'v'); put(24, 17 + look, 'v'); }
+    put(22, 15, 'M'); put(21, 16, 'M');
+    line(26, 19, 28, 30, 'g'); put(27, 25, 'L');
   }
-  // a long nose
-  rect(21, 17, 1, 5, 'd'); put(20, 22, 'd'); put(22, 22, 'd');
+  // a long nose: lit ridge, shaded side
+  rect(20, 16, 1, 6, 'M'); rect(21, 17, 1, 5, 'd'); put(20, 22, 'd'); put(22, 22, 'h'); put(19, 22, 'd');
   // a waxed moustache with curled ends, and a pointed goatee
-  line(15, 25, 19, 24, 'v'); line(21, 24, 25, 25, 'v'); put(14, 24, 'v'); put(26, 24, 'v'); put(14, 23, 'v'); put(26, 23, 'v');
+  line(15, 25, 19, 24, 'v'); line(21, 24, 25, 25, 'v'); put(14, 24, 'v'); put(26, 24, 'v'); put(14, 23, 'v'); put(26, 23, 'v'); put(16, 24, 'N');
   if (talk) paint(['RvR', '.R.'], 19, 26);
   else if (mood === 'annoyed') paint(['.R.', 'R.R'], 19, 26);
   else if (mood === 'content') paint(['R..R', '.RR.'], 18, 26);
   else rect(19, 26, 3, 1, 'R');
-  line(20, 28, 20, 31, 'v'); put(19, 28, 'v'); put(21, 28, 'v');
+  line(20, 28, 20, 31, 'v'); put(19, 28, 'v'); put(21, 28, 'v'); put(19, 29, 'N');
   // thinking: a gloved finger at his lip
-  if (mood === 'thoughtful') { paint(['..b.', '..b.', '.bbb', 'bbbb', 'bbbb', '.bb.'], 14, 25); put(16, 30, 'o'); put(15, 29, 'o'); }
+  if (mood === 'thoughtful') { paint(['..b.', '..b.', '.bbb', 'bbbb', 'bbbo', '.bo.'], 14, 25); put(16, 30, 'o'); put(15, 29, 'o'); put(16, 25, 'M'); }
   return P.rows();
 }
 
@@ -5937,7 +6004,14 @@ class MarketScene {
     draw(x + Math.floor(w / 2), y + 3);
   }
 
-  paint_hub(S) { this.skyAndWater(S); }
+  paint_hub(S) {
+    this.skyAndWater(S);
+    // each shop throws a shadow on the deck; lit windows spill light onto it
+    for (let i = 0; i < SHOPS.length; i++) { const x = shopX(i) + this.ox; S.dither(x - 1, SHOP_BASE, SHOP_W + 3, 3, null, 'void', 0.55); S.dither(x + SHOP_W, MK_DECK, 2, SHOP_BASE - MK_DECK, null, 'void', 0.4); }
+    S.ditherCircle(shopX(1) + this.ox + 8, SHOP_BASE + 3, 9, 'lamp', 0.5, 0.35);
+    S.ditherCircle(shopX(2) + this.ox + 13, SHOP_BASE + 3, 10, 'magic', 0.45, 0.35);
+    S.ditherCircle(shopX(0) + this.ox + 13, SHOP_BASE + 3, 9, 'shimmer', 0.3, 0.35);
+  }
   paint_fronts(S) {
     const base = SHOP_BASE;
     // Galia's fish stall: posts, a striped awning, a counter with fish on ice
@@ -5946,6 +6020,8 @@ class MarketScene {
       for (let i = 0; i < SHOP_W; i++) { S.rect(x + i, top, 1, 5, Math.floor(i / 3) % 2 ? 'bone' : 'red'); if (i % 3 === 1) S.px(x + i, top + 5, Math.floor(i / 3) % 2 ? 'bone' : 'red'); }
       S.rect(x, top - 1, SHOP_W, 1, 'redD');
       S.rect(x + 3, top + 6, SHOP_W - 6, base - top - 14, 'night');
+      S.dither(x + 3, top + 6, SHOP_W - 6, 3, null, 'void', 0.6);
+      S.rect(x + 1, top + 5, 1, base - top - 5, 'lamp');
       for (let i = 0; i < 3; i++) { S.rect(x + 6 + i * 6, top + 7, 1, 3, 'moonD'); S.drawSprite(SPRITES.fish_roach, 0, x + 1 + i * 6, top + 10); }
       S.rect(x, base - 8, SHOP_W, 8, 'wood'); S.rect(x, base - 8, SHOP_W, 1, 'moonD');
       S.dither(x + 1, base - 10, SHOP_W - 2, 2, null, 'shimmer', 0.5); S.rect(x + 4, base - 11, 6, 2, 'waterL'); S.rect(x + 14, base - 11, 7, 2, 'moonS');
@@ -5953,10 +6029,14 @@ class MarketScene {
     }
     // the tavern: a timber house, a pitched roof, a warm window and a door
     { const x = shopX(1) + this.ox, top = SHOP_TOP + 9;
-      for (let i = 0; i <= 9; i++) S.rect(x + 13 - i - 1, top - 9 + i, (i + 1) * 2 + 1, 1, i % 3 ? 'redD' : 'red');
+      for (let i = 0; i <= 9; i++) { S.rect(x + 13 - i - 1, top - 9 + i, (i + 1) * 2 + 1, 1, i % 3 ? 'redD' : 'red'); if (i % 3 === 0) for (let k = x + 13 - i; k < x + 14 + i; k += 3) S.px(k, top - 9 + i + 1, 'void'); }
+      S.line(x + 12, top - 9, x + 2, top + 1, 'lamp');
+      S.rect(x + 20, top - 10, 3, 5, 'moonD'); S.rect(x + 20, top - 10, 3, 1, 'fog');
       S.rect(x, top, SHOP_W, base - top, 'wood');
+      S.dither(x, top, SHOP_W, 2, null, 'void', 0.6);
       for (let y = top + 3; y < base; y += 3) S.rect(x, y, SHOP_W, 1, 'void');
-      S.rect(x + 3, top + 4, 8, 7, 'void'); S.rect(x + 4, top + 5, 6, 5, 'lamp'); S.rect(x + 4, top + 5, 6, 2, 'gold'); S.rect(x + 7, top + 5, 1, 5, 'void');
+      S.rect(x + 3, top + 4, 8, 7, 'void'); S.rect(x + 4, top + 5, 6, 5, 'lamp'); S.rect(x + 4, top + 5, 6, 2, 'gold'); S.rect(x + 7, top + 5, 1, 5, 'void'); S.rect(x + 4, top + 7, 6, 1, 'void');
+      S.rect(x + 2, top + 11, 10, 1, 'moonD'); S.rect(x + 3, top + 12, 2, 1, 'reed'); S.px(x + 4, top + 11, 'red'); S.px(x + 8, top + 11, 'frogL');
       S.rect(x + 15, top + 7, 8, base - top - 7, 'void'); S.rect(x + 16, top + 8, 6, base - top - 8, 'night2'); S.px(x + 21, top + 15, 'gold');
       S.rect(x + 13, top - 4, 1, 3, 'moonD');
       this.sign(S, x + 7, top - 2, 13, (cx, cy) => { S.rect(cx - 2, cy - 2, 4, 4, 'gold'); S.rect(cx - 2, cy - 2, 4, 1, 'bone'); S.px(cx + 2, cy, 'moonD'); });
@@ -5969,7 +6049,9 @@ class MarketScene {
       S.ellipse(x + 13, top + 10, 8, 5, 'magicL', true); S.rect(x + 5, top + 10, 17, 9, 'magicL');
       S.dither(x + 5, top + 6, 17, 13, null, 'magic', 0.35);
       S.drawSprite(SPRITES.fish_moon, 0, x + 6, top + 10);
-      S.rect(x + 4, top + 19, 19, 1, 'void'); S.rect(x + 13, top + 5, 1, 14, 'curseD');
+      S.rect(x + 4, top + 19, 19, 1, 'void'); S.rect(x + 13, top + 5, 1, 14, 'curseD'); S.rect(x + 5, top + 12, 17, 1, 'curseD');
+      S.ellipse(x + 13, top + 10, 9, 6, 'gold'); S.rect(x + 4, top + 10, 1, 9, 'gold'); S.rect(x + 22, top + 10, 1, 9, 'lamp');
+      S.rect(x + 1, top + 2, 1, base - top - 2, 'magic');
       S.rect(x + 9, top + 21, 9, base - top - 21, 'void'); S.px(x + 16, top + 25, 'gold');
       this.sign(S, x + 6, SHOP_TOP - 3, 15, (cx, cy) => { S.ellipse(cx, cy, 2, 2, 'gold'); S.px(cx, cy, 'void'); S.line(cx + 2, cy + 2, cx + 4, cy + 3, 'gold'); });
     }
@@ -5982,31 +6064,68 @@ class MarketScene {
       S.dither(x + 2, top + 2, 7, 9, null, 'fog', 0.5);
       for (const [dx, h] of [[20, 26], [23, 22], [25, 28]]) { S.line(x + dx, base - 1, x + dx - 3, base - h, 'moon'); S.px(x + dx - 3, base - h, 'red'); }
       this.sign(S, x + 5, SHOP_TOP - 1, 15, (cx, cy) => { S.rect(cx, cy - 2, 1, 4, 'bone'); S.px(cx - 1, cy + 2, 'bone'); S.px(cx - 2, cy + 1, 'bone'); });
+      S.dither(x + 1, top, SHOP_W - 2, 2, null, 'void', 0.5);
+      S.rect(x + 1, top, 1, base - top, 'moonD');
+      S.drawSprite(SPRITES.lantern_1, 0, x + 18, top + 2);
+    }
+    // shading common to all fronts: the far (right) wall darker, a lit left edge, eaves' shadow
+    for (let i = 0; i < SHOPS.length; i++) {
+      const x = shopX(i) + this.ox;
+      for (let y = SHOP_TOP - 4; y < SHOP_BASE; y++) {
+        const r = S.buf[y * S.w + x + SHOP_W - 1];
+        if (r) S.dither(x + SHOP_W - 3, y, 3, 1, null, 'void', 0.35);
+      }
     }
   }
 
   /* ---------- inside the shops ---------- */
+  // Plank walls: seams, a shaded edge on every board, knots and grain, and a dark vignette at the sides.
   room(S, wall, wall2, seam) {
     const { w, h } = this;
     S.rect(0, 0, w, h, wall);
-    for (let x = (this.ox % 6 + 6) % 6; x < w; x += 6) { S.rect(x, 0, 1, h, seam); S.dither(x + 1, 0, 2, h, null, wall2, 0.3); }
+    for (let x = (this.ox % 6 + 6) % 6, i = 0; x < w; x += 6, i++) {
+      S.rect(x, 0, 1, h, seam);
+      S.dither(x + 4, 0, 1, h, null, wall2, 0.5);
+      for (let y = (i * 17) % 23; y < h; y += 23) { S.px(x + 2, y, wall2); S.px(x + 3, y + 1, wall2); S.px(x + 2, y + 2, wall2); }
+      for (let y = (i * 7) % 11; y < h; y += 11) S.rect(x + 1 + (i % 3), y, 1, 3, wall2);
+    }
+    this.vignette(S);
   }
+  vignette(S) {
+    const { w, h } = this;
+    for (let i = 0; i < 6; i++) { const k = (6 - i) / 7; S.dither(i, 0, 1, h, null, 'void', k); S.dither(w - 1 - i, 0, 1, h, null, 'void', k); }
+    for (let i = 0; i < 4; i++) S.dither(0, i, w, 1, null, 'void', (4 - i) / 6);
+  }
+  // The counter: a lit top edge, planks with shaded sides and nails, the floor's shadow underneath.
   counter(S, top, face, edge) {
     const { w, h } = this;
     S.rect(0, top, w, h - top, face);
-    S.rect(0, top, w, 2, edge); S.rect(0, top + 2, w, 1, 'void');
-    for (let x = 4; x < w; x += 10) S.rect(x, top + 3, 1, h - top - 3, 'void');
+    S.dither(0, top - 2, w, 2, null, 'void', 0.35);
+    S.rect(0, top, w, 1, 'moon'); S.rect(0, top + 1, w, 1, edge); S.rect(0, top + 2, w, 1, 'void');
+    for (let x = 4; x < w; x += 10) {
+      S.rect(x, top + 3, 1, h - top - 3, 'void'); S.dither(x - 3, top + 3, 3, h - top - 3, null, 'void', 0.25);
+    }
+    S.dither(0, h - 4, w, 4, null, 'void', 0.5);
+    for (let i = 0; i < 6; i++) { const k = (6 - i) / 7; S.dither(i, top, 1, h - top, null, 'void', k); S.dither(w - 1 - i, top, 1, h - top, null, 'void', k); }
   }
+  // The shadow a shelf throws on the wall below it.
+  shelf(S, x, y, w) { S.rect(x, y, w, 2, 'moonD'); S.rect(x, y, w, 1, 'moonS'); S.rect(x, y + 2, w, 1, 'void'); S.dither(x, y + 3, w, 3, null, 'void', 0.4); S.px(x + 2, y + 3, 'moonD'); S.px(x + w - 3, y + 3, 'moonD'); }
   paint_galia(S) {
     this.room(S, 'wood', 'night', 'void');
     // a striped awning with a scalloped edge
     for (let x = 0; x < this.w; x++) { const red = Math.floor((x - this.ox) / 5) % 2; S.rect(x, 0, 1, 7, red ? 'red' : 'bone'); if ((x - this.ox) % 5 !== 0) S.px(x, 7, red ? 'red' : 'bone'); }
     S.rect(0, 0, this.w, 1, 'redD');
+    for (let x = 0; x < this.w; x++) if ((x - this.ox) % 5 >= 2) S.px(x, 1, Math.floor((x - this.ox) / 5) % 2 ? 'redD' : 'moonS');
+    S.dither(0, 8, this.w, 4, null, 'void', 0.45);
     // a string of dried fish and a garlic braid
     const ox = this.ox;
     S.line(ox + 50, 12, ox + 118, 14, 'moonD');
     for (let i = 0; i < 6; i++) { const x = ox + 54 + i * 11, y = 13 + Math.round(i / 3); S.rect(x, y, 1, 2, 'moonD'); S.rect(x - 1, y + 2, 3, 6, 'moonS'); S.rect(x - 1, y + 2, 1, 6, 'moonD'); S.px(x, y + 8, 'moonD'); S.px(x - 1, y + 9, 'moonD'); S.px(x + 1, y + 9, 'moonD'); }
-    for (let i = 0; i < 4; i++) S.ellipse(ox + 112, 18 + i * 4, 2, 2, 'bone', true);
+    for (let i = 0; i < 4; i++) { S.ellipse(ox + 112, 18 + i * 4, 2, 2, 'bone', true); S.px(ox + 111, 17 + i * 4, 'moon'); S.px(ox + 113, 19 + i * 4, 'fog'); }
+    S.line(ox + 112, 14, ox + 112, 17, 'reed');
+    // a basket of crayfish at her elbow
+    S.rect(ox + 84, 37, 14, 10, 'wood'); for (let x = ox + 85; x < ox + 98; x += 2) S.rect(x, 38, 1, 9, 'moonD'); S.rect(ox + 84, 37, 14, 1, 'lamp');
+    for (const [dx, dy] of [[2, -2], [6, -3], [10, -2]]) { S.rect(ox + 84 + dx, 37 + dy, 3, 2, 'red'); S.px(ox + 84 + dx, 36 + dy, 'redD'); S.px(ox + 86 + dx, 36 + dy, 'redD'); }
     this.counter(S, COUNTER_Y, 'wood', 'moonD');
     // ice and fish on the counter
     S.dither(ox + 44, COUNTER_Y - 2, 40, 2, null, 'shimmer', 0.6); S.rect(ox + 44, COUNTER_Y - 1, 40, 1, 'bone');
@@ -6018,53 +6137,75 @@ class MarketScene {
     S.ditherCircle(ox + 70, 12, 26, 'lamp', 0.45, 0.8);
     // shelves of bottles and jugs
     for (const sy of [14, 28]) {
-      S.rect(ox + 50, sy, 70, 2, 'moonD'); S.rect(ox + 50, sy + 2, 70, 1, 'void');
+      this.shelf(S, ox + 50, sy, 70);
       for (let i = 0; i < 8; i++) {
         const x = ox + 53 + i * 8, kind = (i + sy) % 3;
-        if (kind === 0) { S.rect(x, sy - 6, 3, 6, 'reed'); S.rect(x + 1, sy - 8, 1, 2, 'reed'); S.px(x, sy - 5, 'frogL'); }
-        else if (kind === 1) { S.ellipse(x + 2, sy - 3, 3, 3, 'lamp', true); S.rect(x + 1, sy - 7, 3, 2, 'lamp'); S.px(x + 1, sy - 4, 'gold'); }
-        else { S.rect(x, sy - 5, 4, 5, 'bone'); S.rect(x, sy - 5, 4, 1, 'moonD'); }
+        if (kind === 0) { S.rect(x, sy - 6, 3, 6, 'reed'); S.rect(x + 1, sy - 8, 1, 2, 'reed'); S.rect(x + 2, sy - 6, 1, 6, 'reedD'); S.px(x, sy - 5, 'frogL'); S.px(x, sy - 4, 'frogL'); S.rect(x, sy - 3, 3, 1, 'bone'); }
+        else if (kind === 1) { S.ellipse(x + 2, sy - 3, 3, 3, 'lamp', true); S.rect(x + 1, sy - 7, 3, 2, 'lamp'); S.px(x + 1, sy - 4, 'gold'); S.px(x, sy - 3, 'gold'); S.rect(x + 3, sy - 3, 2, 3, 'redD'); S.rect(x + 1, sy - 8, 3, 1, 'wood'); }
+        else { S.rect(x, sy - 5, 4, 5, 'bone'); S.rect(x, sy - 5, 4, 1, 'moonD'); S.rect(x + 3, sy - 4, 1, 4, 'fog'); S.rect(x + 1, sy - 3, 2, 1, 'red'); }
       }
     }
+    // strings of onions and peppers by the door
+    S.line(ox + 48, 2, ox + 48, 30, 'moonD');
+    for (let y = 5; y < 30; y += 4) { S.ellipse(ox + 47, y, 2, 2, (y / 4) % 2 ? 'gold' : 'red', true); S.px(ox + 46, y - 1, (y / 4) % 2 ? 'moon' : 'lamp'); }
     // a lamp hanging from a hook
     S.rect(ox + 70, 0, 1, 4, 'void'); S.drawSprite(SPRITES.lantern_2, 0, ox + 67, 4);
     // a barrel with a tap
-    S.rect(ox + 104, 33, 14, 15, 'wood'); S.rect(ox + 104, 36, 14, 1, 'void'); S.rect(ox + 104, 44, 14, 1, 'void'); S.rect(ox + 105, 33, 12, 1, 'lamp');
-    S.rect(ox + 102, 40, 2, 2, 'moonD');
+    S.rect(ox + 104, 33, 14, 15, 'wood'); S.rect(ox + 104, 33, 3, 15, 'lamp'); S.dither(ox + 104, 33, 3, 15, null, 'wood', 0.5); S.rect(ox + 115, 33, 3, 15, 'void');
+    for (const y of [36, 44]) { S.rect(ox + 104, y, 14, 1, 'moonD'); S.px(ox + 105, y, 'moon'); }
+    S.rect(ox + 105, 33, 12, 1, 'lamp');
+    S.rect(ox + 101, 39, 3, 2, 'moonD'); S.px(ox + 101, 39, 'moon'); S.px(ox + 101, 41, 'gold');
     this.counter(S, COUNTER_Y, 'wood', 'lamp');
-    for (const x of [50, 60, 88]) { S.rect(ox + x, COUNTER_Y - 6, 5, 6, 'gold'); S.rect(ox + x, COUNTER_Y - 7, 5, 1, 'bone'); S.rect(ox + x + 5, COUNTER_Y - 5, 1, 3, 'moonD'); }
+    for (const x of [50, 60, 88]) {
+      S.rect(ox + x, COUNTER_Y - 6, 5, 6, 'gold'); S.rect(ox + x, COUNTER_Y - 6, 1, 6, 'moon'); S.rect(ox + x + 4, COUNTER_Y - 6, 1, 6, 'lamp');
+      S.rect(ox + x - 1, COUNTER_Y - 8, 7, 2, 'bone'); S.px(ox + x + 1, COUNTER_Y - 9, 'bone'); S.px(ox + x + 5, COUNTER_Y - 7, 'fog');
+      S.rect(ox + x + 5, COUNTER_Y - 5, 1, 3, 'moonD'); S.px(ox + x + 6, COUNTER_Y - 5, 'moonD'); S.px(ox + x + 6, COUNTER_Y - 3, 'moonD');
+    }
   }
   paint_collector(S) {
     const { w, h } = this, ox = this.ox;
     // a velvet curtain in folds
     S.rect(0, 0, w, h, 'curseD');
     for (let x = 0; x < w; x += 7) { S.dither(x, 0, 3, h, null, 'night', 0.6); S.rect(x + 4, 0, 1, h, 'magic'); }
-    S.rect(0, 0, w, 3, 'magic'); for (let x = 1; x < w; x += 4) S.px(x, 3, 'gold');
-    // jars with curiosities on a shelf, and candles
-    S.rect(ox + 50, 26, 70, 2, 'moonD'); S.rect(ox + 50, 28, 70, 1, 'void');
+    S.rect(0, 0, w, 3, 'magic'); S.rect(0, 0, w, 1, 'magicL'); for (let x = 1; x < w; x += 4) { S.px(x, 3, 'gold'); S.px(x, 4, 'lamp'); }
+    this.vignette(S);
+    // jars with curiosities on a shelf
+    this.shelf(S, ox + 50, 26, 70);
     for (let i = 0; i < 5; i++) {
       const x = ox + 54 + i * 13;
-      S.rect(x, 15, 9, 11, 'waterD'); S.rect(x, 15, 9, 1, 'bone'); S.rect(x + 1, 14, 7, 1, 'wood');
+      S.rect(x, 15, 9, 11, 'waterD'); S.rect(x, 15, 9, 1, 'bone'); S.rect(x + 1, 13, 7, 2, 'wood'); S.rect(x + 1, 13, 7, 1, 'lamp');
       S.dither(x + 1, 16, 7, 9, null, 'waterL', 0.4);
       S.drawSprite(i % 2 ? SPRITES.fish_bone : SPRITES.fish_roach, 0, x - 3, 17);
+      S.rect(x + 1, 16, 1, 8, 'shimmer'); S.px(x + 2, 17, 'bone'); S.rect(x + 8, 16, 1, 9, 'night');
     }
+    // a gilt frame with a pinned crayfish above the case
+    S.rect(ox + 84, 32, 22, 12, 'gold'); S.rect(ox + 85, 33, 20, 10, 'night'); S.rect(ox + 84, 32, 22, 1, 'moon'); S.rect(ox + 105, 32, 1, 12, 'lamp');
+    S.rect(ox + 90, 36, 9, 3, 'red'); S.px(ox + 89, 35, 'red'); S.px(ox + 89, 39, 'red'); S.px(ox + 99, 37, 'redD'); S.px(ox + 91, 36, 'lamp');
     // a glass case with a pinned fish on the counter
     this.counter(S, COUNTER_Y, 'night', 'magic');
     S.rect(ox + 48, COUNTER_Y - 12, 30, 12, 'bone'); S.rect(ox + 49, COUNTER_Y - 11, 28, 11, 'night2');
     S.dither(ox + 49, COUNTER_Y - 11, 28, 11, null, 'waterL', 0.25);
     S.drawSprite(SPRITES.fish_sterlet, 0, ox + 55, COUNTER_Y - 9);
-    S.rect(ox + 50, COUNTER_Y - 10, 6, 1, 'bone');
+    S.rect(ox + 50, COUNTER_Y - 10, 6, 1, 'bone'); S.line(ox + 52, COUNTER_Y - 2, ox + 58, COUNTER_Y - 8, 'shimmer'); S.line(ox + 70, COUNTER_Y - 3, ox + 74, COUNTER_Y - 7, 'shimmer');
+    S.rect(ox + 49, COUNTER_Y - 2, 28, 1, 'gold');
   }
   paint_gear(S) {
     this.room(S, 'wood', 'night', 'void');
     const ox = this.ox;
     // rods racked on the wall, a net drying, hooks on a board
-    for (let i = 0; i < 5; i++) { const x = ox + 8 + i * 9; S.line(x, 44, x + 10, 6, 'moon'); S.px(x + 10, 6, 'red'); S.rect(x - 1, 40, 3, 3, 'void'); }
+    for (let i = 0; i < 5; i++) {
+      const x = ox + 8 + i * 9;
+      S.line(x + 1, 44, x + 11, 6, 'void'); S.line(x, 44, x + 10, 6, i % 2 ? 'moonS' : 'moon'); S.px(x + 10, 6, 'red');
+      S.rect(x - 1, 40, 3, 4, 'wood'); S.px(x - 1, 40, 'lamp');
+      S.ellipse(x + 2, 37, 2, 2, 'moonD', true); S.px(x + 1, 36, 'moon'); S.px(x + 2, 37, 'void');
+    }
     S.dither(ox + 60, 4, 30, 24, null, 'fog', 0.35);
     for (let x = ox + 60; x < ox + 90; x += 4) S.line(x, 4, x + 3, 28, 'moonD');
     S.rect(ox + 96, 8, 20, 14, 'moonD'); S.rect(ox + 97, 9, 18, 12, 'wood');
     for (let i = 0; i < 6; i++) { const x = ox + 99 + (i % 3) * 6, y = 11 + Math.floor(i / 3) * 5; S.rect(x, y, 1, 3, 'bone'); S.px(x - 1, y + 3, 'bone'); }
     S.drawSprite(SPRITES.lantern_2, 0, ox + 92, 26);
+    this.shelf(S, ox + 60, 32, 56);
+    for (let i = 0; i < 4; i++) { const x = ox + 63 + i * 13; S.rect(x, 27, 9, 5, i % 2 ? 'waterD' : 'redD'); S.rect(x, 27, 9, 1, i % 2 ? 'waterL' : 'red'); S.rect(x + 3, 29, 3, 1, 'bone'); }
     this.counter(S, COUNTER_Y, 'wood', 'moonD');
     S.rect(ox + 20, COUNTER_Y - 4, 16, 4, 'wood'); S.rect(ox + 20, COUNTER_Y - 4, 16, 1, 'lamp');
     for (const x of [22, 26, 30]) S.px(ox + x, COUNTER_Y - 3, 'frogL');
@@ -6114,9 +6255,32 @@ class MarketScene {
       this.drawHubLights(view);
       return;
     }
+    this.drawAmbient(shop);
     this.drawKeeper(shop, view);
     if (shop === 'galia') this.drawScale();
     if (shop === 'gear') S.drawSprite(SPRITES.cat, frameAt(SPRITES.cat, this.calm ? 0 : this.t * 0.4), this.ox + 70, COUNTER_Y - 8);
+  }
+
+  // Things that move in each shop: glints on the ice, the tavern lamp breathing, candle flames, dust in the light.
+  drawAmbient(shop) {
+    const S = this.surf, ox = this.ox, t = this.calm ? 0 : this.t;
+    if (shop === 'galia') {
+      for (let i = 0; i < 3; i++) { const k = Math.floor(t * 2 + i * 1.7) % 6; if (k === 0) { const x = ox + 48 + ((i * 13 + Math.floor(t)) % 34); S.px(x, COUNTER_Y - 2, 'moon'); S.px(x - 1, COUNTER_Y - 1, 'bone'); S.px(x + 1, COUNTER_Y - 1, 'bone'); } }
+    }
+    if (shop === 'korchmar') S.ditherCircle(ox + 70, 10, 10 + Math.round(Math.sin(t * 5) * 1.5), 'gold', 0.35, 0.9);
+    if (shop === 'collector') {
+      for (const cx of [ox + 80, ox + 110]) {
+        const y = COUNTER_Y - 9, fl = Math.floor(t * 8 + cx) % 3;
+        S.ditherCircle(cx, y - 3, 9, 'lamp', 0.3, 1);
+        S.rect(cx - 1, y, 3, 9, 'bone'); S.rect(cx + 1, y, 1, 9, 'fog'); S.px(cx - 1, y + 2, 'moon');
+        S.px(cx, y - 1, 'void'); S.px(cx, y - 2, 'lamp'); S.px(cx, y - 3, 'gold'); if (fl) S.px(cx + (fl === 1 ? -1 : 1), y - 4, 'gold'); S.px(cx, y - 4, 'moon');
+      }
+    }
+    if (shop === 'gear') S.ditherCircle(ox + 95, 30, 12 + Math.round(Math.sin(t * 4) * 1), 'lamp', 0.3, 0.9);
+    if (!this.calm) for (let i = 0; i < 5; i++) {
+      const x = ox + 50 + ((i * 23 + t * (1.5 + i * 0.4)) % 64), y = 8 + ((i * 11 + t * (1 + i * 0.3)) % 34);
+      if ((Math.floor(t * 2) + i) % 4) S.px(x, y, i % 2 ? 'moonS' : 'gold');
+    }
   }
 
   drawKeeper(shop, view) {
