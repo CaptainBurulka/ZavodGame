@@ -3362,6 +3362,22 @@ const PALETTE = {
   reedD: '#1d3324', reed: '#3b5e33', frog: '#7aa04a', frogL: '#b6d36b',
   curseD: '#4a2d5c', magic: '#9a5fc0', magicL: '#d6a7f0',
   bone: '#e8e4d8', fog: '#8d97a3', wood: '#5a3a24',
+  // the places' own shades: lit wood, calm teal deep water, the old bed's moss, the mill's plum dusk and rust
+  woodL: '#7d5536', tealD: '#173238', mossD: '#26332c', moss: '#495c4d', plum: '#33212e', rust: '#6e4232',
+};
+
+// Light without alpha: every colour has a darker and a lighter neighbour. A light moves pixels up this ramp,
+// a reflection moves them down; nothing is ever blended.
+const RAMP = {
+  void: ['void', 'night'], night: ['void', 'night2'], night2: ['night', 'waterD'],
+  waterD: ['tealD', 'waterM'], waterM: ['waterD', 'waterL'], waterL: ['waterM', 'shimmer'], shimmer: ['waterL', 'moonS'],
+  moon: ['moonS', 'bone'], moonS: ['moonD', 'moon'], moonD: ['moss', 'moonS'],
+  gold: ['lamp', 'moon'], lamp: ['rust', 'gold'], red: ['redD', 'lamp'], redD: ['plum', 'red'],
+  reedD: ['void', 'reed'], reed: ['reedD', 'frog'], frog: ['reed', 'frogL'], frogL: ['frog', 'moon'],
+  curseD: ['plum', 'magic'], magic: ['curseD', 'magicL'], magicL: ['magic', 'bone'],
+  bone: ['fog', 'moon'], fog: ['moss', 'bone'], wood: ['plum', 'woodL'],
+  woodL: ['wood', 'lamp'], tealD: ['night', 'waterD'], mossD: ['void', 'moss'], moss: ['mossD', 'fog'],
+  plum: ['night', 'rust'], rust: ['wood', 'lamp'],
 };
 
 // Rarity keys match CONFIG.tiers. outline marks the tier that needs a bone edge to stand out.
@@ -3380,6 +3396,9 @@ const hexToAbgr = hex => {
 };
 // Packed for a little-endian Uint32Array over RGBA bytes; 0 is transparent.
 const PACKED = Object.fromEntries(Object.entries(PALETTE).map(([k, v]) => [k, hexToAbgr(v)]));
+// Packed ink -> the next ink down (DARKER) or up (LIGHTER) its ramp.
+const DARKER = new Map(Object.entries(RAMP).map(([k, r]) => [PACKED[k], PACKED[r[0]]]));
+const LIGHTER = new Map(Object.entries(RAMP).map(([k, r]) => [PACKED[k], PACKED[r[1]]]));
 
 /* render/pixel.js */
 // Software framebuffer: every drawing call lands on whole pixels and takes palette keys,
@@ -3583,6 +3602,56 @@ class Surface {
     this.buf.set(other.buf);
   }
 
+  // The opaque pixels of another surface; what falls off the edge is dropped.
+  blit(src, dx, dy) {
+    dx = whole(dx); dy = whole(dy);
+    const x0 = Math.max(0, dx), x1 = Math.min(this.w, dx + src.w), y0 = Math.max(0, dy), y1 = Math.min(this.h, dy + src.h);
+    for (let y = y0; y < y1; y++) {
+      const so = (y - dy) * src.w - dx, o = y * this.w;
+      for (let x = x0; x < x1; x++) { const ink = src.buf[so + x]; if (ink) this.buf[o + x] = ink; }
+    }
+  }
+
+  // A strip wider than the screen drifting sideways forever: it is laid twice, end to end.
+  blitWrap(src, offset, dy) {
+    const ox = ((whole(offset) % src.w) + src.w) % src.w;
+    this.blit(src, -ox, dy);
+    if (src.w - ox < this.w) this.blit(src, src.w - ox, dy);
+  }
+
+  // One row of src laid at row y, shifted by dx, every ink passed through map (DARKER for a reflection).
+  blitRow(src, sy, y, dx, map) {
+    if (y < 0 || y >= this.h || sy < 0 || sy >= src.h) return;
+    dx = whole(dx);
+    const so = sy * src.w, o = y * this.w;
+    for (let x = Math.max(0, dx); x < Math.min(this.w, src.w + dx); x++) {
+      const ink = src.buf[so + x - dx];
+      if (ink) this.buf[o + x] = map ? (map.get(ink) ?? ink) : ink;
+    }
+  }
+
+  // Light without alpha: inside the ellipse pixels climb their colour ramp, one step at the dithered rim,
+  // two at the core when strength is above 1. clip {x,y,w,h} keeps it to one box (a lit figure).
+  relight(cx, cy, r, squash = 1, strength = 1, clip = null, steps = 2, only = null) {
+    cx = whole(cx); cy = whole(cy); r = whole(r);
+    if (r < 1) return;
+    const ry = Math.max(1, whole(r * squash));
+    let x0 = Math.max(0, cx - r), x1 = Math.min(this.w - 1, cx + r), y0 = Math.max(0, cy - ry), y1 = Math.min(this.h - 1, cy + ry);
+    if (clip) { x0 = Math.max(x0, clip.x); x1 = Math.min(x1, clip.x + clip.w - 1); y0 = Math.max(y0, clip.y); y1 = Math.min(y1, clip.y + clip.h - 1); }
+    for (let py = y0; py <= y1; py++) {
+      for (let px = x0; px <= x1; px++) {
+        const d = Math.hypot((px - cx) / r, (py - cy) / ry);
+        if (d >= 1) continue;
+        const v = (1 - d) * strength, th = (BAYER4[(py & 3) * 4 + (px & 3)] + 0.5) / 16, i = py * this.w + px;
+        let ink = this.buf[i];
+        if (!ink || v <= th || (only && !only(px, py))) continue;
+        ink = LIGHTER.get(ink) ?? ink;
+        if (steps > 1 && v - 1 > th) ink = LIGHTER.get(ink) ?? ink;
+        this.buf[i] = ink;
+      }
+    }
+  }
+
   present(ctx) {
     if (!this.image) this.image = new ImageData(new Uint8ClampedArray(this.buf.buffer), this.w, this.h);
     ctx.imageSmoothingEnabled = false;
@@ -3603,6 +3672,7 @@ const SPRITE_CHARS = {
   e: 'reedD', E: 'reed', f: 'frog', F: 'frogL',
   c: 'curseD', x: 'magic', X: 'magicL',
   b: 'bone', o: 'fog', h: 'wood',
+  k: 'woodL', t: 'tealD', q: 'mossD', Q: 'moss', p: 'plum', P: 'rust',
 };
 
 const SPRITES = {};
@@ -5367,60 +5437,82 @@ const ROD_TIER_INK = [['wood', 'moonD', 'moonS'], ['wood', 'lamp', 'gold'], ['ni
 const LIGHT_INK = ['lamp', 'lamp', 'lamp', 'gold', 'frogL'];
 const FLIES_PER_LAMP = 3;
 // How each fishing place looks. Rules for the places live in CONFIG.locations.
+// pal: the place's sub-palette for its background (sky, water, trees, clouds, mist). The float, the signals,
+// the fisher and the lights keep the shared colours, so they read the same everywhere.
+// haze: the far treeline, one step off the sky; clouds: {n, ink, edge, speed}; mist: {ink, dots, speed}.
 const LOCATION_ART = {
   zavod: {
+    pal: ['void', 'night', 'night2', 'tealD', 'waterD', 'waterM', 'waterL', 'moonS', 'reedD', 'reed', 'wood', 'moonD'],
     sky: ['void', 'night', 'night2'],
-    water: [['waterL', 'waterM'], ['waterM', 'waterD'], ['waterD', 'night2'], ['night2', 'night']],
+    haze: 'night',
+    water: [['waterM', 'waterD'], ['waterD', 'tealD'], ['tealD', 'night'], ['night', 'night']],
     forest: ['tree_a', 'tree_b', 'tree_a'],
+    clouds: { n: 2, ink: 'night', edge: 'night2', speed: 0.6 },
     props: [
       { name: 'lily_pad', x: 0.09, y: 0.62 },
       { name: 'lily_flower', x: 0.17, y: 0.7 },
       { name: 'lily_pad', x: 0.82, y: 0.5 },
     ],
     reeds: true,
-    dash: ['shimmer', 'waterL'],
-    glint: ['moonS', 'shimmer'],
+    moonGlow: 'night2',
+    dash: ['waterL', 'waterD'],
+    glint: ['moonS', 'waterL'],
   },
   ruslo: {
-    sky: ['void', 'night', 'waterD'],
-    water: [['shimmer', 'waterL'], ['waterL', 'waterM'], ['waterM', 'reedD'], ['reedD', 'night']],
+    pal: ['void', 'night', 'mossD', 'moss', 'fog', 'waterD', 'waterM', 'reedD', 'reed', 'wood', 'moonD', 'moonS'],
+    sky: ['void', 'night', 'night'],
+    haze: 'mossD', // in fog the far bank is paler than the near one
+    water: [['moss', 'mossD'], ['mossD', 'waterD'], ['waterD', 'night'], ['night', 'void']],
     forest: ['tree_willow', 'tree_willow', 'tree_a'],
+    mist: { ink: 'moss', dots: 'fog', speed: 2.2 },
     props: [
       { name: 'stone', x: 0.3, y: 0.74 },
     ],
     reeds: true,
-    fog: 'fog',
-    dash: ['shimmer', 'waterL'],
-    glint: ['moonS', 'shimmer'],
+    moonGlow: 'mossD',
+    dash: ['moss', 'waterD'],
+    glint: ['moonS', 'moss'],
   },
   vyr: {
-    sky: ['void', 'void', 'curseD'],
-    water: [['waterD', 'night2'], ['night2', 'night'], ['night', 'void'], ['void', 'void']],
+    pal: ['void', 'night', 'plum', 'curseD', 'rust', 'wood', 'woodL', 'moonD', 'fog', 'night2'],
+    sky: ['void', 'night', 'plum'],
+    haze: 'plum',
+    water: [['curseD', 'plum'], ['plum', 'night'], ['night', 'void'], ['void', 'void']],
     forest: ['tree_ruin', 'tree_a', 'tree_ruin'],
+    clouds: { n: 5, ink: 'plum', edge: 'curseD', speed: 1.4 },
     props: [
       { name: 'stone', x: 0.03, y: 0.56 },
       { name: 'stone', x: 0.84, y: 0.72 },
     ],
     reeds: false,
     wheel: true,
-    whirl: true,
-    dash: ['waterL', 'waterM'],
-    glint: ['moonD', 'waterL'],
+    whirl: ['moonD', 'curseD'],
+    moonGlow: 'plum',
+    dash: ['curseD', 'plum'],
+    glint: ['moonD', 'rust'],
   },
   pleso: {
-    sky: ['void', 'curseD', 'night'],
+    pal: ['void', 'night', 'night2', 'plum', 'curseD', 'magic', 'magicL', 'reedD', 'reed', 'wood', 'moonD'],
+    sky: ['void', 'night', 'curseD'],
+    haze: 'plum',
     water: [['night2', 'curseD'], ['curseD', 'night'], ['night', 'void'], ['void', 'void']],
     forest: ['tree_ruin', 'tree_willow', 'tree_ruin'],
+    clouds: { n: 3, ink: 'plum', edge: 'curseD', speed: 0.8 },
+    mist: { ink: 'curseD', dots: 'magic', speed: 1.2 },
     props: [
       { name: 'stone', x: 0.06, y: 0.62 },
       { name: 'lily_pad', x: 0.38, y: 0.78 },
     ],
     reeds: true,
-    fog: 'magic',
-    dash: ['magic', 'waterD'],
+    moonGlow: 'curseD',
+    dash: ['curseD', 'plum'],
     glint: ['magicL', 'magic'],
   },
 };
+// The lantern does not glow steadily: its radius steps through this list, about seven steps a second.
+const LAMP_FLICKER = [0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 2];
+const LAMP_FLICKER_RATE = 7;
+const REFLECT_MAX = 0.4; // reflections reach this share of the water's height at most
 const ROD_THICK = 2;
 // The rod: segments × segLen pixels long; it bends by at most maxBend radians, reaching it at tension 1/bendPerTension.
 const ROD_SHAPE = { segments: 6, segLen: 5, maxBend: 0.6, bendPerTension: 1 };
@@ -5550,11 +5642,14 @@ class PondScene {
     this.paintedFor = null; // the place is known at draw time
   }
 
-  // Everything that never moves is painted once and copied each frame.
+  // Everything that never moves is painted once per place, into layers drawn back to front each frame:
+  // back (sky and water), far (two treelines), refl (their reflection, laid row by row with a waver),
+  // clouds and mist (strips wider than the screen that drift), fore (the bridge, over the water's edge).
   paintBackground(key) {
-    const S = this.back, g = this.geo, { w, h, horizon, bridgeY } = g, art = LOCATION_ART[key];
+    const g = this.geo, { w, h, horizon, bridgeY } = g, art = LOCATION_ART[key], waterH = bridgeY - horizon;
     this.art = art;
     this.paintedFor = key;
+    const S = this.back;
     const [skyTop, skyMid, skyLow] = art.sky;
     for (let y = 0; y < horizon; y++) {
       const k = y / horizon;
@@ -5562,29 +5657,117 @@ class PondScene {
       else S.dither(0, y, w, 1, skyMid, skyLow, (k - 0.5) * 2);
     }
     const layers = art.water;
-    const waterH = bridgeY - horizon;
     for (let y = 0; y < waterH; y++) {
       const k = (y / waterH) * layers.length, i = Math.min(layers.length - 1, Math.floor(k));
       S.dither(0, horizon + y, w, 1, layers[i][0], layers[i][1], Math.pow(k - i, 1.3));
     }
-    // forest and its dark reflection
+    // far: a paler treeline peeking over a black one
+    const F = this.far = new Surface(w, horizon);
+    let top = horizon;
+    if (art.haze) for (let x = -9, i = 1; x < w; x += 13, i++) {
+      const tree = SPRITES[art.forest[i % art.forest.length]];
+      F.drawSilhouette(tree, 0, x, horizon - tree.h - 3, art.haze);
+      top = Math.min(top, horizon - tree.h - 3);
+    }
     for (let x = -3, i = 0; x < w; x += 16, i++) {
       const tree = SPRITES[art.forest[i % art.forest.length]];
-      S.drawSprite(tree, 0, x, horizon - tree.h);
+      F.drawSprite(tree, 0, x, horizon - tree.h);
+      top = Math.min(top, horizon - tree.h);
     }
-    for (let y = 0; y < 4; y++) S.dither(0, horizon + y, w, 1, null, 'void', 0.7 - y * 0.17);
-    // mist: densest at the waterline, thinning upward, so it never reads as a straight band
-    if (art.fog) for (let i = 0; i < 12; i++) S.dither(0, horizon - 1 - i, w, 1, null, art.fog, 0.3 * (1 - i / 12) * (0.75 + 0.25 * Math.sin(i * 2.1)));
-    // bridge
-    S.rect(0, bridgeY, w, BRIDGE_H, 'wood');
-    S.rect(0, bridgeY, w, 1, 'moonD');
-    S.dither(0, bridgeY + 1, w, BRIDGE_H - 1, null, 'void', 0.12);
-    S.dither(0, h - 5, w, 5, null, 'void', 0.45);
-    for (let x = w % 9; x < w; x += 9) S.rect(x, bridgeY + 1, 1, BRIDGE_H - 1, 'void');
+    this.farTop = top;
+    this.reflH = Math.min(horizon - top, Math.floor(waterH * REFLECT_MAX));
+    // clouds: blobs of the place's cloud colour, their upper rim one step lighter where the moon catches it
+    this.clouds = null;
+    if (art.clouds) {
+      const C = this.clouds = new Surface(w * 2, Math.max(8, Math.floor(horizon * 0.62)));
+      const c = art.clouds;
+      seededList(c.n, 91 + w, r => r()).forEach((r0, i) => {
+        const cx = Math.floor(((i + r0 * 0.6) / c.n) * C.w), cy = 4 + Math.floor(r0 * (C.h - 10)), len = 10 + Math.floor(r0 * 16);
+        for (let k = 0; k < 4; k++) {
+          const bx = cx + Math.floor((k - 1.5) * len * 0.4), by = cy + (k % 2 ? 1 : 0), br = Math.floor(len * (k % 3 ? 0.5 : 0.36));
+          for (const wrap of [0, -C.w, C.w]) C.ditherCircle(bx + wrap, by, br, c.ink, 1.6, 0.28);
+        }
+      });
+      const edge = inkOf(c.edge), body = inkOf(c.ink);
+      for (let y = C.h - 1; y > 0; y--) for (let x = 0; x < C.w; x++) {
+        const i = y * C.w + x;
+        if (C.buf[i] === body && !C.buf[i - C.w]) C.buf[i] = edge;
+      }
+    }
+    // mist: patches lying on the water line, densest at the bottom
+    this.mist = null;
+    if (art.mist) {
+      const M = this.mist = new Surface(w * 2, 16), m = art.mist;
+      seededList(9, 17 + w, r => r()).forEach((r0, i) => {
+        const cx = Math.floor(((i + r0) / 9) * M.w);
+        for (const wrap of [0, -M.w, M.w]) M.ditherCircle(cx + wrap, 13, 14 + Math.floor(r0 * 12), m.ink, 0.55, 0.32);
+      });
+      for (let i = 0; i < M.w; i += 7) M.px(i, 10 + (i * 13) % 6, m.dots);
+    }
+    // fore: the bridge, over the water's edge
+    const B = this.fore = new Surface(w, h);
+    B.rect(0, bridgeY, w, BRIDGE_H, 'wood');
+    B.rect(0, bridgeY, w, 1, 'moonD');
+    B.dither(0, bridgeY + 1, w, BRIDGE_H - 1, null, 'void', 0.12);
+    B.dither(0, h - 5, w, 5, null, 'void', 0.45);
+    for (let x = w % 9; x < w; x += 9) B.rect(x, bridgeY + 1, 1, BRIDGE_H - 1, 'void');
     for (const px of [Math.floor(w * 0.06), w - 6]) {
-      S.rect(px, bridgeY - 7, 4, 7, 'wood');
-      S.rect(px, bridgeY - 7, 1, 7, 'moonD');
-      S.rect(px, bridgeY - 8, 4, 1, 'moonS');
+      B.rect(px, bridgeY - 7, 4, 7, 'wood');
+      B.rect(px, bridgeY - 7, 1, 7, 'moonD');
+      B.rect(px, bridgeY - 8, 4, 1, 'moonS');
+    }
+  }
+
+  // Distinct inks in the place's background layers: the sub-palette check of the dev tools.
+  backgroundInks() {
+    const seen = new Set();
+    for (const L of [this.back, this.far, this.clouds, this.mist]) if (L) for (const ink of L.buf) if (ink) seen.add(ink);
+    return Object.keys(PACKED).filter(k => seen.has(PACKED[k]));
+  }
+
+  // The steps of the wind: 0 most of the time, 1 in a gust. Reduced motion keeps the trees still.
+  wind() {
+    if (this.calm) return 0;
+    const t = this.t;
+    return Math.sin(t * 0.7) * Math.sin(t * 0.23 + 1) > 0.35 ? 1 : 0;
+  }
+
+  // Sideways offset of reflection row k (0 at the waterline): whole pixels, wider further from the bank.
+  waver(k) {
+    const t = this.calm ? 0 : Math.floor(this.t * 6) / 6;
+    return Math.round(Math.sin(k * 0.9 + t * 2.4) * (0.4 + k * 0.12));
+  }
+
+  drawFar() {
+    const S = this.surf, F = this.far, g = this.geo, gust = this.wind();
+    // tree tops lean with the wind, trunks stay put
+    for (let y = this.farTop; y < g.horizon; y++) S.blitRow(F, y, y, y < g.horizon - 5 ? gust : 0, null);
+  }
+
+  drawClouds() {
+    const g = this.geo;
+    if (this.clouds) this.surf.blitWrap(this.clouds, this.calm ? 0 : this.t * this.art.clouds.speed, 1);
+  }
+
+  drawMist() {
+    const g = this.geo;
+    if (this.mist) this.surf.blitWrap(this.mist, this.calm ? 0 : this.t * this.art.mist.speed, g.horizon - 12);
+  }
+
+  // The banks in the water: the treelines and the mill wheel mirrored, a step darker, every row wavering.
+  drawReflections(view) {
+    const S = this.surf, g = this.geo, F = this.far, t = this.calm ? 0 : this.t;
+    for (let k = 0; k < this.reflH; k++) S.blitRow(F, g.horizon - 1 - k, g.horizon + k, this.waver(k), DARKER);
+    if (this.art.wheel) {
+      const wheel = SPRITES.mill_wheel, fr = frameAt(wheel, this.t), x = g.w - wheel.w + 6, axis = g.horizon - 20 + wheel.h;
+      const px = wheel.frames[fr];
+      for (let k = 0; k < Math.min(14, g.bridgeY - axis); k++) {
+        const sy = wheel.h - 1 - k, dx = this.waver(k + 4), y = axis + k;
+        for (let sx = 0; sx < wheel.w; sx++) {
+          const ink = px[sy * wheel.w + sx];
+          if (ink) S.put(x + sx + dx, y, DARKER.get(ink) ?? ink);
+        }
+      }
     }
   }
 
@@ -5708,7 +5891,7 @@ class PondScene {
 
   drawMoon(view) {
     const S = this.surf, g = this.geo, { x, y } = g.moon, phase = view.moonPhase;
-    if (phase !== 0) S.ditherCircle(x + 8, y + 8, 20, 'night2', 0.7);
+    if (phase !== 0) S.ditherCircle(x + 8, y + 8, 20, this.art.moonGlow, 0.7);
     S.drawSprite(SPRITES[`moon_${phase}`], 0, x, y);
   }
 
@@ -5716,7 +5899,9 @@ class PondScene {
     const S = this.surf, g = this.geo, t = this.t, { horizon, bridgeY, w } = g;
     const waterH = bridgeY - horizon, art = this.art;
     for (const d of this.dashes) {
-      S.rect(((d.x + t * d.v) % (w + d.len)) - d.len, d.y, d.len, 1, d.y < horizon + waterH * 0.5 ? art.dash[0] : art.dash[1]);
+      const x = ((d.x + t * d.v) % (w + d.len)) - d.len;
+      if (this.isQuiet(x, x + d.len, d.y)) continue; // no ripples under the float or a signal
+      S.rect(x, d.y, d.len, 1, d.y < horizon + waterH * 0.5 ? art.dash[0] : art.dash[1]);
     }
     // the whirlpool: broken rings that turn, tighter toward the middle
     if (art.whirl) {
@@ -5726,7 +5911,7 @@ class PondScene {
         for (let a = 0; a < 16; a++) {
           if ((a + ring) % 3 === 0) continue;
           const ang = (a / 16) * Math.PI * 2 + t * (1.4 - ring * 0.22);
-          S.px(cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry, ring < 3 ? 'waterL' : 'waterM');
+          S.px(cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry, ring < 3 ? art.whirl[0] : art.whirl[1]);
         }
       }
     }
@@ -5738,6 +5923,7 @@ class PondScene {
         if ((y + Math.floor(t * 6)) % 5 === 0) continue;
         const sway = Math.round(Math.sin(y * 0.5 + t * 2) * (1 + k * 3));
         const half = 1 + Math.floor((1 + Math.sin(y * 1.7 + t * 3)) * (1 + k * 2));
+        if (this.isQuiet(cx + sway - half, cx + sway + half, y)) continue;
         S.rect(cx + sway - half, y, half * 2, 1, k < 0.45 ? art.glint[0] : art.glint[1]);
       }
     }
@@ -5777,6 +5963,7 @@ class PondScene {
     }
     for (const r of this.rings) {
       const k = r.r / r.max;
+      S.ellipse(r.x, r.y + 1, r.r, r.r / 3, 'void'); // a dark underside: the ring reads on any water
       S.ellipse(r.x, r.y, r.r, r.r / 3, k < 0.35 ? 'moon' : k < 0.7 ? 'shimmer' : 'waterL');
     }
   }
@@ -5791,21 +5978,26 @@ class PondScene {
         case 'rings': {
           for (let i = 0; i < 2; i++) {
             const r = ((age * 5 + i * 4) % 8) + 1;
-            S.ellipse(x, y, r, Math.max(1, r / 3), r < 4 ? 'shimmer' : 'waterL');
+            S.ellipse(x, y + 1, r, Math.max(1, r / 3), 'void');
+            S.ellipse(x, y, r, Math.max(1, r / 3), r < 4 ? 'moon' : 'shimmer');
           }
           break;
         }
         case 'bubbles': {
           for (let i = 0; i < 3; i++) {
             const k = (age * 1.3 + i / 3) % 1;
-            S.px(x + (i - 1) * 2 + (i === 1 ? 0 : Math.round(Math.sin(age * 3 + i))), y - Math.round(k * 3), k < 0.75 ? 'moon' : 'shimmer');
+            const bx = x + (i - 1) * 2 + (i === 1 ? 0 : Math.round(Math.sin(age * 3 + i))), by = y - Math.round(k * 3);
+            S.px(bx, by + 1, 'void');
+            S.px(bx, by, k < 0.75 ? 'moon' : 'shimmer');
           }
-          S.rect(x - 2, y + 1, 5, 1, 'waterL');
+          S.rect(x - 2, y + 2, 5, 1, 'void');
+          S.rect(x - 2, y + 1, 5, 1, 'shimmer');
           break;
         }
         case 'splash': {
           // a fin cutting the water, and its wake
           const dx = Math.round(Math.sin(age * 2 + s.u * 9) * 3);
+          S.rect(x + dx - 1, y - 2, 1, 2, 'void'); S.rect(x + dx + 2, y - 1, 1, 1, 'void');
           S.rect(x + dx, y - 2, 1, 2, 'bone');
           S.rect(x + dx + 1, y - 1, 1, 1, 'moonS');
           S.line(x + dx - 1, y, x + dx - 5, y + 1, 'shimmer');
@@ -5839,12 +6031,52 @@ class PondScene {
     for (const r of this.reeds) this.surf.drawSprite(SPRITES.reed, frameAt(SPRITES.reed, this.t + r.p), r.x, r.y, r.flip);
   }
 
+  // The lantern's light: a step of the radius list each 1/7 s (higher tiers burn steadier), no alpha.
+  lampLight(view) {
+    const lv = view.lampLv, g = this.geo;
+    if (!lv) return null;
+    const step = this.calm ? 0 : LAMP_FLICKER[Math.floor(this.t * LAMP_FLICKER_RATE) % LAMP_FLICKER.length];
+    const dr = lv <= 2 ? step : lv === 3 ? step >> 1 : 0;
+    return { x: g.lantern.x + 3, y: g.lantern.y - 4, r: LIGHT_RADIUS[lv] - dr, ink: LIGHT_INK[lv] };
+  }
+
   drawLight(view) {
-    const lv = view.lampLv;
-    if (!lv) return;
-    const g = this.geo, r = LIGHT_RADIUS[lv], ink = LIGHT_INK[lv];
-    const flicker = lv === 1 && Math.sin(this.t * 11) > 0.6 ? 1 : 0;
-    this.surf.ditherCircle(g.lantern.x + 3, g.lantern.y - 2, r - flicker, ink, 0.26, 0.4);
+    const L = this.lampLight(view);
+    if (!L) return;
+    this.surf.relight(L.x, L.y + 2, L.r, 0.45, 2.1);
+    this.surf.ditherCircle(L.x, L.y + 2, L.r >> 1, L.ink, 0.22, 0.4); // a few warm specks at the heart
+  }
+
+  // The lantern caught in the ripples before the bridge: short warm dashes that jump from place to place.
+  drawLampGlints(view) {
+    const L = this.lampLight(view);
+    if (!L) return;
+    const S = this.surf, g = this.geo, step = this.calm ? 0 : Math.floor(this.t * 3);
+    for (let k = 0; k < 2 + (view.lampLv >> 1); k++) {
+      const hsh = ((step + k * 7) * 2654435761) >>> 0, x = L.x - (L.r >> 1) + (hsh % Math.max(1, L.r)), y = g.bridgeY - 2 - k * 2;
+      if (this.isQuiet(x, x + 2, y)) continue;
+      S.rect(x, y, 2 + (hsh >> 8) % 2, 1, k ? 'lamp' : L.ink);
+    }
+  }
+
+  // The fisher's side toward the lantern takes its light too: only his own pixels, never the water behind him.
+  lightFisher(view, pose) {
+    const L = this.lampLight(view), g = this.geo;
+    if (!L) return;
+    const layers = ['body', 'near'].map(n => SPRITES[`fisher_${pose.name}_${n}`]).map(sp => sp.frames[pose.frame % sp.frames.length]);
+    const mine = (x, y) => { const i = (y - g.fisherY) * FISHER_W + (x - g.fisherX); return layers.some(f => f[i] !== 0); };
+    this.surf.relight(L.x, L.y - 4, Math.round(L.r * 0.75), 1, 3.5, { x: g.fisherX, y: g.fisherY, w: FISHER_W, h: FISHER_H }, 1, mine);
+  }
+
+  // Points the background must leave clean: the float and every signal on the water.
+  quietSpots(view) {
+    const q = this.quiet = [], g = this.geo;
+    if (['waiting', 'bite', 'reel'].includes(view.state) && this.lastFloat) q.push({ x: this.lastFloat.x + 1, y: this.lastFloat.y + 5 });
+    for (const sg of view.signals || []) q.push(waterPoint(g, sg.u, sg.v));
+  }
+  isQuiet(x0, x1, y) {
+    for (const p of this.quiet || []) if (Math.abs(y - p.y) <= 5 && x1 >= p.x - 7 && x0 <= p.x + 7) return true;
+    return false;
   }
 
   drawLantern(view) {
@@ -5859,7 +6091,9 @@ class PondScene {
     for (let i = 0; i < Math.min(view.lampLv * FLIES_PER_LAMP, this.flies.length); i++) {
       const f = this.flies[i], v = Math.sin(t * 3 + f.p);
       if (v < -0.1) continue;
-      S.px(f.x + Math.sin(t * f.s + f.p) * 6, f.y + Math.cos(t * f.s * 1.3 + f.p) * 4, v > 0.6 ? 'gold' : 'frogL');
+      const x = f.x + Math.sin(t * f.s + f.p) * 6, y = f.y + Math.cos(t * f.s * 1.3 + f.p) * 4;
+      if (v > 0.6) S.relight(x, y, 2, 1, 1.4); // a firefly lights the water around it
+      S.px(x, y, v > 0.6 ? 'gold' : 'frogL');
     }
   }
 
@@ -6082,12 +6316,19 @@ class PondScene {
   draw(view) {
     const S = this.surf, g = this.geo, place = view.location || 'zavod';
     if (this.paintedFor !== place) this.paintBackground(place);
+    this.quietSpots(view);
     S.copyFrom(this.back);
     this.drawSky();
     this.drawMoon(view);
+    this.drawClouds();
+    this.drawFar();
+    this.drawReflections(view);
+    this.drawMist();
     this.drawWater(view);
     this.drawSignals(view);
     this.drawAim(view);
+    this.drawLampGlints(view);
+    S.blit(this.fore, 0, 0);
     this.drawReeds();
     this.drawLight(view);
     this.drawFlies(view);
@@ -6097,6 +6338,7 @@ class PondScene {
     this.drawRodAndFloat(view, pose);
     S.drawSprite(L('body'), pose.frame, fx, fy);
     S.drawOutline(L('near'), pose.frame, fx, fy, 'void'); S.drawSprite(L('near'), pose.frame, fx, fy);
+    this.lightFisher(view, pose);
     if (view.debug) this.drawDebug(view, pose);
     this.drawLantern(view);
     this.drawParticles();
@@ -8891,7 +9133,7 @@ function renderCue(){
 
 $('#act').addEventListener('pointerdown',press);
 // for automated checks only: open the page with #test
-if(location.hash.includes('test'))window.__T={get S(){return S},F,startSpecial,specialPlan,fight(n,kind){F.fish=fishByName(n);F.zone='deep';F.father=false;F.state='bite';F.biteShown=true;F.spot=aimPx();hook();F.reel.prog=0.9;if(kind)startSpecial(kind)}};
+if(location.hash.includes('test'))window.__T={get S(){return S},scene,F,startSpecial,specialPlan,fight(n,kind){F.fish=fishByName(n);F.zone='deep';F.father=false;F.state='bite';F.biteShown=true;F.spot=aimPx();hook();F.reel.prog=0.9;if(kind)startSpecial(kind)}};
 $('#scene').addEventListener('pointerdown',e=>{
   if(e.target.closest('.pcard,.psnag'))return;
   // the cat: a tap on it sends it off, and casts nothing
