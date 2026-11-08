@@ -3773,32 +3773,42 @@ const ARM_LEFT_UP = ['.mb...', 'nmb...', 'nmN...', 'nmNN..', '.nNN..', '.nNNN.',
    hand: where the rod's butt sits; rod: the rod's angle in degrees (0 right, 90 up, 180 left);
    far/near: [shoulder, hand] of each arm. The rod is drawn between the far arm and the body, the near arm over all. */
 const FISHER_POSES = {
-  wait: { fps: 1.5, frames: [
-    { far: [[6, 15], [3, 21]], near: [[17, 15], [5, 21]], hand: [4, 21], rod: 145 },
-    { headDy: 1, bodyDy: 1, far: [[6, 16], [3, 22]], near: [[17, 16], [5, 22]], hand: [4, 22], rod: 146 },
-  ] },
-  aim: { fps: 1, frames: [{ headDx: 1, far: [[6, 15], [16, 9]], near: [[17, 15], [18, 9]], hand: [17, 9], rod: 72 }] },
-  throw: { fps: 1, frames: [{ headDx: -1, far: [[6, 15], [1, 13]], near: [[17, 15], [3, 14]], hand: [2, 13], rod: 165 }] },
-  strike: { fps: 1, frames: [{ headDy: -1, bodyDy: -1, far: [[6, 14], [3, 10]], near: [[17, 14], [5, 10]], hand: [4, 10], rod: 112 }] },
-  pull: { fps: 6, frames: [
-    { headDx: -1, headDy: 1, far: [[6, 15], [2, 17]], near: [[17, 15], [4, 17]], hand: [3, 17], rod: 116 },
-    { headDx: -1, headDy: 2, far: [[6, 16], [2, 18]], near: [[17, 16], [4, 18]], hand: [3, 18], rod: 114 },
-  ] },
-  joy: { fps: 6, frames: [
-    { headDy: -2, far: [[6, 15], [5, 7]], near: [[17, 15], [7, 7]], hand: [6, 7], rod: 98 },
-    { far: [[6, 15], [5, 8]], near: [[17, 15], [7, 8]], hand: [6, 8], rod: 100 },
-  ] },
+  wait: { fps: 1.5, frames: [{ hand: [4, 21], rod: 145 }, { headDy: 1, bodyDy: 1, hand: [4, 22], rod: 146 }] },
+  aim: { fps: 1, frames: [{ headDx: 1, hand: [18, 9], rod: 72 }] },
+  throw: { fps: 1, frames: [{ headDx: -1, hand: [2, 14], rod: 165 }] },
+  strike: { fps: 1, frames: [{ headDy: -1, bodyDy: -1, hand: [4, 11], rod: 112 }] },
+  pull: { fps: 6, frames: [{ headDx: -1, headDy: 1, hand: [3, 17], rod: 116 }, { headDx: -1, headDy: 2, hand: [3, 18], rod: 114 }] },
+  joy: { fps: 6, frames: [{ headDy: -2, hand: [5, 8], rod: 98 }, { hand: [5, 9], rod: 100 }] },
   // the pike's candle: the rod lowered to the water
-  lower: { fps: 1, frames: [{ headDy: 1, bodyDy: 1, far: [[6, 16], [1, 22]], near: [[17, 16], [3, 22]], hand: [2, 22], rod: 172 }] },
+  lower: { fps: 1, frames: [{ headDy: 1, bodyDy: 1, hand: [2, 22], rod: 172 }] },
   // the catfish's snag: leaning back, pulling
-  strain: { fps: 6, frames: [
-    { headDx: 1, far: [[6, 15], [2, 18]], near: [[17, 15], [4, 19]], hand: [3, 19], rod: 128 },
-    { headDx: 2, far: [[6, 15], [2, 19]], near: [[17, 15], [4, 20]], hand: [3, 20], rod: 126 },
-  ] },
-  // the landing net: one hand up with the rod, the other low with the net
-  net: { fps: 1, frames: [{ far: [[6, 15], [4, 11]], near: [[17, 15], [2, 25]], hand: [4, 11], rod: 118, net: [2, 25] }] },
+  strain: { fps: 6, frames: [{ headDx: 1, hand: [3, 19], rod: 128 }, { headDx: 2, hand: [3, 20], rod: 126 }] },
+  // the landing net: the rod up in one hand, the net low in the other
+  net: { fps: 1, frames: [{ hand: [4, 11], rod: 118, net: [2, 25] }] },
 };
+// In-between frames, so the rod never jumps: winding up (wait → aim, by the swing's power) and the throw (aim → throw).
+const lerpN = (a, b, k) => a + (b - a) * k;
+const lerpPose = (a, b, k) => ({
+  headDx: Math.round(lerpN(a.headDx || 0, b.headDx || 0, k)), headDy: Math.round(lerpN(a.headDy || 0, b.headDy || 0, k)),
+  bodyDy: Math.round(lerpN(a.bodyDy || 0, b.bodyDy || 0, k)),
+  hand: [Math.round(lerpN(a.hand[0], b.hand[0], k)), Math.round(lerpN(a.hand[1], b.hand[1], k))], rod: Math.round(lerpN(a.rod, b.rod, k)),
+});
+FISHER_POSES.wind = { fps: 1, frames: [1, 2, 3, 4].map(i => lerpPose(FISHER_POSES.wait.frames[0], FISHER_POSES.aim.frames[0], i / 4)) };
+FISHER_POSES.swing = { fps: 1, frames: [0, 1, 2, 3, 4].map(i => lerpPose(FISHER_POSES.aim.frames[0], FISHER_POSES.throw.frames[0], i / 4)) };
 const FISHER_LAYERS = ['far', 'body', 'near'];
+// He is seen from behind. Both hands hold the rod in front of him; only the arm on the rod's side shows,
+// a short forearm along that side of his body. The other arm reaches across in front of him, hidden by the body.
+const SHOULDER = { left: [6, 15], right: [17, 15] };
+function fisherArms(fr) {
+  const [hx, hy] = fr.hand, dy = fr.bodyDy || 0;
+  const arms = [
+    { side: 'left', from: [SHOULDER.left[0], SHOULDER.left[1] + dy], to: [hx - 1, hy] },
+    { side: 'right', from: [SHOULDER.right[0], SHOULDER.right[1] + dy], to: fr.net ? fr.net : [hx + 1, hy] },
+  ];
+  // an arm is near (drawn over the body) when its hand stays on its own side; otherwise it is hidden behind him
+  for (const a of arms) a.near = a.side === 'left' ? a.to[0] <= 9 : a.to[0] >= 14;
+  return arms;
+}
 function fisherLayer(fr, layer) {
   const grid = Array.from({ length: FISHER_H }, () => Array(FISHER_W).fill('.'));
   const put = (x, y, ch) => { if (grid[y] && grid[y][x] !== undefined) grid[y][x] = ch; };
@@ -3808,14 +3818,18 @@ function fisherLayer(fr, layer) {
     paint(BODY.map(r => [...r].reverse().join('')), 0, 13 + (fr.bodyDy || 0));
     return grid.map(r => r.join(''));
   }
-  // a sleeve two pixels thick from shoulder to hand, lit on top; the hand itself
-  const [[sx, sy], [hx, hy]] = fr[layer], n = Math.max(Math.abs(hx - sx), Math.abs(hy - sy)) || 1;
-  for (let i = 0; i <= n; i++) {
-    const x = Math.round(sx + ((hx - sx) * i) / n), y = Math.round(sy + ((hy - sy) * i) / n);
-    put(x, y, layer === 'near' ? 'w' : 'N'); put(x + 1, y, layer === 'near' ? 'N' : 'n'); put(x, y + 1, layer === 'near' ? 'N' : 'n');
+  for (const arm of fisherArms(fr)) {
+    if (arm.near !== (layer === 'near')) continue;
+    // a sleeve two pixels thick from shoulder to hand, lit on the outer edge; the hand itself
+    const [[sx, sy], [hx, hy]] = [arm.from, arm.to], n = Math.max(Math.abs(hx - sx), Math.abs(hy - sy)) || 1;
+    for (let i = 0; i <= n; i++) {
+      const x = Math.round(sx + ((hx - sx) * i) / n), y = Math.round(sy + ((hy - sy) * i) / n);
+      put(x, y, 'N'); put(x + (arm.side === 'left' ? 1 : -1), y, 'n'); put(x, y + 1, 'n');
+      put(x + (arm.side === 'left' ? -1 : 1), y, 'w');
+    }
+    put(hx, hy, 'm'); put(hx + 1, hy, 'm'); put(hx, hy + 1, 'd'); put(hx + 1, hy + 1, 'm');
+    if (arm.near) put(hx + (arm.side === 'left' ? 0 : 1), hy, 'M');
   }
-  put(hx, hy, 'm'); put(hx + 1, hy, 'm'); put(hx, hy + 1, 'd'); put(hx + 1, hy + 1, 'm');
-  if (layer === 'near') put(hx + 1, hy, 'M');
   return grid.map(r => r.join(''));
 }
 // Sprites per layer, and the old one-piece fisher_* sprites (the finale uses them) as all layers merged.
@@ -5410,6 +5424,7 @@ const LOCATION_ART = {
 const ROD_THICK = 2;
 // The rod: segments × segLen pixels long; it bends by at most maxBend radians, reaching it at tension 1/bendPerTension.
 const ROD_SHAPE = { segments: 6, segLen: 5, maxBend: 0.6, bendPerTension: 1 };
+const ROD_TURN = 520; // how fast the rod swings to a new pose, degrees per second
 
 function seededList(n, seed, make) {
   let s = seed;
@@ -5669,8 +5684,8 @@ class PondScene {
   fisherFrame(view) {
     const t = this.t;
     const at = name => ({ name, frame: frameAt(SPRITES[`fisher_${name}_body`], this.calm ? 0 : t) });
-    if (view.state === 'aim') return at('aim');
-    if (view.state === 'cast') return view.castT < 0.35 ? at('aim') : at('throw');
+    if (view.state === 'aim') return { name: 'wind', frame: Math.min(3, Math.floor((view.power || 0) * 4)) };
+    if (view.state === 'cast') return view.castT < 0.35 ? { name: 'swing', frame: Math.min(4, Math.floor((view.castT / 0.35) * 5)) } : at('throw');
     if (this.strike > 0) return at('strike');
     if (view.state === 'reel') {
       const sp = view.sp;
@@ -5901,9 +5916,15 @@ class PondScene {
 
   drawRodAndFloat(view, pose) {
     const S = this.surf, g = this.geo, t = this.t;
-    const fr = FISHER_POSES[pose.name].frames[pose.frame];
+    let fr = FISHER_POSES[pose.name].frames[pose.frame];
     const hx = g.fisherX + fr.hand[0], hy = g.fisherY + fr.hand[1];
     const tension = view.state === 'reel' ? view.tension : 0;
+    // the rod's angle eases toward the pose's angle at a limited speed (degrees per second)
+    const step = ROD_TURN * Math.min(0.05, Math.max(0, t - (this.rodT ?? t)));
+    this.rodT = t;
+    if (this.rodAng == null || this.calm) this.rodAng = fr.rod;
+    else this.rodAng += clampN(fr.rod - this.rodAng, -step, step);
+    fr = { ...fr, rod: this.rodAng };
     // where the float would be with the tip at rest: needed to bend the rod toward it
     const pre = this.rodPoints(hx, hy, fr.rod, 0, null), restTip = { x: pre[pre.length - 1][0], y: pre[pre.length - 1][1] };
     const fl = floatPosition(view, g, t, restTip);
