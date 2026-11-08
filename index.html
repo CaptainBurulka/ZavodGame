@@ -195,7 +195,28 @@ main{flex:1;min-height:0;position:relative}
 .picon{display:inline-block;flex:none;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
 
 /* fishing places and the night */
-.plocs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--px);flex:none}
+.plocs{display:grid;grid-template-columns:1fr;gap:var(--px);flex:none}
+.plocs #locopen{display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--px)*3);color:var(--bone)}
+.plocs #locopen small{font-size:20px;color:var(--moonD)}
+.plocs button:disabled small{color:var(--waterD)}
+/* a new place: its name over the scene for a moment */
+.pplace{position:absolute;left:0;right:0;top:54%;margin:0 auto;width:fit-content;display:flex;flex-direction:column;align-items:center;padding:calc(var(--px)*2) calc(var(--px)*5);background:var(--void);box-shadow:0 0 0 var(--px) var(--moonD),0 0 0 calc(var(--px)*2) var(--void);pointer-events:none;z-index:3;text-align:center}
+.pplace b{font-family:var(--f-num);font-weight:400;font-size:18px;line-height:1.4;color:var(--gold)}
+.pplace small{font-size:20px;line-height:1.1;color:var(--fog)}
+/* the place picker: one card per water, a live corner of it on the left */
+.ploccard{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--px)*3);align-items:start;width:100%;padding:calc(var(--px)*2);text-align:left;background:var(--night);color:var(--bone);box-shadow:inset 0 0 0 var(--px) var(--night2)}
+.ploccard.on{box-shadow:inset 0 0 0 var(--px) var(--moonS)}
+.ploccard.locked{background:var(--void)}
+.ploccard.armed{box-shadow:inset 0 0 0 var(--px) var(--gold)}
+.ploccard:disabled{opacity:1}
+.ploccard canvas{display:block;image-rendering:pixelated;box-shadow:0 0 0 var(--px) var(--void)}
+.ploccard h4{margin:0;font-family:var(--f-num);font-weight:400;font-size:15px;line-height:1.5;color:var(--gold)}
+.ploccard.locked h4{color:var(--moonD)}
+.ploccard p{margin:0 0 var(--px);font-size:20px;line-height:1.05;color:var(--fog)}
+.ploccard .pstat{color:var(--moonS)}
+.ploccard.armed .pstat{color:var(--gold)}
+.plocfish{display:flex;flex-wrap:wrap;gap:var(--px)}
+.plocfish .picon{width:calc(var(--px)*9);height:calc(var(--px)*9)}
 .plocs button{height:calc(var(--px)*15);padding:0 var(--px);font-size:20px;line-height:1;color:var(--fog);background:var(--night)}
 .plocs button.on{color:var(--void);background:var(--moonS)}
 .plocs button.locked{color:var(--moonD);box-shadow:inset 0 calc(var(--px)*-1) 0 var(--wood)}
@@ -601,6 +622,7 @@ button.hud-stat:active{transform:translateY(var(--px))}
       <div class="scene" id="scene">
         <canvas id="cv" class="pcanvas"></canvas>
         <div id="msg" class="msg pbubble"></div>
+        <div id="placebanner" class="pplace" hidden><b></b><small></small></div>
         <div class="pnight" id="nightinfo"></div>
         <button class="ptrapbtn" id="trapbtn" aria-label="Верші"><i class="picon ic-trap"></i><small>верші</small><b id="trapn"></b></button>
         <div id="spcue" class="pspcue" hidden></div>
@@ -869,6 +891,10 @@ button.hud-stat:active{transform:translateY(var(--px))}
       <button class="pbtn" id="awaytake">Забрати все</button>
       <button class="pbtn ghost" id="awayclose">Просто подивитись</button>
     </div>
+  </div>
+  <div id="locpick" class="poverlay" hidden>
+    <div class="poverlay-head"><h3>Куди йти рибалити?</h3><button class="pbtn ghost" id="locclose">Лишитися</button></div>
+    <div class="poverlay-body" id="loccards"></div>
   </div>
   <div id="bestiary" class="poverlay" hidden>
     <div class="poverlay-head"><h3>Бестіарій</h3><button class="pbtn ghost" id="bestclose">Закрити</button></div>
@@ -5585,6 +5611,9 @@ const LOCATION_ART = {
 // Rare living details: one at a time, LIFE_GAP seconds apart, never near the float in a bite or a fight.
 const LIFE_GAP = [5, 15];
 const LIFE_LEN = { frogJump: 1.2, potercha: 7, bats: 4, eyes: 2.4, faces: 4 };
+const PLACE_FADE = 0.7; // seconds: the old place dithers into the dark, the new one out of it
+// Where a picker card looks: the landmark's share of the width.
+const PREVIEW_AT = { zavod: 0.22, ruslo: 0.42, vyr: 0.72, pleso: 0.37 };
 // The lantern does not glow steadily: its radius steps through this list, about seven steps a second.
 const LAMP_FLICKER = [0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 2];
 const LAMP_FLICKER_RATE = 7;
@@ -6029,6 +6058,9 @@ class PondScene {
     }
     const ev = L.ev;
     if (!ev) return;
+    // a bite or a fight started right next to it: it slips away at once
+    const fl = this.lastFloat, busy = view.state === 'bite' || view.state === 'reel';
+    if (busy && fl && ev.kind !== 'bats' && Math.hypot(ev.x - fl.x, ev.y - fl.y) < 24) { L.ev = null; L.next = t + LIFE_GAP[0]; return; }
     const k = (t - ev.t0) / LIFE_LEN[ev.kind];
     if (k >= 1) { if (ev.kind === 'frogJump') L.pad = 1 - (L.pad || 0); L.ev = null; L.next = t + LIFE_GAP[0] + ((L.n * 7919) % 100) / 100 * (LIFE_GAP[1] - LIFE_GAP[0]); return; }
     if (ev.kind === 'frogJump') {
@@ -6187,6 +6219,7 @@ class PondScene {
       return;
     }
     this.t += dt;
+    if (this.fadeT) { this.fadeT += dt; if (this.fadeT >= PLACE_FADE) this.fadeT = 0; }
     this.shake = Math.max(0, this.shake - dt);
     for (const r of this.rings) r.r += dt * 16;
     this.rings = this.rings.filter(r => r.r < r.max);
@@ -6253,7 +6286,7 @@ class PondScene {
   }
 
   drawWater(view) {
-    const S = this.surf, g = this.geo, t = this.t, { horizon, bridgeY, w } = g;
+    const S = this.surf, g = this.geo, t = this.nt, { horizon, bridgeY, w } = g;
     const waterH = bridgeY - horizon, art = this.art;
     const nd = Math.round(this.dashes.length * (art.dashes ?? 1));
     for (const d of this.dashes.slice(0, nd)) {
@@ -6388,7 +6421,7 @@ class PondScene {
 
   drawReeds() {
     if (!this.art.reeds) return;
-    for (const r of this.reeds) this.surf.drawSprite(SPRITES.reed, frameAt(SPRITES.reed, this.t + r.p), r.x, r.y, r.flip);
+    for (const r of this.reeds) this.surf.drawSprite(SPRITES.reed, frameAt(SPRITES.reed, this.nt + r.p), r.x, r.y, r.flip);
   }
 
   // The lantern's light: a step of the radius list each 1/7 s (higher tiers burn steadier), no alpha.
@@ -6673,8 +6706,21 @@ class PondScene {
   }
 
   // view: { state, castT, tension, prog, lampLv, moonPhase, location, ghost, spot, aim, signals }
-  draw(view) {
-    const S = this.surf, g = this.geo, place = view.location || 'zavod';
+  // Nature's clock: reduced motion runs water, wheel and reeds at half speed.
+  get nt() { return this.calm ? this.t * 0.5 : this.t; }
+
+  // preview: only the place itself (no fisher, lights or effects), for the picker's cards.
+  draw(view, preview = false) {
+    const S = this.surf, g = this.geo;
+    let place = view.location || 'zavod';
+    if (!preview) {
+      // a new place dithers in through the dark; the old one is drawn until the screen is black
+      if (this.shownPlace == null) this.shownPlace = place;
+      if (place !== this.shownPlace && !this.fadeT) this.fadeT = 1e-6;
+      if (this.fadeT && this.fadeT < PLACE_FADE / 2) place = this.shownPlace;
+      else if (this.shownPlace !== place) { this.shownPlace = place; if (this.onPlace) this.onPlace(place); }
+      if (place !== view.location) view = { ...view, location: place, signals: [], traps: [] };
+    }
     if (this.paintedFor !== place) this.paintBackground(place);
     this.quietSpots(view);
     S.copyFrom(this.back);
@@ -6688,6 +6734,7 @@ class PondScene {
     this.drawWindows();
     this.drawWater(view);
     this.drawLife(view);
+    if (preview) { S.blit(this.fore, 0, 0); this.drawReeds(); return; }
     this.drawSignals(view);
     this.drawAim(view);
     this.drawLampGlints(view);
@@ -6708,6 +6755,10 @@ class PondScene {
     this.drawWeather(view);
     this.drawCat(view);
     if (this.shake > 0 && !this.calm) screenShake(S, this.t);
+    if (this.fadeT) {
+      const h = PLACE_FADE / 2, k = this.fadeT < h ? this.fadeT / h : 1 - (this.fadeT - h) / h;
+      S.dither(0, 0, g.w, g.h, null, 'void', Math.round(k * 16) / 16);
+    }
   }
 }
 
@@ -9230,30 +9281,74 @@ const F={state:'idle',t:0,wait:0,biteT:0,win:0,fish:null,reel:null,holding:false
   chargeT:0,power:0,aim:null,spot:null,zone:null,signal:null,bait:'bread',father:false,castNote:'',cardIndex:-1,inMark:false};
 const FISHING_BUSY=['aim','cast','waiting','bite','reel','snag'];
 let cardOpen=false,lastActKey='';
+// The pond's top row: where you are, and a way to the picker.
 function renderLocations(){
-  const box=$('#locs'),busy=F.state!=='idle'||cardOpen;
-  const places=Object.entries(CONFIG.locations).filter(([k,l])=>!l.byBuyout||isUnlocked(S,k));
-  box.style.gridTemplateColumns=`repeat(${places.length},1fr)`;
-  box.innerHTML=places.map(([k,l])=>{
-    const open=isUnlocked(S,k),on=S.location===k,armed=locArm.key===k;
-    const label=open?l.name:armed?`Купити? ${fmt(l.cost)} мон.`:`${l.name} · ${fmt(l.cost)} мон.`;
-    return `<button data-loc="${k}" class="${on?'on':''}${open?'':' locked'}${armed?' armed':''}" ${busy&&!on?'disabled':''}>${label}</button>`;
-  }).join('');
+  const busy=F.state!=='idle'||cardOpen,l=CONFIG.locations[S.location];
+  $('#locs').innerHTML=`<button id="locopen" ${busy?'disabled':''}><span>${l.name}</span><small>${busy?'тримай вудку':'інша вода ▾'}</small></button>`;
+  if(!$('#locpick').hidden)renderLocCards();
 }
+const PLACE_LINES={zavod:'Тиха вода під вербою',ruslo:'Туман над мертвими деревами',vyr:'Колесо скрипить, Водяник не спить',pleso:'Під водою дзвонить дзвін'};
 // A locked place asks twice: spending thousands should never be a stray tap.
 const locArm={key:null,t:0};
-$('#locs').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b||b.disabled||F.state!=='idle'||cardOpen)return;
+const locPrev={}; // a small scene per card, kept while the picker is open
+function renderLocCards(){
+  const places=Object.entries(CONFIG.locations).filter(([k,l])=>!l.byBuyout||isUnlocked(S,k));
+  $('#loccards').innerHTML=places.map(([k,l])=>{
+    const open=isUnlocked(S,k),on=S.location===k,armed=locArm.key===k;
+    const stat=on?'Ти тут':open?'Відкрито · перейти':armed?`Купити за ${fmt(l.cost)} мон.? Тисни ще раз`:canBuyLocation(S,k)?`${fmt(l.cost)} мон. · можна купити`:`${fmt(l.cost)} мон.`;
+    const fish=l.fish.map(n=>`<i class="picon ${isKnown(S,n)?fishIconClass(n):silhouetteClass(n)}" title="${isKnown(S,n)?n:'???'}"></i>`).join('');
+    return `<button class="ploccard${on?' on':''}${open?'':' locked'}${armed?' armed':''}" data-loc="${k}"><canvas data-prev="${k}"></canvas><span><h4>${l.name}</h4><p>${PLACE_LINES[k]||''}</p><p class="pstat">${stat}</p><span class="plocfish">${fish}</span></span></button>`;
+  }).join('');
+  for(const c of $('#loccards').querySelectorAll('canvas'))sizePreview(c);
+}
+const PREV_W=46,PREV_H=40;
+function sizePreview(c){c.width=PREV_W;c.height=PREV_H;c.style.width=PREV_W*pxUnit+'px';c.style.height=PREV_H*pxUnit+'px'}
+function openLocPick(){
+  if(F.state!=='idle'||cardOpen)return;
+  locArm.key=null;
+  $('#locpick').hidden=false;lockUi();renderLocCards();
+}
+function closeLocPick(){$('#locpick').hidden=true;for(const k in locPrev)delete locPrev[k]}
+// Each card shows a live corner of its water: the same scene, drawn without the fisher, cropped around the landmark.
+function locPickTick(dt){
+  if($('#locpick').hidden)return;
+  for(const c of $('#loccards').querySelectorAll('canvas')){
+    const k=c.dataset.prev;
+    let P=locPrev[k];
+    if(!P){P=locPrev[k]={scene:new PondScene({calm:REDUCED_MOTION}),crop:new Surface(PREV_W,PREV_H)};P.scene.resize(scene.surf.w,scene.surf.h);P.scene.t=Math.random()*20}
+    const sc=P.scene,g=sc.geo;
+    sc.advance(dt);
+    sc.draw({state:'idle',lampLv:0,moonPhase:S.night.phase,location:k,signals:[],traps:[]},true);
+    const x0=Math.max(0,Math.min(g.w-PREV_W,Math.round(g.w*PREVIEW_AT[k]-PREV_W/2))),y0=Math.max(0,g.horizon-28);
+    for(let y=0;y<PREV_H;y++)P.crop.buf.set(sc.surf.buf.subarray((y0+y)*g.w+x0,(y0+y)*g.w+x0+PREV_W),y*PREV_W);
+    if(!isUnlocked(S,k))P.crop.dither(0,0,PREV_W,PREV_H,null,'void',0.5); // still behind the Vodianyk's fog
+    P.crop.present(c.getContext('2d'));
+  }
+}
+$('#locs').addEventListener('click',e=>{if(e.target.closest('#locopen'))openLocPick()});
+$('#locclose').addEventListener('click',closeLocPick);
+$('#loccards').addEventListener('click',e=>{
+  const b=e.target.closest('.ploccard');if(!b||F.state!=='idle'||cardOpen)return;
   const k=b.dataset.loc;
   if(isUnlocked(S,k)){
+    closeLocPick();
     if(S.location===k)return;
-    goToLocation(S,k);locArm.key=null;signals.list=[];save();say(`${CONFIG.locations[k].name}`,'',1400);SFX.plop();renderLocations();renderHud();updateAct(true);return;
+    goToLocation(S,k);locArm.key=null;signals.list=[];save();SFX.plop();renderLocations();renderHud();updateAct(true);return;
   }
   if(!canBuyLocation(S,k)){toast(`Треба ${fmt(CONFIG.locations[k].cost)} монет`);SFX.bad();return}
-  if(locArm.key!==k){locArm.key=k;locArm.t=Date.now();renderLocations();setTimeout(()=>{if(Date.now()-locArm.t>=2900){locArm.key=null;renderLocations()}},3000);return}
-  buyLocation(S,k);locArm.key=null;signals.list=[];save();renderHud();renderLocations();updateAct(true);
+  if(locArm.key!==k){locArm.key=k;locArm.t=Date.now();renderLocCards();setTimeout(()=>{if(locArm.key===k&&Date.now()-locArm.t>=2900){locArm.key=null;if(!$('#locpick').hidden)renderLocCards()}},3000);return}
+  buyLocation(S,k);locArm.key=null;signals.list=[];save();renderHud();updateAct(true);
   toast(`Відкрито: ${CONFIG.locations[k].name}`);SFX.win();
+  closeLocPick();goToLocation(S,k);save();renderLocations();
 });
+// The new place's name, while the dark lifts: 1.5 s.
+let placeBannerT=0;
+scene.onPlace=k=>{
+  const el=$('#placebanner');
+  el.querySelector('b').textContent=CONFIG.locations[k].name;
+  el.querySelector('small').textContent=PLACE_LINES[k]||'';
+  el.hidden=false;clearTimeout(placeBannerT);placeBannerT=setTimeout(()=>{el.hidden=true},1500);
+};
 
 // Which traps show on this water: set here, and whether something waits inside. Cached per second.
 const trapCache={t:0,v:[]};
@@ -9854,6 +9949,7 @@ function loop(now){
   if(tab==='slot')slotTick(dt);
   if(tab==='market')mkTick(dt);
   if(cardOpen)cardTick(now/1000);
+  locPickTick(dt);
   eventsTick(now);
   finaleTick(dt);
   tutorialTick();
