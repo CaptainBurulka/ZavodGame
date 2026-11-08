@@ -369,6 +369,18 @@ main{flex:1;min-height:0;position:relative}
 .mkback:active{transform:translateY(var(--px));box-shadow:0 var(--px) 0 var(--void)}
 .mkbar b{font-family:var(--f-num);font-weight:400;font-size:14px;line-height:1.3;color:var(--gold)}
 .mkhint{margin:0;text-align:center}
+.pbtn.ghost.hot{--ink:var(--gold);box-shadow:calc(var(--px)*-1) 0 var(--void),var(--px) 0 var(--void),0 calc(var(--px)*-1) var(--void),0 var(--px) var(--gold),calc(var(--px)*-1) var(--px) var(--void),var(--px) var(--px) var(--void),0 calc(var(--px)*2) var(--void)}
+.mkfish .mkdem{font-size:14px;line-height:1;color:var(--red)}
+.mktag.land{background:var(--frogL);left:0;right:auto;top:auto;bottom:0}
+.mkbld.built{box-shadow:inset 0 0 0 var(--px) var(--gold),0 var(--px) 0 var(--void)}
+.mkbld .mkrew{color:var(--frogL)}
+.mkbundle{display:flex;flex-direction:column;gap:var(--px);padding:var(--px) 0;border-top:var(--px) solid var(--night)}
+.mkbundle h4{margin:0;display:flex;justify-content:space-between;font-weight:400;font-size:20px;color:var(--moonS)}
+.mkbundle h4 em{font-style:normal;font-family:var(--f-num);font-size:12px;color:var(--fog)}
+.mkbundle.done h4 em{color:var(--frogL)}
+.mkplot{position:absolute;bottom:var(--px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;padding:1px var(--px);font-size:14px;line-height:1;color:var(--bone);background:var(--void);white-space:nowrap}
+.mkplot small{font-size:12px;color:var(--fog)}
+.mkplot.built small{color:var(--gold)}
 .mkanchor{position:absolute;width:1px;height:1px;pointer-events:none}
 .mkpane{display:flex;flex-direction:column;gap:calc(var(--px)*2)}
 .mkhead{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--px)*2)}
@@ -606,11 +618,13 @@ main{flex:1;min-height:0;position:relative}
           <button class="mkshop" data-shop="collector"><b>Колекціонер</b><small></small></button>
           <button class="mkshop" data-shop="gear"><b>Снасті</b><small></small></button>
         </div>
+        <div class="mkshops" id="mkplots" hidden></div>
       </div>
 
       <div class="mkpane" data-pane="hub">
         <p class="psub mkhint">Торкнись лавку, щоб зайти. Або продай усе Галі одним тапом.</p>
         <button class="pbtn" id="hubsell">Продати все</button>
+        <button class="pbtn ghost" id="landbtn">Відбудова пристані</button>
         <div class="pframe gold ppanel">
           <h3>Викупити заводь</h3>
           <p class="psub" id="pondinfo"></p>
@@ -622,6 +636,11 @@ main{flex:1;min-height:0;position:relative}
           <div class="pstats" id="stats"></div>
           <button class="pbtn ghost" id="bestopen">Бестіарій · <span id="bestcount">0</span></button>
         </div>
+      </div>
+
+      <div class="mkpane" data-pane="landing" hidden>
+        <p class="psub mkhint" id="landsub"></p>
+        <div class="mkorders" id="landlist"></div>
       </div>
 
       <div class="mkpane" data-pane="galia" hidden>
@@ -910,6 +929,37 @@ const CONFIG = {
   // але з шансом offend[крок] він ображається й іде на away закидів; риба лишається в тебе. Більше торгів, ніж offend, нема.
   market: {
     collector: { minTier: 'rare', priceMul: 1.3, haggleStep: 0.25, offend: [0.25, 0.5], away: [10, 15] },
+    // Попит у Галі, у відсотках: кожна продана рибина виду знімає perSale (не нижче min), кожен закид повертає perCast усім видам.
+    // Сим-перевірка (Фаза 2): короткий захід ≈99%, 2 хв ≈98%, фарм хлібом 60 закидів ≈91%, мотилем ≈87%.
+    demand: { min: 70, perSale: 3, perCast: 0.5 },
+  },
+  // Відбудова пристані: будівлі з наборів риби. Риба віддається назавжди. Нагорода постійна й не купується.
+  // item: { n, qty, stars } — конкретний вид; { any: [...], qty } — будь-які з переліку; { tier, qty } — будь-яка риба цього рівня й вище.
+  // reward: netAdd — місця в садку; trapAdd — безплатна верша; baitMul — ціна наживки; nightOrder — четверте замовлення Корчмаря;
+  // collectorAwayMul — скільки триває образа Колекціонера.
+  landing: {
+    buildings: [
+      { id: 'smoke', name: 'Коптильня', text: '+2 місця в садку', reward: { netAdd: 2 }, bundles: [
+        { id: 'smoke1', name: 'Мирна риба', items: [{ n: 'Плітка', qty: 1 }, { n: 'Окунь', qty: 1 }, { n: 'Карась', qty: 1 }, { n: 'Лящ', qty: 1 }] },
+        { id: 'smoke2', name: 'Велика юшка', items: [{ n: 'Щука', qty: 1 }, { n: 'Короп', qty: 1, stars: 2 }] },
+      ] },
+      { id: 'hut', name: 'Хатинка діда', text: 'ще одна верша, безплатно', reward: { trapAdd: 1 }, bundles: [
+        { id: 'hut1', name: 'Мотлох', items: [{ n: 'Старий чобіт', qty: 3 }] },
+        { id: 'hut2', name: 'Різне з дна', items: [{ n: 'Іржавий чайник', qty: 1 }, { n: 'Кістка утопленика', qty: 1 }, { n: 'Перлівниця', qty: 2 }] },
+      ] },
+      { id: 'tackle', name: 'Лавка снастяра', text: 'наживка на 20% дешевша', reward: { baitMul: 0.8 }, bundles: [
+        { id: 'tackle1', name: 'Хижаки', items: [{ n: 'Щука', qty: 1, stars: 2 }, { n: 'Судак', qty: 1 }, { n: 'Окунь', qty: 1, stars: 2 }] },
+        { id: 'tackle2', name: 'З глибини', items: [{ n: 'Минь', qty: 1 }, { any: ['Сом', 'Стерлядь', 'Судак'], qty: 2, stars: 2 }] },
+      ] },
+      { id: 'pier', name: 'Причал', text: 'Корчмар дає четверте, нічне замовлення', reward: { nightOrder: true }, bundles: [
+        { id: 'pier1', name: 'Улов з русла', items: [{ n: 'Лящ', qty: 1, stars: 3 }, { n: 'Стерлядь', qty: 1 }] },
+        { id: 'pier2', name: 'Повний човен', items: [{ any: ['Короп', 'Судак', 'Минь', 'Лящ', 'Щука'], qty: 3 }] },
+      ] },
+      { id: 'lighthouse', name: 'Маяк', text: 'Колекціонер ображається вдвічі коротше', reward: { collectorAwayMul: 0.5 }, bundles: [
+        { id: 'light1', name: 'Нічні трофеї', items: [{ tier: 'epic', qty: 3 }] },
+        { id: 'light2', name: 'Світло з глибини', items: [{ n: 'Місячна рибка', qty: 1 }] },
+      ] },
+    ],
   },
   // Корчмар: завжди три замовлення — мале, середнє, велике. Без дедлайнів; виконане одразу замінюється.
   // bonus — надбавка до ціни кожної зданої рибини; bait — наживка за все замовлення (одна з переліку).
@@ -921,6 +971,8 @@ const CONFIG = {
       short: { name: 'Мале', bonus: 0.2, items: [{ tiers: ['common'], qty: [2, 3] }], bait: { worm: 5 } },
       mid: { name: 'Середнє', bonus: 0.3, items: [{ tiers: ['uncommon', 'common'], qty: [1, 2], stars: { 2: 0.4 } }, { tiers: ['common'], qty: [1, 2], chance: 0.5 }], bait: { moth: 4, live: 4 } },
       long: { name: 'Велике', bonus: 0.4, items: [{ tiers: ['rare', 'uncommon'], qty: [1, 1], stars: { 3: 0.5 } }, { tiers: ['uncommon', 'rare'], qty: [1, 1], chance: 0.7 }], bait: { moon: 1, live: 6 } },
+      // відкривається Причалом
+      night: { name: 'Нічне', bonus: 0.5, items: [{ tiers: ['epic', 'rare'], qty: [1, 1], stars: { 2: 0.5 } }], bait: { moon: 2 } },
     },
   },
   // Верші: ловлять самі, по рибині раз на every хвилин, до cap риб; повна верша просто чекає.
@@ -1474,8 +1526,11 @@ const tierRank = t => TIER_ORDER.indexOf(t);
 const fairMul = S => (S.event && S.event.k === 'fair' && eventOn(S) ? CONFIG.events.list.fair.marketMul : 1);
 // The fish's own price: what Vodianyk counts it at too.
 const basePrice = f => f.price;
-// What Galia pays: the fish's price, and the village fair on top while it lasts.
-const salePrice = (S, f) => Math.max(1, Math.round(f.price * fairMul(S)));
+// Galia's demand for a species, 0.7..1: each sale of it takes a little off, each cast gives a little back.
+const DM = MK.demand;
+const demandOf = (S, n) => (100 - Math.min(100 - DM.min, (S.sat && S.sat[n]) || 0)) / 100;
+// What Galia pays: the fish's price at today's demand, and the village fair on top while it lasts.
+const salePrice = (S, f) => Math.max(1, Math.round(f.price * demandOf(S, f.n) * fairMul(S)));
 // Rare and up: worth taking to the collector instead.
 const isTrophy = f => !!f && !f.junk && !f.item && tierRank(f.t) >= tierRank(MK.collector.minTier);
 
@@ -1486,15 +1541,25 @@ function sellFish(S, index) {
   S.net.splice(index, 1);
   S.coins += coins;
   S.stats.earned += coins;
+  if (!S.sat) S.sat = {};
+  S.sat[f.n] = Math.min(100 - DM.min, (S.sat[f.n] || 0) + DM.perSale);
   return coins;
 }
 // «Sell all» sells everything to Galia, keeping rare fish back when the player asked to.
-const sellAllPicks = S => S.net.map((f, i) => i).filter(i => !(S.keepTrophies && isTrophy(S.net[i])));
-const sellAllValue = S => sellAllPicks(S).reduce((a, i) => a + salePrice(S, S.net[i]), 0);
+// The dearest go first, while demand is highest; the sum on the button is exactly what you get.
+const sellAllPicks = S => S.net.map((f, i) => i).filter(i => !(S.keepTrophies && isTrophy(S.net[i]))).sort((a, b) => S.net[b].price - S.net[a].price);
+function sellAllValue(S) {
+  const sat = { ...(S.sat || {}) };
+  return sellAllPicks(S).reduce((a, i) => {
+    const f = S.net[i], d = (100 - Math.min(100 - DM.min, sat[f.n] || 0)) / 100;
+    sat[f.n] = Math.min(100 - DM.min, (sat[f.n] || 0) + DM.perSale);
+    return a + Math.max(1, Math.round(f.price * d * fairMul(S)));
+  }, 0);
+}
 function sellAll(S) {
-  const picks = sellAllPicks(S);
+  const picks = sellAllPicks(S).map(i => S.net[i]);
   let coins = 0;
-  for (let k = picks.length - 1; k >= 0; k--) coins += sellFish(S, picks[k]);
+  for (const f of picks) coins += sellFish(S, S.net.indexOf(f));
   return { coins, count: picks.length, kept: S.net.length };
 }
 
@@ -1523,11 +1588,13 @@ function makeOrder(S, len, rng = Math.random) {
   return { len, items, bonus: B.bonus, bait: { k: bk, v: B.bait[bk] } };
 }
 
-// Always three, one of each size.
+// Always three, one of each size; the rebuilt jetty adds a fourth, the night order.
+const boardLens = S => (landingFx(S).nightOrder ? [...BOARD_LENS, 'night'] : BOARD_LENS);
 function ensureBoard(S, rng = Math.random) {
   if (!Array.isArray(S.board)) S.board = [];
-  BOARD_LENS.forEach((len, i) => { const o = S.board[i]; if (!o || o.len !== len || !Array.isArray(o.items)) S.board[i] = makeOrder(S, len, rng); });
-  S.board.length = BOARD_LENS.length;
+  const lens = boardLens(S);
+  lens.forEach((len, i) => { const o = S.board[i]; if (!o || o.len !== len || !Array.isArray(o.items)) S.board[i] = makeOrder(S, len, rng); });
+  S.board.length = lens.length;
 }
 
 const fitsItem = (it, f) => it.left > 0 && f.n === it.n && (!it.stars || (f.q || 0) >= it.stars);
@@ -1599,7 +1666,7 @@ function haggle(S, index, rng = Math.random) {
   const f = S.net[index], risk = isTrophy(f) && collectorHere(S) ? haggleRisk(S, f) : null;
   if (risk == null) return null;
   if (rng() < risk) {
-    S.collector.away = CL.away[0] + Math.floor(rng() * (CL.away[1] - CL.away[0] + 1));
+    S.collector.away = Math.max(1, Math.round((CL.away[0] + Math.floor(rng() * (CL.away[1] - CL.away[0] + 1))) * landingFx(S).collectorAwayMul));
     S.collector.deal = null;
     return { left: true, away: S.collector.away };
   }
@@ -1607,8 +1674,60 @@ function haggle(S, index, rng = Math.random) {
   return { left: false, price: collectorPrice(S, f) };
 }
 // Each cast that reaches a bite brings him a step nearer.
+// Each cast also brings Galia's demand back a little for every species.
 function marketAfterCast(S) {
   if (S.collector && S.collector.away > 0) S.collector.away--;
+  if (S.sat) for (const n of Object.keys(S.sat)) { S.sat[n] -= DM.perCast; if (S.sat[n] <= 1e-9) delete S.sat[n]; }
+}
+
+/* ---------- rebuilding the landing ---------- */
+const LD = CONFIG.landing;
+const BUILDINGS = LD.buildings;
+const BUNDLES = Object.fromEntries(BUILDINGS.flatMap(b => b.bundles.map(u => [u.id, { ...u, building: b.id }])));
+const isBuilt = (S, id) => !!(S.landing && S.landing.built.includes(id));
+// What the finished buildings give, merged.
+function landingFx(S) {
+  const fx = { netAdd: 0, trapAdd: 0, baitMul: 1, nightOrder: false, collectorAwayMul: 1 };
+  for (const b of BUILDINGS) if (isBuilt(S, b.id)) for (const [k, v] of Object.entries(b.reward)) {
+    if (k.endsWith('Mul')) fx[k] *= v; else if (typeof v === 'number') fx[k] += v; else fx[k] = v;
+  }
+  return fx;
+}
+const bundleGot = (S, id) => (S.landing && S.landing.got[id]) || [];
+const itemLeft = (S, id, k) => BUNDLES[id].items[k].qty - (bundleGot(S, id)[k] || 0);
+const bundleDone = (S, id) => BUNDLES[id].items.every((it, k) => itemLeft(S, id, k) <= 0);
+const fitsBundleItem = (it, f) => !!f && (!it.stars || (f.q || 0) >= it.stars) &&
+  (it.n ? f.n === it.n : it.any ? it.any.includes(f.n) : !f.junk && !f.item && tierRank(f.t) >= tierRank(it.tier));
+// The fish a bundle would take from the net now: the cheapest that fit, each once.
+function bundleTakes(S, id) {
+  const B = BUNDLES[id], used = new Set(), out = [];
+  if (!B || bundleDone(S, id)) return out;
+  B.items.forEach((it, k) => {
+    const left = itemLeft(S, id, k);
+    if (left <= 0) return;
+    S.net.map((f, i) => i).filter(i => !used.has(i) && fitsBundleItem(it, S.net[i])).sort((a, b) => S.net[a].price - S.net[b].price).slice(0, left)
+      .forEach(i => { used.add(i); out.push({ i, k }); });
+  });
+  return out;
+}
+const landingWants = (S, f) => BUILDINGS.some(b => !isBuilt(S, b.id) && b.bundles.some(u => !bundleDone(S, u.id) && u.items.some((it, k) => itemLeft(S, u.id, k) > 0 && fitsBundleItem(it, f))));
+// Gives the fish for good. Returns { count, bundleDone, built } — built is the building that just went up.
+function giveToBundle(S, id) {
+  const takes = bundleTakes(S, id);
+  if (!takes.length) return { count: 0 };
+  if (!S.landing) S.landing = { got: {}, built: [] };
+  const got = S.landing.got[id] || (S.landing.got[id] = BUNDLES[id].items.map(() => 0));
+  takes.forEach(t => { got[t.k] = (got[t.k] || 0) + 1; });
+  takes.map(t => t.i).sort((a, b) => b - a).forEach(i => S.net.splice(i, 1));
+  const out = { count: takes.length, bundleDone: bundleDone(S, id) };
+  const b = BUILDINGS.find(x => x.id === BUNDLES[id].building);
+  if (!isBuilt(S, b.id) && b.bundles.every(u => bundleDone(S, u.id))) {
+    S.landing.built.push(b.id);
+    if (b.reward.trapAdd) for (let i = 0; i < b.reward.trapAdd; i++) S.traps.push(null);
+    if (b.reward.nightOrder) ensureBoard(S);
+    out.built = b;
+  }
+  return out;
 }
 
 /* ---------- the goal ---------- */
@@ -1640,7 +1759,7 @@ const FISH_BY_NAME = Object.fromEntries(CONFIG.fish.map(f => [f.n, f]));
 const between = (rng, [a, b]) => rangeRnd(rng, a, b);
 
 const fishByName = name => FISH_BY_NAME[name];
-const netCapacity = S => Math.max(1, CONFIG.netCapacity.base + CONFIG.netCapacity.perLevel * S.lv.net + artifactFx(S).netCapAdd);
+const netCapacity = S => Math.max(1, CONFIG.netCapacity.base + CONFIG.netCapacity.perLevel * S.lv.net + artifactFx(S).netCapAdd + landingFx(S).netAdd);
 
 function tierWeights(baitLv, moonBait) {
   const w = {};
@@ -1726,10 +1845,12 @@ function nextBait(S) {
   S.bait.on = own[(i + 1) % own.length];
   return S.bait.on;
 }
+// The tackle shop on the landing makes every pack cheaper.
+const baitCost = (S, k) => Math.max(1, Math.round(FC.baits[k].cost * landingFx(S).baitMul));
 function buyBait(S, k) {
   const B = FC.baits[k];
-  if (!B || B.free || S.coins < B.cost) return false;
-  S.coins -= B.cost;
+  if (!B || B.free || S.coins < baitCost(S, k)) return false;
+  S.coins -= baitCost(S, k);
   S.bait.have[k] = (S.bait.have[k] || 0) + B.pack;
   return true;
 }
@@ -2358,11 +2479,13 @@ const TC = CONFIG.traps;
 const trapFill = (t, now) => Math.min(TC.cap, Math.floor(Math.max(0, now - t.since) / (TC.every * 60000)));
 const trapReady = (t, now) => Math.max(0, trapFill(t, now) - (t.taken || 0));
 const trapFullAt = t => t.since + TC.cap * TC.every * 60000;
-const canBuyTrap = S => S.traps.length < TC.slots && S.coins >= TC.cost[S.traps.length];
+// The grandfather's hut gives one trap on top of the ones you can buy.
+const trapsBought = S => S.traps.length - landingFx(S).trapAdd;
+const canBuyTrap = S => trapsBought(S) < TC.slots && S.coins >= TC.cost[trapsBought(S)];
 
 function buyTrap(S) {
   if (!canBuyTrap(S)) return false;
-  S.coins -= TC.cost[S.traps.length];
+  S.coins -= TC.cost[trapsBought(S)];
   S.traps.push(null);
   return true;
 }
@@ -2726,7 +2849,7 @@ function refuseDeal(S) {
 /* core/save.js */
 // Save schema. To change it: raise SCHEMA_VERSION and add one MIGRATIONS step, never edit old steps.
 
-const SCHEMA_VERSION = 16;
+const SCHEMA_VERSION = 17;
 const SAVE_KEY = 'nichna-zavod';
 const LEGACY_KEY = 'nichna-zavod-v1';
 const BACKUP_KEY = 'nichna-zavod-backup';
@@ -2761,6 +2884,8 @@ const defaultState = () => ({
   refusedAt: null, // the cast count when an order was last turned down
   collector: { away: 0, deal: null }, // away: casts until he is back; deal: the haggling over one fish { key, step }
   keepTrophies: false, // «sell all» leaves rare fish for the collector
+  sat: {}, // Galia's demand: how many percent each species is down, 0..30
+  landing: { got: {}, built: [] }, // rebuilding the landing: fish given per bundle item, and the buildings up
   traps: [null], // one trap comes free; null is an empty one
   gifts: [], // symbols the buyer gave, waiting to be put on a reel
   seen: 0, // when the game was last open
@@ -2890,6 +3015,8 @@ const MIGRATIONS = {
       : null)).filter(Boolean);
     return { ...rest, v: 16, board, refusedAt: null, collector: { away: 0, deal: null }, keepTrophies: false };
   },
+  // Galia's demand per species and the landing's rebuilding start empty.
+  16: d => ({ ...d, v: 17, sat: {}, landing: { got: {}, built: [] } }),
 };
 
 function migrate(data) {
@@ -2915,7 +3042,9 @@ function migrate(data) {
     collector: { away: 0, deal: null, ...(d.collector && typeof d.collector === 'object' ? d.collector : {}) },
     rewarded: Array.isArray(d.rewarded) ? d.rewarded : [],
     board: Array.isArray(d.board) ? d.board : [],
-    traps: Array.isArray(d.traps) && d.traps.length ? d.traps.slice(0, CONFIG.traps.slots) : [null],
+    traps: Array.isArray(d.traps) && d.traps.length ? d.traps.slice(0, CONFIG.traps.slots + 1) : [null],
+    sat: d.sat && typeof d.sat === 'object' ? d.sat : {},
+    landing: { got: {}, built: [], ...(d.landing && typeof d.landing === 'object' ? d.landing : {}) },
     gifts: Array.isArray(d.gifts) ? d.gifts : [],
     amulets: { owned: (d.amulets && Array.isArray(d.amulets.owned) ? d.amulets.owned : []).filter(id => AMULET_BY_ID[id]), on: (d.amulets && Array.isArray(d.amulets.on) ? d.amulets.on : []).filter(id => AMULET_BY_ID[id]).slice(0, CONFIG.amulets.slots) },
     unlocked: Array.isArray(d.unlocked) ? d.unlocked : b.unlocked,
@@ -5931,13 +6060,13 @@ class SlotScene {
 const MARKET_SCENE_H = 62;
 const MK_HORIZON = 21, MK_DECK = 40;
 const SHOPS = ['galia', 'korchmar', 'collector', 'gear'];
+// The old end of the pier, plot by plot, in CONFIG.landing order.
+const PLOT_W = 22, plotX = i => 2 + i * (PLOT_W + 2), PLOT_BASE = 50;
 const SHOP_W = 27;
 const shopX = i => 2 + i * (SHOP_W + 2);
 const SHOP_TOP = 14, SHOP_BASE = MK_DECK + 7;
 const COUNTER_Y = 48;
 const WEIGH_TIME = 0.9;
-// Plots on the far bank for the landing's buildings (phase two fills them).
-const MK_PLOTS = [8, 30, 54, 78, 100];
 
 class MarketScene {
   constructor({ calm = false } = {}) {
@@ -5956,7 +6085,7 @@ class MarketScene {
     this.ox = Math.floor((w - 120) / 2);
     this.surf = new Surface(w, h);
     this.backs = {};
-    for (const k of ['hub', ...SHOPS]) { const b = new Surface(w, h); this.backs[k] = b; this['paint_' + k](b); }
+    for (const k of ['hub', 'landing', ...SHOPS]) { const b = new Surface(w, h); this.backs[k] = b; this['paint_' + k](b); }
     // the shopfronts on their own transparent layer, over the moving water and fog
     this.front = new Surface(w, h);
     this.paint_fronts(this.front);
@@ -5966,7 +6095,9 @@ class MarketScene {
   /* ---------- the pier ---------- */
   shopBox(i) { return { x: shopX(i) + this.ox, y: SHOP_TOP, w: SHOP_W, h: SHOP_BASE - SHOP_TOP }; }
   hit(x, y, view) {
+    if (view === 'landing') { for (let i = 0; i < BUILDINGS.length; i++) { const b = this.plotBox(i); if (x >= b.x && x < b.x + b.w && y >= b.y) return 'plot' + i; } return null; }
     if (view !== 'hub') return view === 'gear' ? null : 'face';
+    if (y < SHOP_TOP - 3) return 'landing';
     for (let i = 0; i < SHOPS.length; i++) { const b = this.shopBox(i); if (x >= b.x && x < b.x + b.w && y >= b.y - 2 && y <= MK_DECK + 20) return SHOPS[i]; }
     return null;
   }
@@ -6076,6 +6207,89 @@ class MarketScene {
         if (r) S.dither(x + SHOP_W - 3, y, 3, 1, null, 'void', 0.35);
       }
     }
+  }
+
+  /* ---------- the old end of the pier, being rebuilt ---------- */
+  paint_landing(S) {
+    const { w, h } = this;
+    this.skyAndWater(S);
+    // here the deck starts lower and is older: grey boards with gaps
+    S.dither(0, MK_DECK, w, PLOT_BASE - MK_DECK, 'waterD', 'waterM', 0.3);
+    for (let y = PLOT_BASE; y < h; y++) S.rect(0, y, w, 1, y % 4 === 0 ? 'void' : 'wood');
+    S.dither(0, PLOT_BASE, w, h - PLOT_BASE, null, 'moonD', 0.15);
+    for (let x = 3; x < w; x += 9) S.rect(x, PLOT_BASE, 1, h - PLOT_BASE, 'void');
+    for (let x = 0; x < w; x += 12) { S.rect(x + 5, PLOT_BASE - 2, 2, 14, 'wood'); S.rect(x + 5, PLOT_BASE - 2, 2, 1, 'moonD'); }
+    S.dither(0, h - 5, w, 5, null, 'void', 0.45);
+  }
+  plotBox(i) { return { x: plotX(i) + this.ox, y: 14, w: PLOT_W, h: PLOT_BASE - 14 }; }
+  // An empty plot: stumps of old piles, a fallen plank, weeds.
+  drawRuin(i) {
+    const S = this.surf, x = plotX(i) + this.ox, b = PLOT_BASE;
+    S.rect(x + 3, b - 6, 2, 6, 'wood'); S.rect(x + 3, b - 6, 2, 1, 'moonD');
+    S.rect(x + 15, b - 9, 2, 9, 'wood'); S.rect(x + 15, b - 9, 1, 9, 'lamp'); S.px(x + 16, b - 10, 'wood');
+    S.line(x + 6, b - 1, x + 14, b - 4, 'wood'); S.line(x + 6, b, x + 14, b - 3, 'void');
+    for (const dx of [1, 9, 19]) { S.px(x + dx, b - 1, 'reed'); S.px(x + dx, b - 2, 'reed'); S.px(x + dx + 1, b - 3, 'reedD'); }
+    // a marker stake with a scrap of cloth
+    S.rect(x + 10, b - 14, 1, 13, 'moonD'); S.rect(x + 11, b - 14, 3, 2, 'red'); S.px(x + 13, b - 12, 'redD');
+  }
+  // A finished building on its plot; some parts move (smoke, the lighthouse lamp, the boat).
+  drawBuilding(id, i) {
+    const S = this.surf, x = plotX(i) + this.ox, b = PLOT_BASE, t = this.calm ? 0 : this.t;
+    S.dither(x - 1, b, PLOT_W + 2, 2, null, 'void', 0.5);
+    if (id === 'smoke') {
+      // a log smokehouse: round logs, a dark roof, a chimney with smoke
+      S.rect(x + 2, b - 14, 18, 14, 'wood');
+      for (let y = b - 13; y < b; y += 3) { S.rect(x + 2, y, 18, 1, 'void'); S.px(x + 2, y + 1, 'lamp'); S.px(x + 19, y + 1, 'void'); }
+      for (let k = 0; k < 7; k++) S.rect(x + 1 + k, b - 15 - k, 20 - k * 2, 1, k % 2 ? 'moonD' : 'fog');
+      S.rect(x + 15, b - 22, 3, 7, 'moonD'); S.rect(x + 15, b - 22, 3, 1, 'fog');
+      S.rect(x + 8, b - 8, 5, 8, 'void'); S.rect(x + 9, b - 7, 3, 7, 'redD'); S.ditherCircle(x + 10, b - 5, 3, 'lamp', 0.8, 1);
+      // fish hanging to smoke under the eaves
+      for (let k = 0; k < 4; k++) { const fx = x + 3 + k * 4; S.px(fx, b - 14, 'moonD'); S.rect(fx - 1, b - 13, 2, 4, 'gold'); S.px(fx - 1, b - 13, 'lamp'); S.px(fx, b - 9, 'wood'); }
+      for (let k = 0; k < 4; k++) { const ph = (t * 0.5 + k / 4) % 1; S.ditherCircle(x + 16 + Math.sin(ph * 6 + k) * 2, b - 24 - ph * 14, 2 + ph * 3, 'fog', 0.6 * (1 - ph), 1); }
+    } else if (id === 'hut') {
+      // a whitewashed hut under thatch, a lit window, a bench
+      S.rect(x + 2, b - 11, 18, 11, 'bone'); S.dither(x + 13, b - 11, 7, 11, null, 'fog', 0.6); S.rect(x + 2, b - 2, 18, 2, 'fog');
+      for (let k = 0; k < 7; k++) S.rect(x - 1 + k, b - 12 - k, 24 - k * 2, 1, 'gold');
+      S.dither(x - 1, b - 18, 24, 7, null, 'lamp', 0.4); S.rect(x - 1, b - 12, 24, 1, 'lamp');
+      for (let xx = x; xx < x + 22; xx += 2) S.px(xx, b - 11, 'wood');
+      S.rect(x + 5, b - 8, 4, 4, 'wood'); S.rect(x + 6, b - 7, 2, 2, 'gold'); S.px(x + 6, b - 7, 'moon');
+      S.rect(x + 12, b - 9, 4, 9, 'wood'); S.px(x + 15, b - 5, 'gold');
+      S.rect(x - 1, b - 3, 5, 1, 'wood'); S.px(x - 1, b - 2, 'wood'); S.px(x + 3, b - 2, 'wood');
+    } else if (id === 'tackle') {
+      // the tackle maker's shop: planks, a big hook on a sign, rods
+      S.rect(x + 2, b - 13, 18, 13, 'wood'); for (let xx = x + 5; xx < x + 20; xx += 3) S.rect(xx, b - 13, 1, 13, 'void');
+      S.rect(x + 1, b - 15, 20, 2, 'redD'); S.rect(x + 1, b - 15, 20, 1, 'red');
+      S.rect(x + 4, b - 10, 6, 5, 'void'); S.rect(x + 5, b - 9, 4, 3, 'lamp');
+      S.rect(x + 13, b - 8, 5, 8, 'void');
+      S.rect(x + 7, b - 22, 9, 6, 'moonD'); S.rect(x + 8, b - 21, 7, 4, 'bone'); S.rect(x + 11, b - 21, 1, 3, 'void'); S.px(x + 10, b - 18, 'void'); S.px(x + 9, b - 19, 'void');
+      for (const dx of [19, 21]) { S.line(x + dx, b - 1, x + dx + 2, b - 20, 'moon'); S.px(x + dx + 2, b - 20, 'red'); }
+    } else if (id === 'pier') {
+      // a jetty running out into the water, a moored boat rocking
+      S.rect(x + 1, MK_DECK + 2, PLOT_W - 2, 3, 'wood'); S.rect(x + 1, MK_DECK + 2, PLOT_W - 2, 1, 'moonD');
+      for (let xx = x + 2; xx < x + PLOT_W; xx += 5) S.rect(xx, MK_DECK + 5, 1, b - MK_DECK - 5, 'void');
+      const bob = Math.round(Math.sin(t * 1.6));
+      S.rect(x + 3, MK_DECK - 2 + bob, 15, 3, 'wood'); S.rect(x + 2, MK_DECK - 3 + bob, 17, 1, 'lamp'); S.px(x + 2, MK_DECK - 4 + bob, 'wood'); S.px(x + 18, MK_DECK - 4 + bob, 'wood');
+      S.line(x + 6, MK_DECK - 3 + bob, x + 1, MK_DECK + 1 + bob, 'moonD');
+      S.rect(x + 18, b - 8, 2, 8, 'wood'); S.rect(x + 17, b - 8, 4, 1, 'moonD'); S.line(x + 18, b - 6, x + 15, MK_DECK + bob, 'bone');
+    } else if (id === 'lighthouse') {
+      // a striped lighthouse; its lamp turns
+      for (let y = b - 34; y < b; y++) { const half = 3 + Math.floor((y - (b - 34)) / 10); S.rect(x + 11 - half, y, half * 2 + 1, 1, Math.floor((y - b) / 5) % 2 ? 'bone' : 'red'); S.px(x + 11 + half, y, 'void'); }
+      S.rect(x + 7, b - 38, 9, 4, 'void'); S.rect(x + 8, b - 37, 7, 2, 'gold'); S.rect(x + 6, b - 34, 11, 1, 'moonD'); S.rect(x + 8, b - 40, 7, 2, 'redD');
+      S.rect(x + 10, b - 6, 3, 6, 'void');
+      const side = Math.floor(t * 1.2) % 2, k = (t * 1.2) % 1;
+      if (!this.calm) for (let d = 1; d < 14; d++) if (d % 2 || k > 0.5) S.px(x + 11 + (side ? d : -d) * 1.6, b - 36 - d * 0.1, 'moon');
+      S.ditherCircle(x + 11, b - 36, 6, 'gold', 0.5, 0.8);
+    }
+  }
+  // The pier from the market: the lighthouse peeks over the roofs, the smokehouse smokes.
+  drawFarBuilt(built) {
+    const S = this.surf, t = this.calm ? 0 : this.t;
+    if (built.includes('lighthouse')) {
+      const x = this.ox + 117;
+      for (let y = 2; y < MK_HORIZON; y++) S.rect(x - 1, y, 3, 1, Math.floor(y / 3) % 2 ? 'bone' : 'red');
+      S.rect(x - 1, 0, 3, 2, 'gold'); if (Math.floor(t * 1.2) % 2) S.px(x - 3, 1, 'moon'); else S.px(x + 3, 1, 'moon');
+    }
+    if (built.includes('smoke')) for (let k = 0; k < 3; k++) { const ph = (t * 0.4 + k / 3) % 1; S.ditherCircle(this.ox + 22 + Math.sin(ph * 5) * 2, 12 - ph * 12, 1.5 + ph * 2, 'fog', 0.5 * (1 - ph), 1); }
   }
 
   /* ---------- inside the shops ---------- */
@@ -6227,14 +6441,7 @@ class MarketScene {
       this.surf.ditherCircle(x, MK_HORIZON + 4 + i * 5, 22, 'fog', 0.3, 0.18);
     }
   }
-  drawPlots(built) {
-    const S = this.surf;
-    MK_PLOTS.forEach((px, i) => {
-      if (built && built[i]) return;
-      const x = px + this.ox, base = MK_HORIZON + 1;
-      S.rect(x, base - 3, 1, 3, 'wood'); S.rect(x + 9, base - 3, 1, 3, 'wood');
-    });
-  }
+  drawPlots() {}
   // A lit window flickers a little; a closed shop's window is dark.
   drawHubLights(view) {
     const S = this.surf, f = this.calm ? 0 : Math.floor(this.t * 3) % 7 === 0;
@@ -6251,8 +6458,16 @@ class MarketScene {
       this.drawPlots(view.built);
       this.drawWater();
       this.drawFog();
+      this.drawFarBuilt(view.built || []);
       S.drawSprite(this.frontSprite, 0, 0, 0);
       this.drawHubLights(view);
+      return;
+    }
+    if (shop === 'landing') {
+      this.drawWater();
+      this.drawFog();
+      BUILDINGS.forEach((b, i) => { if ((view.built || []).includes(b.id)) this.drawBuilding(b.id, i); else this.drawRuin(i); });
+      if (this.raise) { const r = this.raise, x = plotX(r.i) + this.ox; for (let k = 0; k < 6; k++) S.ditherCircle(x + 3 + k * 3, PLOT_BASE - 2 - (r.t * 10) % 6, 4, 'fog', 0.6 * (1 - r.t / 1.5), 0.7); }
       return;
     }
     this.drawAmbient(shop);
@@ -6327,11 +6542,14 @@ class MarketScene {
 
   weighFish(name) { this.weigh = { sprite: name ? fishSpriteFor(name) : null, t: this.calm ? WEIGH_TIME * 0.8 : 0, popped: false }; }
   talk(sec = 1.6) { this.talkT = sec; }
+  // Dust over a plot as a building goes up.
+  build(i) { this.raise = { i, t: 0 }; }
   feel(mood, sec = 1.8) { this.mood = mood; this.moodT = sec; }
 
   advance(dt) {
     this.t += dt;
     this.talkT = Math.max(0, this.talkT - dt);
+    if (this.raise) { this.raise.t += dt; if (this.raise.t > 1.5) this.raise = null; }
     this.moodT = Math.max(0, this.moodT - dt);
     this.blinkT = Math.max(0, this.blinkT - dt);
     this.nextBlink -= dt;
@@ -8404,11 +8622,11 @@ const artArm={id:null,t:0};
 const pondArm={on:false,t:0};
 const mk={view:'hub',sel:null,refuseArm:null,refuseT:0};
 const MK_MOOD={content:'задоволений',thoughtful:'задумливий',annoyed:'роздратований',gone:'пішов'};
-const SHOP_TITLE={galia:'Рибна ятка Галі',korchmar:'Корчма',collector:'Крамниця дивин',gear:'Снасті'};
+const SHOP_TITLE={galia:'Рибна ятка Галі',korchmar:'Корчма',collector:'Крамниця дивин',gear:'Снасті',landing:'Відбудова пристані'};
 
 const mkCv=$('#mkcv'),mkCtx=mkCv.getContext('2d');
 const mkScene=new MarketScene({calm:REDUCED_MOTION});
-let mkReady=false,mkScale=3;
+let mkReady=false,mkScale=3,mkPlotsLeft=()=>0;
 function mkResize(){
   const box=$('#v-market').getBoundingClientRect();
   if(!box.width)return;
@@ -8420,20 +8638,24 @@ function mkResize(){
   if(!(mkCv.width===l.w&&mkCv.height===l.h&&mkReady)){mkCv.width=l.w;mkCv.height=l.h;mkScene.resize(l.w,l.h);mkReady=true}
   // the shop labels sit under their shopfronts; the coin anchor over the scale
   document.querySelectorAll('.mkshop').forEach((el,i)=>{const b=mkScene.shopBox(i);el.style.left=ml+(b.x+b.w/2)*l.scale+'px'});
+  mkPlotsLeft=i=>{const b=mkScene.plotBox(i);return ml+(b.x+b.w/2)*l.scale};
+  document.querySelectorAll('.mkplot').forEach((el,i)=>{el.style.left=mkPlotsLeft(i)+'px'});
   const sc=mkScene.scaleAt(),pt=$('#mkscalept');pt.style.left=ml+(sc.x-8)*l.scale+'px';pt.style.top=(sc.y-8)*l.scale+'px';
 }
 new ResizeObserver(mkResize).observe($('#v-market'));
 function mkTick(dt){
   if(!mkReady)return;
   mkScene.advance(dt);
-  mkScene.draw({shop:mk.view,collector:collectorMood(S),built:null});
+  mkScene.draw({shop:mk.view,collector:collectorMood(S),built:S.landing.built});
   mkScene.surf.present(mkCtx);
 }
 $('#mkcv').addEventListener('click',e=>{
   const r=mkCv.getBoundingClientRect();if(!r.width)return;
   const who=mkScene.hit((e.clientX-r.left)/mkScale,(e.clientY-r.top)/mkScale,mk.view);
   if(!who)return;
-  if(who==='face')keeperChat();else openShop(who);
+  if(who==='face')keeperChat();
+  else if(who.startsWith('plot')){const c=document.querySelector(`[data-bld="${who.slice(4)}"]`);if(c){c.scrollIntoView({behavior:REDUCED_MOTION?'auto':'smooth',block:'start'});c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')}}
+  else openShop(who);
 });
 $('#mkshops').addEventListener('click',e=>{const b=e.target.closest('.mkshop');if(b)openShop(b.dataset.shop)});
 $('#mkback').addEventListener('click',()=>openShop('hub'));
@@ -8462,7 +8684,7 @@ const COLL={offer:['Гм. Пристойний екземпляр.','Цікав�
 /* ---------- the pier and the shops ---------- */
 function openShop(v){
   const was=mk.view;mk.view=v;
-  $('#mkbar').hidden=v==='hub';$('#mkshops').hidden=v!=='hub';
+  $('#mkbar').hidden=v==='hub';$('#mkshops').hidden=v!=='hub';$('#mkplots').hidden=v!=='landing';
   $('#mktitle').textContent=SHOP_TITLE[v]||'';
   document.querySelectorAll('.mkpane').forEach(el=>{el.hidden=el.dataset.pane!==v});
   $('#mkmsg').hidden=true;
@@ -8477,6 +8699,7 @@ const HELLO={
   gear:['Мурко спить на прилавку. Гроші кидай у скриньку — він стежить.','Мур-р. (Кіт приглядає за крамницею.)'],
 };
 function greet(v){
+  if(!HELLO[v])return;
   if(v==='collector'&&!collectorHere(S)){mkSay(`Табличка: «Пішов ображений. Повернуся за ${S.collector.away} закидів».`,v,3000);return}
   mkSay(pickLine(HELLO[v]),v);
 }
@@ -8494,19 +8717,25 @@ function renderShops(){
   const up=Object.entries(UPG).some(([k,u])=>S.lv[k]<u.cost.length&&S.coins>=u.cost[S.lv[k]]);
   st.gear=up?['можна оновити',true]:['вудка, наживка',false];
   document.querySelectorAll('.mkshop').forEach(el=>{const [t2,hot]=st[el.dataset.shop];const sm=el.querySelector('small');sm.textContent=t2;sm.classList.toggle('hot',hot)});
+  const built=S.landing.built.length,canGive=BUILDINGS.some(bd=>!isBuilt(S,bd.id)&&bd.bundles.some(u=>bundleTakes(S,u.id).length));
+  $('#landbtn').textContent=`Відбудова пристані · ${built}/${BUILDINGS.length}${canGive?' · є що віддати':''}`;
+  $('#landbtn').classList.toggle('hot',canGive);
   const picks=sellAllPicks(S),b=$('#hubsell');
   b.disabled=!picks.length;
   b.textContent=!n?'Садок порожній':!picks.length?'Лише рідкісні — неси Колекціонеру':picks.length<n?`Продати ${picks.length} Галі за ${fmt(v)}`:`Продати все Галі за ${fmt(v)}`;
 }
 $('#hubsell').addEventListener('click',()=>sellAllHere($('#hubsell')));
+$('#landbtn').addEventListener('click',()=>openShop('landing'));
 
 const kgText=f=>`${f.w.toFixed(f.w<10?2:1).replace('.',',')} кг`;
 const starRow=f=>`<span class="mkstars">${f.junk||f.item?'':[1,2,3].map(k=>`<i class="picon ic-star-${k<=(f.q||0)?'on':'off'}"></i>`).join('')}</span>`;
 // One card for the net, the same size for every fish. price: what this buyer pays; note: why it differs.
-function fishCard(f,i,price,{tags=true,sel=false,note=''}={}){
+function fishCard(f,i,price,{tags=true,sel=false,note='',demand=false}={}){
   const tier=f.junk||f.item?'junk':f.t;
-  const tg=tags?(orderWants(S,f)?'<span class="mktag">Корчмар</span>':'')+(isTrophy(f)?'<span class="mktag coll">рідк.</span>':''):'';
-  return `<button class="mkfish ${tier}${f.golden?' golden':''}${sel?' sel':''}" data-i="${i}" aria-label="${f.n}, ${price} монет">${tg}<span class="mkicon"><i class="picon ${fishIconClass(f.n)}"></i></span><span class="mkname">${f.n}</span>${starRow(f)}<span class="mkw">${kgText(f)}</span><span class="mkp">${fmt(price)}${note}</span></button>`;
+  const tg=tags?(orderWants(S,f)?'<span class="mktag">Корчмар</span>':'')+(isTrophy(f)?'<span class="mktag coll">рідк.</span>':'')+(landingWants(S,f)?'<span class="mktag land">пристань</span>':''):'';
+  const d=demand?Math.round(demandOf(S,f.n)*100):100;
+  const dem=d<100?`<span class="mkdem">▼ попит ${d}%</span>`:'';
+  return `<button class="mkfish ${tier}${f.golden?' golden':''}${sel?' sel':''}" data-i="${i}" aria-label="${f.n}, ${price} монет">${tg}<span class="mkicon"><i class="picon ${fishIconClass(f.n)}"></i></span><span class="mkname">${f.n}</span>${starRow(f)}<span class="mkw">${kgText(f)}</span><span class="mkp">${fmt(price)}${note}</span>${dem}</button>`;
 }
 const fairNote=()=>fairMul(S)>1?` <s>▲${Math.round((fairMul(S)-1)*100)}%</s>`:'';
 
@@ -8515,8 +8744,8 @@ function renderStall(){
   $('#netsum').textContent=`${n}/${cap}`;
   const rare=S.net.filter(isTrophy).length;
   $('#stallsub').textContent=!n?'Порожньо. Риба сама себе не зловить.'
-    :`Галя бере все за ціну риби${fairMul(S)>1?' (зараз ярмарок: ▲'+Math.round((fairMul(S)-1)*100)+'%)':''}. Торкнись рибу — продаси одну.${rare?' Рідкісних краще нести Колекціонеру: дасть більше.':''}`;
-  $('#fishlist').innerHTML=S.net.map((f,i)=>fishCard(f,i,salePrice(S,f),{note:fairNote()})).join('');
+    :`Галя бере все за ціну риби${fairMul(S)>1?' (зараз ярмарок: ▲'+Math.round((fairMul(S)-1)*100)+'%)':''}. Торкнись рибу — продаси одну. Кожна продана рибина знижує попит на свій вид на ${DM.perSale}% (до ${DM.min}%), кожен закид повертає ${String(DM.perCast).replace('.',',')}%.${rare?' Рідкісних краще нести Колекціонеру.':''}`;
+  $('#fishlist').innerHTML=S.net.map((f,i)=>fishCard(f,i,salePrice(S,f),{note:fairNote(),demand:true})).join('');
   const k=$('#keeptrophies');k.setAttribute('aria-checked',String(!!S.keepTrophies));
   const picks=sellAllPicks(S),v=sellAllValue(S),b=$('#sellall');
   b.disabled=!picks.length;
@@ -8617,6 +8846,34 @@ $('#colldeal').addEventListener('click',e=>{
   save();renderMarket();
 });
 
+/* ---------- rebuilding the landing ---------- */
+const itemFish=it=>it.n||(it.any?it.any[0]:'Сом');
+const itemName=it=>it.n?fishLabel(it.n):it.any?`Будь-які: ${it.any.map(fishLabel).join(', ')}`:`Будь-які трофеї`;
+function renderLanding(){
+  $('#landsub').textContent='Риба для будівель віддається назавжди. Кожна будівля дає постійну нагороду — її не купиш. Здавати можна частинами.';
+  // labels under the plots
+  const plots=$('#mkplots');
+  plots.innerHTML=BUILDINGS.map((b,i)=>{const done=b.bundles.filter(u=>bundleDone(S,u.id)).length;return `<span class="mkplot${isBuilt(S,b.id)?' built':''}" style="left:${mkPlotsLeft(i)}px">${b.name.split(' ')[0]}<small>${isBuilt(S,b.id)?'готово':`${done}/${b.bundles.length}`}</small></span>`}).join('');
+  $('#landlist').innerHTML=BUILDINGS.map((b,bi)=>{
+    const built=isBuilt(S,b.id);
+    const bundles=b.bundles.map(u=>{
+      const done=bundleDone(S,u.id),takes=bundleTakes(S,u.id),got=bundleGot(S,u.id);
+      const rows=u.items.map((it,k)=>{const g=got[k]||0,full=g>=it.qty,fname=itemFish(it);
+        const cond=[it.stars?`від ${it.stars}★`:'',full?'':`у садку: ${S.net.filter(f=>fitsBundleItem(it,f)).length}`].filter(Boolean).join(' · ');
+        return `<div class="mkitem${full?' done':''}"><span class="mkicon"><i class="picon ${full?fishIconClass(fname):silhouetteClass(fname)}"></i></span><span>${itemName(it)}${cond?`<small>${cond}</small>`:''}</span><b class="${full?'ok':''}">${Math.min(g,it.qty)}/${it.qty}</b></div>`}).join('');
+      const btn=done?'':`<button class="pbuy" data-u="${u.id}" ${takes.length?'':'disabled'}>${takes.length?`Віддати назавжди: ${takes.length}`:'Нема в садку'}</button>`;
+      return `<div class="mkbundle${done?' done':''}"><h4>${u.name}<em>${done?'зібрано':`${u.items.reduce((a,it,k)=>a+Math.min(got[k]||0,it.qty),0)}/${u.items.reduce((a,it)=>a+it.qty,0)}`}</em></h4>${rows}${btn}</div>`}).join('');
+    return `<div class="mkcard mkbld${built?' built':''}" data-bld="${bi}"><div class="mkcard-top"><b>${b.name}</b><em>${built?'збудовано':`${b.bundles.filter(u=>bundleDone(S,u.id)).length}/${b.bundles.length}`}</em></div><div class="mkrew">${built?'Дає':'Нагорода'}: ${b.text}, назавжди</div>${built?'':bundles}</div>`}).join('');
+}
+$('#landlist').addEventListener('click',e=>{
+  const b=e.target.closest('.pbuy');if(!b||b.disabled)return;
+  const r=giveToBundle(S,b.dataset.u);if(!r.count)return;
+  SFX.plop();
+  if(r.built){const i=BUILDINGS.indexOf(r.built);mkScene.build(i);SFX.win();toast(`Збудовано: ${r.built.name}! ${r.built.text}`);$('#v-market').scrollTop=0}
+  else toast(r.bundleDone?`Набір «${BUNDLES[b.dataset.u].name}» зібрано`:`Віддано: ${r.count}`);
+  save();renderHud();renderMarket();
+});
+
 /* ---------- gear ---------- */
 const pctS=v=>`${Math.round(v*100)}%`;
 const secS=v=>`${v.toFixed(2).replace('.',',')} с`;
@@ -8638,7 +8895,8 @@ function renderGear(){
   $('#baits').innerHTML=FCU.baitOrder.map(k=>{
     const B=FCU.baits[k],n=baitCount(S,k),on=S.bait.on===k;
     const pick=`<button class="pbuy" data-bait="${k}" data-pick="1" ${on?'disabled':''}>${on?'На гачку':'На гачок'}</button>`;
-    const buy=B.free?'<button class="pbuy" disabled>Безплатно</button>':S.coins<B.cost?`<button class="pbuy" disabled>Бракує ${fmt(B.cost-S.coins)}</button>`:`<button class="pbuy" data-bait="${k}">Купити ${B.pack} за ${fmt(B.cost)}</button>`;
+    const bc=B.free?0:baitCost(S,k);
+    const buy=B.free?'<button class="pbuy" disabled>Безплатно</button>':S.coins<bc?`<button class="pbuy" disabled>Бракує ${fmt(bc-S.coins)}</button>`:`<button class="pbuy" data-bait="${k}">Купити ${B.pack} за ${fmt(bc)}${bc<B.cost?` (−${Math.round((1-bc/B.cost)*100)}%)`:''}</button>`;
     return `<div class="mkcard" data-bc="${k}"><div class="mkup"><i class="picon ic-bait-${k}"></i><div class="mkup-main"><b>${B.name}: <span>${B.free?'завжди є':`є ${n}`}</span></b><div class="mkdelta">${B.desc}</div></div></div><div class="mkbait-row">${pick}${buy}</div></div>`}).join('');
   $('#artlist').innerHTML=Array.from({length:SC.artifactSlots},(_,i)=>{
     const id=S.artifacts[i];
@@ -8676,13 +8934,13 @@ $('#pondbuy').addEventListener('click',()=>{if(!canBuyPond(S))return;
 
 function renderMarket(){
   tip('landing');
-  renderStall();renderStallExtras();renderOrders();renderCollector();renderGear();
+  renderStall();renderStallExtras();renderOrders();renderCollector();renderGear();renderLanding();
   renderShops();
 }
 
 /* ui/board.js */
 // A fish not yet caught is named only by its rarity.
-const fishLabel=n=>isKnown(S,n)?n:TIERS[fishByName(n).t].label+' риба';
+const fishLabel=n=>isKnown(S,n)?n:fishByName(n).junk?'Щось із дна':TIERS[fishByName(n).t].label+' риба';
 
 /* ---------- traps ---------- */
 function renderTrapBtn(){
@@ -8703,7 +8961,7 @@ function renderTraps(){
     const ready=trapReady(t,now);
     return `<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond"><b>${ready} риб</b> · ${trapLine(t,now)}</span><button class="pbuy" data-take="${i}" ${ready?'':'disabled'}>Забрати</button></div>`;
   });
-  if(S.traps.length<T.slots){const c=T.cost[S.traps.length];rows.push(`<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond">Ще одна верша</span><button class="pbuy" data-buy="1" ${S.coins<c?'disabled':''}>${fmt(c)}</button></div>`)}
+  if(trapsBought(S)<T.slots){const c=T.cost[trapsBought(S)];rows.push(`<div class="ptrap"><i class="picon ic-trap"></i><span class="pord-cond">Ще одна верша</span><button class="pbuy" data-buy="1" ${S.coins<c?'disabled':''}>${fmt(c)}</button></div>`)}
   $('#traplist').innerHTML=rows.join('');
   $('#trapall').disabled=!trapsReady(S,now);
 }
