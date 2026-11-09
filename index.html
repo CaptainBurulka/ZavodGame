@@ -366,6 +366,9 @@ button.hud-stat:active{transform:translateY(var(--px))}
 .pbests{display:flex;flex-direction:column;gap:var(--px)}
 .pbest{display:grid;grid-template-columns:calc(var(--px)*24) 1fr auto auto;align-items:center;gap:calc(var(--px)*2);min-height:calc(var(--px)*11);padding:var(--px);background:var(--night2)}
 .pbest.unknown{background:var(--night)}
+.pbest-how{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr;gap:calc(var(--px)*2);align-items:center;font-size:20px;line-height:1.05;color:var(--fog)}
+.pbest-how b{font-weight:400;color:var(--moonS)}
+.pbest-how canvas{display:block;image-rendering:pixelated;box-shadow:0 0 0 var(--px) var(--void)}
 .pbest-name{min-width:0;font-size:22px;line-height:1;color:var(--bone)}
 .pbest.unknown .pbest-name{color:var(--fog)}
 .pbest-num{font-family:var(--f-num);font-size:16px;line-height:1;color:var(--gold)}
@@ -952,19 +955,19 @@ const CONFIG = {
     { n: 'Щука', t: 'uncommon', w: [1, 5], p: 24, d: 0.58, pattern: 'jerk' },
     { n: 'Короп', t: 'rare', w: [2, 9], p: 42, d: 0.62, pattern: 'heavy', prog: 0.75 }, // prog: тягне довше
     { n: 'Судак', t: 'rare', w: [1.5, 6], p: 55, d: 0.7, pattern: 'trick' },
-    { n: 'Минь', t: 'rare', w: [1, 5], p: 48, d: 0.66, pattern: 'dive' },
+    { n: 'Минь', t: 'rare', w: [1, 5], p: 48, d: 0.66, pattern: 'heavy' }, // її нора — подія корча (fishing.events)
     // Сом: його «корч» тепер окрема дія в боротьбі (fishing.specials), тож сама виводка простіша
     { n: 'Сом', t: 'epic', w: [8, 40], p: 120, d: 0.72, pattern: 'steady' },
     { n: 'Стерлядь', t: 'epic', w: [1, 4], p: 150, d: 0.78, pattern: 'nervous' },
-    { n: 'Місячна рибка', t: 'legend', w: [0.3, 0.9], p: 420, d: 0.93, glow: true, pattern: 'ghost' },
-    { n: 'Білуга', t: 'legend', w: [40, 120], p: 520, d: 0.95, pattern: ['dive', 'jerk'] },
+    { n: 'Місячна рибка', t: 'legend', w: [0.3, 0.9], p: 420, d: 0.93, glow: true, pattern: 'nervous' },
+    { n: 'Білуга', t: 'legend', w: [40, 120], p: 520, d: 0.95, pattern: ['heavy', 'jerk'] },
     // Перлівниця: не риба, а квиток у Мушлі Водяника. Ловиться окремим жеребом (fishing.mussel), продається дешево.
     { n: 'Перлівниця', t: 'junk', junk: true, item: true, w: [0.1, 0.3], p: 6, d: 0.05, pattern: 'dead' },
     // Іменні легенди: не клюють звичайно, лише коли збіглися умови з legends. stages — бій у кілька етапів.
     { n: 'Баба Килина', t: 'legend', named: true, w: [14, 22], p: 700, d: 0.86, pattern: 'heavy', stages: ['heavy', 'nervous', 'trick'] },
     { n: 'Сивий Остап', t: 'legend', named: true, w: [9, 14], p: 800, d: 0.86, pattern: 'trick', stages: ['trick', 'jerk', 'trick'] },
-    { n: 'Старий Митрофан', t: 'legend', named: true, w: [90, 160], p: 1200, d: 0.86, pattern: 'dive', stages: ['nervous', 'dive', 'jerk'] },
-    { n: 'Чорна Бранка', t: 'legend', named: true, w: [150, 260], p: 1600, d: 0.86, pattern: 'ghost', stages: ['dive', 'ghost', 'jerk'] },
+    { n: 'Старий Митрофан', t: 'legend', named: true, w: [90, 160], p: 1200, d: 0.86, pattern: 'heavy', stages: ['nervous', 'heavy', 'jerk'] },
+    { n: 'Чорна Бранка', t: 'legend', named: true, w: [150, 260], p: 1600, d: 0.86, pattern: 'heavy', stages: ['heavy', 'nervous', 'jerk'] },
   ],
   // Де й коли виходить кожна іменна легенда. phases — фази місяця, bait — наживка, zone — зона води.
   // chance — шанс на клюванні, коли все збіглося; again — шанс, якщо її вже ловили.
@@ -1182,7 +1185,7 @@ const CONFIG = {
       cost: [100, 190, 340, 630, 1170, 2170, 4010, 7420],
       perks: {
         2: { name: 'Гнучка лоза', text: 'ривки риби б’ють на 20% слабше', fx: { jerkMul: 0.8 } },
-        4: { name: 'Бамбукове коліно', text: 'шанс вирвати з корча +10%', fx: { snagPullAdd: 0.1 } },
+        4: { name: 'Бамбукове коліно', text: 'на свайп від корча +0,1 с', fx: { snagWinAdd: 0.1 } },
         6: { name: 'Вуглецева жилка', text: 'риба «видихається» на 0,5 с довше', fx: { tiredAdd: 0.5 } },
         8: { name: 'Срібло проти нечисті', text: 'вікна спритних дій у боротьбі +0,1 с', fx: { specialAdd: 0.1 } },
       },
@@ -1314,6 +1317,7 @@ const CONFIG = {
       bySpecies: {
         'Щука': { kinds: ['candle'], chance: 0.5 },
         'Судак': { kinds: ['candle'] },
+        'Минь': { kinds: ['snagpull'] }, // тягне в нору під берегом
         'Сом': { kinds: ['snagpull', 'snagpull'] },
         'Стерлядь': { kinds: ['zigzag', 'zigzag'] },
         'Місячна рибка': { kinds: ['rhythm', 'rhythm', 'rhythm'] },
@@ -1324,6 +1328,7 @@ const CONFIG = {
         'Чорна Бранка': { kinds: ['rhythm', 'snagpull', 'candle'] },
       },
       netSpecies: ['Короп'], // наприкінці бою — підсак
+      zoneSnag: true, // корч у зоні «Корч» — ще одна подія-свайп (у межах трьох подій за бій)
       netTier: 'epic', // і для всіх трофеїв від цієї рідкості
       kinds: {
         candle: { gesture: 'tap', act: 0.7, back: 0.25, bonus: 0.05 },
@@ -1338,7 +1343,7 @@ const CONFIG = {
         snagpull: '{n} тягне під корч — свайпни від кнопки за зеленою стрілкою',
         zigzag: '{n} петляє — свайпай від кнопки туди, куди стрілка',
         net: 'Підсак — тапни, коли кільце позеленіє',
-        rhythm: '{n} мерехтить — тапай, коли кільце доходить до неї',
+        rhythm: '{n} мерехтить — тапни, коли кільце зійдеться на ній',
       },
     },
     castTime: 0.55,
@@ -1625,7 +1630,7 @@ const NO_FX = Object.freeze({
   priceMul: 1, tensionMul: 1, surgeMul: 1, zoneMul: 1, progressMul: 1, waitMul: 1, snapMul: 1, junkMul: 1, legendMul: 1,
   jackpotShareMul: 1, angerMul: 1, slotPayMul: 1, diveLoseMul: 1, hookPayMul: 1, frogPayMul: 1,
   frogRight: 0, hookTwo: 0, noCurse: false, musselMul: 1, freeSpinMul: 1, starPearlMul: 1, biteGlow: 0, signalMul: 1, fatherAdd: 0,
-  biteWindowAdd: 0, specialAdd: 0, netCapAdd: 0, jerkMul: 1, snagPullAdd: 0, tiredAdd: 0, noCat: false, netRingAdd: 0, netWinAdd: 0, netBackMul: 1, trapAdd: 0,
+  biteWindowAdd: 0, specialAdd: 0, netCapAdd: 0, jerkMul: 1, snagPullAdd: 0, snagWinAdd: 0, tiredAdd: 0, noCat: false, netRingAdd: 0, netWinAdd: 0, netBackMul: 1, trapAdd: 0,
   fogSee: false, moonSignalMul: 1, signalLifeMul: 1,  curseAdd: 0, seeBite: false,
 });
 
@@ -5864,7 +5869,7 @@ function floatPosition(view, geo, t, tip = rodTip(geo, view.spot || geo.target))
     case 'reel': {
       const home = geo.home;
       return {
-        x: mix(target.x, home.x, view.prog * 0.75) + Math.sin(t * 9) * 3 * view.tension,
+        x: mix(target.x, home.x, view.prog * 0.75) + Math.sin(t * 9) * 3 * view.tension + ((view.sp && view.sp.pull) || 0),
         y: mix(target.y, home.y, view.prog * 0.75) + Math.cos(t * 7),
         flying: false,
       };
@@ -6829,7 +6834,8 @@ class PondScene {
     }
     const m = view.meter;
     if (!m || !fl) return;
-    const W = GAUGE_W, x = clampN(Math.round(fl.x + 1 - W / 2), 2, g.w - W - 2), y = clampN(Math.round(fl.y - 16), 12, g.h - 30);
+    // over the fish; under it while a pike jumps, so the jump has the sky to itself
+    const W = GAUGE_W, x = clampN(Math.round(fl.x + 1 - W / 2), 2, g.w - W - 2), y = clampN(Math.round(m.below ? fl.y + 14 : fl.y - 16), 12, g.h - 22);
     this.meterAt = { x, y, w: W };
     const px = k => x + Math.round(clampN(k, 0, 1) * (W - 1));
     S.rect(x - 1, y - 1, W + 2, 9, 'void');
@@ -6850,7 +6856,7 @@ class PondScene {
     if (m.frozen) S.dither(x, y, W, 7, null, 'void', 0.35); // held still while an event runs
     const ev = view.sp;
     if (ev && ev.color) {
-      const sp = SPRITES[`icon_ev_${ev.gesture}`], ix = x + (W >> 1) - (sp.w >> 1), iy = y - 4 - sp.h;
+      const sp = SPRITES[`icon_ev_${ev.gesture}`], ix = x + (W >> 1) - (sp.w >> 1), iy = m.below ? y + 10 : y - 4 - sp.h;
       // yellow: get ready; green, pulsing in steps: now; red: missed
       const pulse = ev.color === 'act' && Math.floor(t * 8) % 2;
       const col = ev.color === 'prep' ? 'gold' : ev.color === 'act' ? (pulse ? 'moon' : 'frogL') : ev.color === 'ok' ? 'frogL' : 'red';
@@ -6867,31 +6873,38 @@ class PondScene {
 
   // A fish's trick in the fight, drawn around the float.
   drawTrick(sp, fl) {
-    const S = this.surf, t = this.t, C = CONFIG.fishing.specials;
+    const S = this.surf, t = this.t, g = this.geo;
     const fx = fl.x + 1, fy = fl.y + 5;
     if (sp.kind === 'candle') {
       if (sp.phase === 'warn') {
-        // a shadow rising under the water, and the water starting to boil
-        const k = Math.min(1, sp.t / sp.warn);
-        S.ditherCircle(fx + sp.side * 3, fy + 2, 4 + k * 5, 'void', 0.4 + 0.5 * k, 0.45);
-        if (Math.floor(t * 8) % 2) S.px(fx + sp.side * 5, fy - 1, 'bone');
+        // the line goes slack, the water swells into a hump, a shadow rises under it
+        const k = Math.min(1, sp.t / sp.warn), hx = fx + sp.side * 4, hh = 1 + Math.round(k * 3);
+        S.ditherCircle(hx, fy + 2, 4 + k * 6, 'void', 0.5 + 0.6 * k, 0.45);
+        for (let i = -4; i <= 4; i++) { const yy = fy - Math.round(hh * (1 - (i * i) / 20)); S.px(hx + i, yy, Math.abs(i) < 2 ? 'shimmer' : 'waterL'); }
+        if (k > 0.6 && Math.floor(t * 10) % 2) { S.px(hx - 2, fy - hh - 1, 'bone'); S.px(hx + 2, fy - hh - 2, 'bone'); }
       } else {
+        // in the air: up out of the hump, over and back down
         const k = Math.min(1, (sp.t - sp.warn) / Math.max(0.1, sp.win)), sp2 = fishSpriteFor(sp.fish);
-        const x = fx + sp.side * (2 + k * 8) - (sp2.w >> 1), y = fy - 6 - Math.sin(Math.PI * Math.min(1, k * 1.2)) * 16 - sp2.h;
+        const x = fx + sp.side * (4 + k * 10) - (sp2.w >> 1), y = fy - 4 - Math.sin(Math.PI * Math.min(1, k * 1.1)) * 18 - sp2.h;
         S.drawOutline(sp2, 0, x, y, 'void'); S.drawSprite(sp2, 0, x, y, sp.side < 0);
-        S.dither(fx - 6, fy - 1, 13, 2, null, 'bone', 0.5);
+        S.dither(fx + sp.side * 4 - 6, fy - 1, 13, 2, null, 'bone', 0.5);
       }
     } else if (sp.kind === 'snagpull') {
-      // the snag on one side, the line dragged toward it
-      const sx = fx + sp.side * 16 - 8, sy = fy - 6, sh = Math.floor(t * 20) % 2;
+      // the snag slides in from its edge of the screen; the fish drags the float toward it
+      const k = sp.snagK ?? 1, home = sp.side < 0 ? fx - 30 : fx + 14, edge = sp.side < 0 ? -18 : g.w + 2;
+      const sx = Math.round(edge + (home - edge) * k), sy = fy - 8, sh = sp.phase === 'act' && Math.floor(t * 20) % 2;
       S.drawOutline(SPRITES.snag, 0, sx + sh, sy, 'void'); S.drawSprite(SPRITES.snag, 0, sx + sh, sy);
-      for (let i = 1; i < 4; i++) S.px(fx + sp.side * (4 + i * 3), fy - 1, Math.floor(t * 10 + i) % 2 ? 'bone' : 'shimmer');
+      // the strained line toward it
+      for (let i = 1; i < 5; i++) S.px(fx + sp.side * (2 + i * 3), fy - 1, Math.floor(t * 10 + i) % 2 ? 'bone' : 'shimmer');
     } else if (sp.kind === 'zigzag') {
-      // the sterlet darting under the surface
       if (sp.phase === 'dart') {
+        // the sterlet darting under the surface
         const k = Math.min(1, sp.dt / Math.max(0.1, sp.win));
-        S.ditherCircle(fx + sp.dir * (3 + k * 12), fy + 1, 4, 'void', 0.8, 0.4);
+        S.ditherCircle(fx + sp.dir * (3 + k * 12), fy + 1, 4, 'void', 0.9, 0.4);
         S.line(fx, fy, fx + sp.dir * (3 + k * 12), fy + 1, 'shimmer');
+      } else {
+        // getting ready: its shadow twitches under the float
+        S.ditherCircle(fx + (Math.floor(t * 12) % 2 ? 2 : -2), fy + 1, 4, 'void', 0.7, 0.4);
       }
     } else if (sp.kind === 'net') {
       // the landing net's ring closing in on the fish: yellow while it closes, green when it sits on the fish
@@ -6902,10 +6915,17 @@ class PondScene {
       S.drawOutline(fsp, 0, fx + ox - (fsp.w >> 1), fy - 3, 'void'); S.drawSprite(fsp, 0, fx + ox - (fsp.w >> 1), fy - 3, left);
       S.line(fx + r, fy + 1, fx + r + 6, fy - 10, 'wood');
     } else if (sp.kind === 'rhythm') {
-      // the moon fish shines on the beat
-      const ph = (sp.t % sp.every) / sp.every, on = ph < 0.18 || ph > 0.92;
-      if (on) { S.ditherCircle(fx, fy, 16, 'magicL', 0.95, 0.6); S.ditherCircle(fx, fy, 8, 'bone', 0.9, 0.6); }
-      S.ellipse(fx, fy + 1, 6 + Math.round(ph * 8), 3 + Math.round(ph * 3), on ? 'gold' : 'moonD');
+      // a ring closes on the fish for every beat: yellow on its way, green inside the window; the fish flashes on the beat
+      let flash = false;
+      for (const b of sp.beatsIn || []) {
+        if (b.hit) continue;
+        if (Math.abs(b.in) <= 0.08) flash = true;
+        if (b.in < -sp.tol || b.in > 0.8) continue;
+        const r = 3 + Math.max(0, b.in) * 22, ink = Math.abs(b.in) <= sp.tol ? 'frogL' : 'gold';
+        S.ellipse(fx, fy + 2, Math.round(r) + 1, Math.max(2, Math.round(r * 0.4) + 1), 'void');
+        S.ellipse(fx, fy + 1, Math.round(r), Math.max(1, Math.round(r * 0.4)), ink);
+      }
+      S.ditherCircle(fx, fy, flash ? 12 : 6, flash ? 'bone' : 'magicL', flash ? 1 : 0.5, 0.6);
     }
   }
 
@@ -9071,7 +9091,7 @@ function createAmbience(eng) {
 
 const SFX_NAMES = ['plop', 'nibble', 'bite', 'catch', 'bad', 'tick', 'stop', 'win', 'coin', 'jerk', 'warn', 'dive', 'ghost', 'snap', 'night',
   'signal', 'splash', 'shimmer', 'snag', 'tired', 'clean', 'release', 'father', 'aim',
-  'thunder', 'meow', 'song', 'event', 'stage', 'clack', 'pearl'];
+  'thunder', 'meow', 'song', 'event', 'stage', 'clack', 'pearl', 'ev-candle', 'ev-snagpull', 'ev-zigzag', 'ev-rhythm', 'ev-net', 'ev-beat'];
 
 const SN = { D2: 38, D3: 50, D4: 62, E3: 52, F4: 65, A4: 69, D5: 74, E5: 76, F5: 77, A5: 81, D6: 86 };
 
@@ -9117,6 +9137,13 @@ function createSfx(eng, music) {
     // shell on shell: a short hollow knock
     clack: () => { str(SN.D4 + 7, 0, 0.07, 0.08, 0); shaker(eng, { bus: 'sfx', t: at(), gain: v(0.025) }); },
     pearl: () => { duck(); [SN.A5, SN.D6].forEach((m, i) => box(m, i * 0.09, 0.08, 0.9)); box(SN.F5, 0.2, 0.05, 1.2); },
+    // each fight event has its own warning, so with time the ear knows it before the eye
+    'ev-candle': () => { duck(); bubble(eng, { bus: 'sfx', t: at(), from: 160, to: 620, dur: 0.5, gain: v(0.11), wet: 0.3 }); box(SN.A5, 0.45, 0.05, 0.2); }, // the water swelling, then up
+    'ev-snagpull': () => { duck(); str(SN.D2, 0, 0.14, 0.7); str(SN.D2 + 1, 0.05, 0.1, 0.7); str(SN.D2, 0.25, 0.1, 0.5); }, // wood groaning low
+    'ev-zigzag': () => { duck(); for (const dt of [0, 0.09]) box(SN.E5, dt, 0.06, 0.08, 0); bubble(eng, { bus: 'sfx', t: at(0.04), from: 900, to: 500, dur: 0.06, gain: v(0.05) }); }, // two quick flicks
+    'ev-rhythm': () => { box(SN.D6, 0, 0.05, 0.8, 0.8); box(SN.A5, 0.18, 0.04, 0.8, 0.8); flute(eng, { bus: 'sfx', midi: SN.D5, t: at(0.05), dur: 0.5, gain: v(0.03) }); }, // a moonlit chime
+    'ev-net': () => { shaker(eng, { bus: 'sfx', t: at(), gain: v(0.06) }); shaker(eng, { bus: 'sfx', t: at(0.12), gain: v(0.04) }); str(SN.A3, 0.05, 0.07, 0.3); }, // the net's mesh swishing
+    'ev-beat': () => box(SN.D6, 0, 0.04, 0.3, 0.4),
   };
   const out = {};
   for (const k of SFX_NAMES) out[k] = () => { if (live()) sounds[k](); };
@@ -9817,15 +9844,15 @@ const canStartEvent=()=>F.fightT>=FEV_C.startQuiet&&F.fightT-F.lastEventEnd>=FEV
 function startEvent(kind){
   const R=F.reel,first=!tut.on&&!(S.seenFx||[]).includes('ev:'+kind);
   const fx=artifactFx(S);
-  F.ev=newFightEvent(kind,{k:eventScale(),add:(fx.specialAdd||0)+(kind==='net'?fx.netWinAdd||0:0)});
+  F.ev=newFightEvent(kind,{k:eventScale(),add:(fx.specialAdd||0)+(kind==='net'?fx.netWinAdd||0:0)+(kind==='snagpull'?fx.snagWinAdd||0:0)});
   F.ev.first=first;F.ev.lastPhase='prep';
   calmReel(R,99);F.holding=false;F.swipe=null;
   if(first){
     if(!Array.isArray(S.seenFx))S.seenFx=[];
     S.seenFx.push('ev:'+kind);save();
     fightSay(FEV_C.hints[kind].replace('{n}',F.fish?F.fish.n:'Риба'),'gold',0);
-  }
-  scene.emit('sp');SFX.warn();
+  }else fightSay(''); // nothing else to read while it comes
+  scene.emit('sp');SFX['ev-'+kind]();
   updateAct(true);
 }
 // Time inside an event: halved on the first meeting.
@@ -9835,10 +9862,12 @@ function tickEvent(dt){
   if(ev.result){ev.resT=(ev.resT||0)+dt;if(ev.resT>=FEV_C.resultHold)endEvent();return}
   const r=stepFightEvent(ev,eventDt(dt));
   if(ev.phase!==ev.lastPhase){
-    if(ev.phase==='act'){SFX.tick();if(ev.kind==='candle')scene.emit('candle-jump')}
-    if(ev.phase==='prep'&&ev.lastPhase==='gap')SFX.warn();
+    if(ev.phase==='act'){if(ev.kind!=='rhythm')SFX.tick();if(ev.kind==='candle'){scene.emit('candle-jump');SFX.splash()}}
+    if(ev.phase==='prep'&&ev.lastPhase==='gap')SFX['ev-zigzag']();
     ev.lastPhase=ev.phase;updateAct(true);
   }
+  // the rhythm's beats are heard as well as seen
+  if(ev.kind==='rhythm'&&ev.phase==='act'&&!ev.result){const s=eventStep(ev),b=Math.floor((ev.t-s.lead)/s.every+1e-6);if(b>=0&&b<s.beats&&b!==ev.lastBeat){ev.lastBeat=b;SFX['ev-beat']()}}
   if(r)eventResult(r);
 }
 // Taps and swipes during an event. Inputs while it prepares are simply not heard.
@@ -9887,7 +9916,17 @@ function eventView(){
   if(ev.kind==='candle'){v.phase=ev.phase==='act'||ev.result==='ok'?'jump':'warn';v.warn=s.prep;v.win=s.act;v.t=ev.phase==='act'?s.prep+ev.t:Math.min(ev.t,s.prep)}
   if(ev.kind==='zigzag'){v.phase=ev.phase==='act'?'dart':'gap';v.dt=ev.t;v.win=s.act}
   if(ev.kind==='net'){const k=ev.phase==='prep'?ev.t/(s.prep+s.act):(s.prep+Math.min(ev.t,s.act))/(s.prep+s.act);v.ring=Math.round(C.ringFrom+(C.ringTo-C.ringFrom)*Math.min(1,k));v.off=0;v.green=ev.phase==='act'&&!ev.result}
-  if(ev.kind==='rhythm'){v.every=s.every;v.t=ev.phase==='act'?ev.t-s.lead+s.every:0;v.beat=ev.phase==='act'}
+  if(ev.kind==='rhythm'){
+    // seconds until each beat, from now: through the prepare phase too, so the first ring is already closing in
+    const toAct=ev.phase==='prep'?s.prep-ev.t:-ev.t;
+    v.tol=s.tol;v.beatsIn=Array.from({length:s.beats},(_,b)=>({in:toAct+s.lead+b*s.every,hit:!!s.hit[b]}));
+  }
+  if(ev.kind==='snagpull'){
+    // the snag rolls in over the prepare phase and the fish pulls the float toward it; a good swipe brings it back
+    v.snagK=ev.phase==='prep'?Math.min(1,ev.t/s.prep):1;
+    const back=ev.result==='ok'?Math.max(0,1-(ev.resT||0)/FEV_C.resultHold):1;
+    v.pull=Math.round(s.side*8*v.snagK*back);
+  }
   return v;
 }
 // Swipes start on the big button and are read by how far the finger has travelled from where it came down.
@@ -9909,9 +9948,11 @@ function fightSay(text,cls='',ms=1600){
 // Keeps the bubble over the fish: above the gauge, inside the scene.
 function placeFightBubble(){
   const el=$('#fbub');if(el.hidden)return;
-  const m=scene.meterAt||{x:scene.lastFloat.x-16,y:scene.lastFloat.y-14,w:33};
+  const f=scene.lastFloat,m=scene.meterAt||{x:f.x-16,y:f.y-14,w:33};
+  // above everything the fish is doing: the gauge, and a pike's jump when the gauge has moved under it
+  const anchor=Math.min(m.y,f.y-(F.ev&&F.ev.kind==='candle'?28:4));
   const box=$('#scene').getBoundingClientRect(),cvb=cv.getBoundingClientRect();
-  const cx=cvb.left-box.left+(m.x+m.w/2)*pxUnit,top=cvb.top-box.top+(m.y-12)*pxUnit;
+  const cx=cvb.left-box.left+(m.x+m.w/2)*pxUnit,top=cvb.top-box.top+(anchor-12)*pxUnit;
   const half=el.offsetWidth/2,x=Math.max(half+4,Math.min(box.width-half-4,cx));
   el.style.left=Math.round(x)+'px';el.style.top=Math.max(4,Math.round(top))+'px';
 }
@@ -9984,7 +10025,13 @@ function hook(){
   // the storm makes every line weaker
   const fx={...artifactFx(S)},sm=eventFx(S).snapMul;if(sm)fx.snapMul*=sm;
   F.state='reel';F.reel=newReel(F.fish,S.lv.rod,S.location,Math.random,fx,{zone:F.zone,father:F.father});
-  F.plan=tut.on?{mids:[],finale:null}:eventPlan(F.fish);F.ev=null;F.finaleDone=false;F.misses={};F.fightT=0;F.lastEventEnd=-1e9;
+  F.plan=tut.on?{mids:[],finale:null}:eventPlan(F.fish);
+  // a snag in the «Корч» zone is one more swipe event, never a fourth one
+  if(F.reel.snagAt!==null&&FEV_C.zoneSnag&&!tut.on){
+    if(F.plan.mids.length<3&&!F.fish.junk&&!F.fish.item){F.plan.mids.push({kind:'snagpull',at:F.reel.snagAt,zone:true});F.plan.mids.sort((a,b)=>a.at-b.at)}
+    F.reel.snagAt=null;
+  }
+  F.ev=null;F.finaleDone=false;F.misses={};F.fightT=0;F.lastEventEnd=-1e9;
   F.finger=true;
   scene.emit('hook');
   if(F.fish.named){say(`${F.fish.n}! Легенда вийшла до тебе.`,'gold',2600);SFX.stage();return}
@@ -10231,13 +10278,13 @@ function loop(now){
     signalsTick(dt);
     scene.advance(eventDt(dt)); // the first meeting with an event runs at half speed, picture and all
     const fighting=F.state==='reel'||F.state==='snag';
-    scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?F.reel.tension:0,prog:F.reel?F.reel.prog:0,lampLv:tackleTier(S.lv.lamp),rodTier:tackleTier(S.lv.rod),fogSee:artifactFx(S).fogSee,moonPhase:S.night.phase,location:S.location,
+    scene.draw({state:F.state==='snag'?'reel':F.state,castT:F.t,tension:F.reel?(F.ev&&F.ev.kind==='candle'?0:F.reel.tension):0,prog:F.reel?F.reel.prog:0,lampLv:tackleTier(S.lv.lamp),rodTier:tackleTier(S.lv.rod),fogSee:artifactFx(S).fogSee,moonPhase:S.night.phase,location:S.location,
       ghost:fighting&&F.reel.ghost>0,spot:F.state==='idle'||F.state==='aim'?(F.state==='aim'?F.aim:aimPx()):F.spot,aim:F.state==='aim'?F.aim:aimPx(),power:F.power,signals:fighting?[]:signals.list,traps:trapView(),event:eventOn(S),
       glow:F.state==='waiting'&&artifactFx(S).biteGlow>0&&F.t>=F.wait-artifactFx(S).biteGlow,
       debug:DEBUG_VIEW.anchors,
       bite:F.state==='bite'?{style:F.biteStyle,stage:F.biteStage,t:F.stageT,lead:F.pre,win:F.win,dir:F.biteDir}:null,
       sp:F.state==='reel'?eventView():null,
-      meter:fighting&&F.reel?{tension:F.reel.tension,zoneC:F.reel.zoneC,half:F.reel.half,zoneNext:F.reel.zoneNext,prog:Math.min(1,F.reel.prog),redHold:F.reel.redHold||0,snapHold:FCU.reel.snapHold,redAt:FCU.quality.redAt,snapAt:FCU.reel.snapAt*artifactFx(S).snapMul,ghost:F.reel.ghost>0,tired:F.reel.tired>0,dive:F.reel.diving>0||F.reel.diveWarn,frozen:!!F.ev}:null,
+      meter:fighting&&F.reel?{tension:F.reel.tension,zoneC:F.reel.zoneC,half:F.reel.half,zoneNext:F.reel.zoneNext,prog:Math.min(1,F.reel.prog),redHold:F.reel.redHold||0,snapHold:FCU.reel.snapHold,redAt:FCU.quality.redAt,snapAt:FCU.reel.snapAt*artifactFx(S).snapMul,ghost:F.reel.ghost>0,tired:F.reel.tired>0,dive:F.reel.diving>0||F.reel.diveWarn,frozen:!!F.ev,below:!!(F.ev&&F.ev.kind==='candle')}:null,
       focus:fighting,
       bang:F.state==='bite'&&F.biteShown&&prefs.biteMark!==false&&!biteHidden()});
     placeFightBubble();
@@ -10247,6 +10294,7 @@ function loop(now){
   if(tab==='market')mkTick(dt);
   if(cardOpen)cardTick(now/1000);
   locPickTick(dt);
+  bestiaryTick();
   eventsTick(now);
   finaleTick(dt);
   tutorialTick();
@@ -10667,7 +10715,7 @@ const secS=v=>`${v.toFixed(2).replace('.',',')} с`;
 const rodZone=l=>{const Z=CONFIG.fishing.reel.zoneHalf;return 2*Math.max(Z.min,Math.min(Z.max,Z.base+Z.perRod*l+Z.perDifficulty*0.5))};
 // What each level changes, as numbers: [label, value at a level].
 const UPG_STATS={
-  rod:[['Безпечна зона',l=>pctS(rodZone(l))],['Час на підсічку',l=>secS(biteWindow(l))],['Вікна подій у боротьбі',l=>'+'+Math.round(CONFIG.fishing.events.perRod*l*100)+'%'],['Вирвати з корча',l=>pctS(snagPullChance(l))]],
+  rod:[['Безпечна зона',l=>pctS(rodZone(l))],['Час на підсічку',l=>secS(biteWindow(l))],['Вікна подій у боротьбі',l=>'+'+Math.round(CONFIG.fishing.events.perRod*l*100)+'%']],
   net:[['Місць у садку',l=>String(Math.max(1,Math.floor(CONFIG.netCapacity.base+CONFIG.netCapacity.perLevel*l)+artifactFx(S).netCapAdd+landingFx(S).netAdd))]],
   lamp:[['Клює швидше на',l=>pctS(CONFIG.fishing.lampSpeedPerLevel*l)]],
 };
@@ -11179,13 +11227,50 @@ function soundSlotResult(out){
 /* ui/meta.js */
 /* ---------- the bestiary ---------- */
 const bestStars=e=>e&&e.q?` <span class="pbest-q">${'<i class="picon ic-star-on"></i>'.repeat(e.q)}</span>`:'';
+// What the bestiary says about a species: how it bites, and what it does once hooked.
+const BITE_DESC={dip:'просто топить поплавок',tilt:'піднімає поплавок і кладе набік',pokes:'кілька тичків-проб, потім повільно топить з колом',snap:'тичок-другий і різко вниз — найшвидша',drag:'веде поплавок убік, лишаючи V-слід',slow:'повільно відводить, потім топить',deep:'топить глибоко, по воді великі кола',glow:'поплавок світиться в три кроки'};
+const FIGHT_DESC={candle:'стрибає свічкою — тапни, коли в повітрі',snagpull:'тягне під корч — свайп від корча',zigzag:'петляє — свайпай за стрілкою',rhythm:'мерехтить — тапай, коли кільце сходиться',jerk:'смикає ривками',trick:'перескакує — зона стрибає',nervous:'нервово сіпається',heavy:'важко хитає зону',steady:'тягне рівно'};
+function behaviourOf(f){
+  const ev=CONFIG.fishing.events,spec=ev.bySpecies[f.n],kinds=spec?[...new Set(spec.kinds)]:[];
+  const fight=kinds.length?kinds.map(k=>FIGHT_DESC[k]).join('; ')+(spec.chance?' (не завжди)':''):[].concat(f.pattern).map(k=>FIGHT_DESC[k]).filter(Boolean).join(', ');
+  const net=ev.netSpecies.includes(f.n)||tierRank(f.t)>=tierRank(ev.netTier)?'; наприкінці — підсак':'';
+  return `<b>Клює:</b> ${BITE_DESC[biteStyleOf(f)]}. <b>У боротьбі:</b> ${fight||'тягне рівно'}${net}.`;
+}
+// A small loop of the float doing what this species does, with the «!» on the true moment.
+const DEMO_W=22,DEMO_H=18,DEMO_LOOP=3.2;
+const demoSurf=new Surface(DEMO_W,DEMO_H);
+function drawBiteDemo(c,style,T){
+  const S=demoSurf,st=CONFIG.fishing.bites.styles[style],t=T%DEMO_LOOP;
+  S.clear('night');S.dither(0,9,DEMO_W,DEMO_H-9,'waterD','tealD',0.5);S.rect(0,9,DEMO_W,1,'waterM');
+  const fakes=Math.round((st.fakes[0]+st.fakes[1])/2),every=st.every||0.4,fakeEnd=0.5+fakes*every,lead=(st.lead[0]+st.lead[1])/2,show=fakeEnd+lead;
+  let x=9,y=3,sink=0,lie=false,glow=0;
+  if(t>0.5&&t<fakeEnd&&((t-0.5)%every)<0.15)sink=1;
+  const inLead=t>=fakeEnd&&t<show,inShow=t>=show,k=inShow?Math.min(1,(t-show)/st.win):0;
+  if(style==='tilt'){if(inLead)y-=t-fakeEnd<lead/2?1:2;lie=inShow}
+  if(style==='slow')x+=Math.round((inLead?(t-fakeEnd)/lead:inShow?1:0)*4);
+  if(style==='drag'&&inShow)x+=Math.round(k*5);
+  if(style==='glow')glow=inShow?4:inLead?1+Math.min(2,Math.floor(3*(t-fakeEnd)/lead)):0;
+  if(inShow&&!lie)sink=({dip:3,pokes:1+Math.floor(k*4),snap:5,drag:1,slow:3,deep:6,glow:0})[style]??3;
+  if(glow)S.ditherCircle(x+1,y+4,glow*2,glow===4?'bone':'magicL',0.4+glow*0.15,0.6);
+  if(inShow&&(style==='deep'||style==='pokes'||style==='snap'||style==='slow'||style==='dip'))S.ellipse(x+1,10,2+Math.floor(k*6),1+Math.floor(k*2),'shimmer');
+  if(lie){S.drawOutline(SPRITES.float_lie,0,x-2,y+4,'void');S.drawSprite(SPRITES.float_lie,0,x-2,y+4)}
+  else{const fs=floatSunk(Math.min(6,sink));S.drawOutline(fs,0,x,y,glow===4?'gold':'void');S.drawSprite(fs,0,x,y)}
+  if(inShow&&Math.floor(T*6)%3!==2){S.drawSilhouette(SPRITES.icon_bang,0,DEMO_W-4,1,'gold')}
+  S.present(c.getContext('2d'));
+}
+function bestiaryTick(){
+  if($('#bestiary').hidden)return;
+  const T=performance.now()/1000;
+  for(const c of $('#bestlist').querySelectorAll('canvas[data-demo]'))drawBiteDemo(c,c.dataset.demo,T);
+}
 function renderBestiary(){
   const places=Object.entries(CONFIG.locations).map(([k,l])=>{
     const p=collectionProgress(S,k),got=S.rewarded.includes(k);
     const rows=l.fish.map(n=>{
       const known=isKnown(S,n),e=S.bestiary[n],f=fishByName(n);
       const icon=known?fishIconClass(n):silhouetteClass(n);
-      return `<div class="pbest${known?'':' unknown'}"><i class="picon ${icon}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}${bestStars(e)}</span><span class="pbest-kg">${e.best.toFixed(2).replace('.',',')} кг</span>`:`<span class="pbest-tier">${TIERS[f.t].label}</span>`}</div>`;
+      const how=known&&!f.junk&&!f.item?`<div class="pbest-how"><canvas data-demo="${biteStyleOf(f)}"></canvas><span>${behaviourOf(f)}</span></div>`:'';
+      return `<div class="pbest${known?'':' unknown'}"><i class="picon ${icon}"></i><span class="pbest-name">${known?n:'???'}</span>${known?`<span class="pbest-num">×${e.count}${bestStars(e)}</span><span class="pbest-kg">${e.best.toFixed(2).replace('.',',')} кг</span>`:`<span class="pbest-tier">${TIERS[f.t].label}</span>`}${how}</div>`;
     }).join('');
     return `<div class="pframe ${got?'gold ':''}ppanel"><h3>${l.name}</h3><p class="psub">${p.have}/${p.all} · ${got?'нагороду отримано':`за всіх ${fmt(CONFIG.collection.rewards[k])} монет`}</p><div class="pbests">${rows}</div></div>`;
   }).join('');
@@ -11203,7 +11288,7 @@ renderReact();
 function renderBang(){for(const b of $('#setbang').querySelectorAll('button'))b.classList.toggle('ghost',(prefs.biteMark===false?'off':'on')!==b.dataset.b)}
 $('#setbang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;prefs.biteMark=b.dataset.b==='on';savePrefs();renderBang()});
 renderBang();
-$('#bestopen').addEventListener('click',()=>{renderBestiary();$('#bestiary').hidden=false});
+$('#bestopen').addEventListener('click',()=>{renderBestiary();$('#bestiary').hidden=false;for(const c of $('#bestlist').querySelectorAll('canvas[data-demo]')){c.width=DEMO_W;c.height=DEMO_H;c.style.width=DEMO_W*pxUnit+'px';c.style.height=DEMO_H*pxUnit+'px'}});
 $('#bestclose').addEventListener('click',()=>{$('#bestiary').hidden=true});
 
 /* ---------- the finale ---------- */
