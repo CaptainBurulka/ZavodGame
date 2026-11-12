@@ -15,14 +15,17 @@ body{overflow:hidden}
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .labrow{display:grid;gap:var(--px);flex:none}
 #fishes{grid-template-columns:repeat(4,1fr)}
-#fishes button,#trophy,.labsmall{height:calc(var(--px)*14);padding:0 var(--px);font-family:var(--f-text);font-size:20px;line-height:1;color:var(--fog);background:var(--night);border:0}
+#fishes button,#trophy,.labsmall{height:calc(var(--px)*13);padding:0 var(--px);font-family:var(--f-text);font-size:20px;line-height:1;color:var(--fog);background:var(--night);border:0}
 #fishes button.on,#trophy.on{color:var(--void);background:var(--moonS)}
-#scene{flex:none;height:44vh;min-height:230px}
-#status{flex:none;min-height:calc(var(--px)*16);font-size:20px;line-height:1.1;color:var(--moonS);text-align:center}
+#fishes button:disabled,#trophy:disabled,.labsmall:disabled{opacity:.5}
+/* the scene takes every touch: no page scroll, no zoom, no long-press menu */
+#scene{flex:none;touch-action:none;background:var(--void)}
+#cv{touch-action:none}
+#status{flex:none;min-height:calc(var(--px)*15);font-size:20px;line-height:1.1;color:var(--moonS);text-align:center}
 #status b{color:var(--gold);font-weight:400}
 #status.bad{color:var(--red)}
 #status.good{color:var(--frogL)}
-#act{flex:none;min-height:calc(var(--px)*26);margin:0 var(--px)}
+#hook{flex:none;min-height:calc(var(--px)*18);margin:0 var(--px)}
 .labline{grid-template-columns:1fr auto;align-items:center;font-size:20px;color:var(--bone)}
 .labline b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--gold)}
 .labline b.low{color:var(--red)}
@@ -30,12 +33,13 @@ body{overflow:hidden}
 .labtune{display:grid;grid-template-columns:1fr calc(var(--px)*22);align-items:center;gap:0 calc(var(--px)*2);font-size:20px;line-height:1;color:var(--bone)}
 .labtune span{grid-column:1/-1}
 .labtune b{font-family:var(--f-num);font-weight:400;font-size:13px;text-align:right;color:var(--gold)}
-.labstats{width:100%;border-collapse:collapse;font-size:20px;line-height:1.2;color:var(--bone)}
-.labstats th{font-weight:400;color:var(--fog);text-align:right;padding:0 var(--px)}
-.labstats td{text-align:right;padding:0 var(--px)}
+.labstats{width:100%;border-collapse:collapse;font-size:19px;line-height:1.2;color:var(--bone)}
+.labstats th{font-weight:400;color:var(--fog);text-align:right;padding:0 2px}
+.labstats td{text-align:right;padding:0 2px}
 .labstats td:first-child,.labstats th:first-child{text-align:left}
 .labstats tr.sum td{color:var(--gold)}
 .labnote{margin:0;font-size:19px;line-height:1.1;color:var(--fog)}
+.labnote b{font-weight:400;color:var(--moonS)}
 #pop{position:absolute;z-index:4}
 </style>
 </head>
@@ -44,12 +48,18 @@ body{overflow:hidden}
   <div class="labrow" id="fishes"></div>
   <div class="labrow" style="grid-template-columns:1fr 1fr">
     <button id="trophy">Трофей: ні</button>
-    <button id="soundbtn" class="labsmall">Звук: увімкни тапом</button>
+    <button id="soundbtn" class="labsmall">Звук: увімкни дотиком</button>
   </div>
   <div class="scene" id="scene"><canvas id="cv" class="pcanvas"></canvas><div id="pop" class="pbubble pfbub" hidden></div></div>
-  <div id="status">Обери рибу й тисни «Почати бій».</div>
-  <button id="act" class="pbtn mainact">Почати бій</button>
-  <div class="labrow labline"><span>Волосінь: <b id="linepct">100%</b> · <span id="lineboats">нова</span></span><button id="retie" class="labsmall">Перевʼязати</button></div>
+  <div id="status">Тисни «Підсічка» або торкнись води.</div>
+  <div class="labrow" style="grid-template-columns:2fr 1fr">
+    <button id="hook" class="pbtn mainact">Підсічка</button>
+    <button id="retie" class="labsmall">Перевʼязати</button>
+  </div>
+  <div class="labrow labline"><span>Волосінь: <b id="linepct">100%</b> · <span id="linefights">нова</span></span></div>
+
+  <h3 class="labhead">Як грати</h3>
+  <p class="labnote"><b>Котушка</b> (унизу праворуч): крути пальцем по колу або флікни — крутиться сама й поволі зупиняється. Що швидше, то швидше підтягуєш. <b>Гальмо</b>: торкнись котушки й тримай. <b>Вудка</b>: веди пальцем уліво-вправо по воді. Риба блиснула й завмерла — зараз рвоне: гальмуй. Загальмуєш у першу мить ривка — <b>контр</b>. Нахиляй вудку проти руху риби — вона втомлюється й не дійде до очерету чи корча.</p>
 
   <h3 class="labhead">Статистика</h3>
   <table class="labstats" id="stats"></table>
@@ -57,9 +67,6 @@ body{overflow:hidden}
 
   <h3 class="labhead">Повзунки</h3>
   <div id="tunes"></div>
-
-  <h3 class="labhead">Як грати</h3>
-  <p class="labnote">Тримай кнопку — тягнеш. Біля риби дві смужки: зелена — прогрес, світла — міцність волосіні. Спокійна вода — риба втомилась, тягни. Блиснула — зараз рвоне. Вода кипить — рветься: тягнеш далі — волосінь швидко зношується. Відпусти в першу мить ривка — контр: риба оглушена.</p>
 </div>
 <script>
 (()=>{
@@ -67,123 +74,389 @@ body{overflow:hidden}
 /*@@ENGINE@@*/
 
 /* ================= lab/config.js ================= */
-// «Ривок і перепочинок». One button: held, you pull. The fish is either TIRED or SURGING; a glint warns of every surge.
-// All numbers of the mechanic live here. Rates are per second; progress and line strength run 0..1.
+// First-person fight. The fish lives in water coordinates: x across (-1 left bank .. 1 right bank),
+// d away from you (0 at your feet .. 1 at the far edge). Every number of the mechanic is here; rates are per second.
 const LAB = {
-  startProgress: 0.2,
-  intro: 0.8, // calm seconds before the fish's first rest is counted
-  // progress per second while the button is held
-  pull: { tired: 0.09, surge: 0.03, stun: 0.22 },
-  // progress per second while it is not (surge is multiplied by the fish's force)
-  drift: { tired: -0.02, surge: -0.05 },
-  wear: 0.4, // line strength lost per second of pulling into a surge of force 1
-  // let go within `window` seconds of the surge's start, having held into it: the fish is stunned
-  counter: { window: 0.15, stun: 1.5, bonus: 0.1 },
-  // rest: seconds of calm between surges; tell: the glint before a surge; surge: its length; force: how hard it is.
-  // series: surges in a row (gap seconds apart, each with its own tell); fake: share of tells with no surge behind them.
-  fish: {
-    roach: { name: 'Плітка', sprite: 'Плітка', rest: [2.6, 3.6], tell: 0.9, surge: [0.7, 1.0], force: 0.6 },
-    perch: { name: 'Окунь', sprite: 'Окунь', rest: [1.3, 1.4], tell: 0.45, surge: [0.5, 0.55], force: 0.8 },
-    pike: { name: 'Щука', sprite: 'Щука', rest: [3.2, 4.4], tell: 0.3, surge: [0.55, 0.7], force: 1.1, series: 3, gap: 0.5 },
-    zander: { name: 'Судак', sprite: 'Судак', rest: [2.2, 3.4], tell: 0.5, surge: [0.8, 1.1], force: 1.0, fake: 0.35, fakeRest: [0.7, 1.3] },
+  reel: {
+    maxW: 13, // the reel's top speed, radians per second
+    gain: 1.15, // a finger going round the reel at w drives it toward w × gain
+    add: 0.45, // a flick on a reel already turning adds this share of the finger's speed on top
+    tau: 2.1, // seconds: how fast a free reel loses speed (exponential part)
+    fric: 0.7, // and the steady part, rad/s²: from full speed it stops in about 4 s
+    idle: 0.5, // below this the reel counts as stopped
+    still: 8, // CSS px: a touch on the reel that moves less than this is the brake
+    brakeHold: 0.08, // seconds a still touch takes to count as the brake (it then counts from the touch itself)
+    clicks: 7, // ratchet clicks per turn
   },
-  // the same fish as a trophy: harder and more frequent surges, slower to bring in
-  trophy: { force: 1.3, rest: 0.85, pull: 0.95 },
-  // the sliders: [label, min, max, step, default]; all but the counter window are multipliers
+  reelIn: 0.085, // distance per second with the reel at top speed and a calm fish
+  start: { d: 0.62, x: 0.35 },
+  catchAt: 0.05,
+  wear: 0.65, // line strength lost per second when the reel turns at full speed into a surge of force 1
+  wearFloor: 0.35, // even a slow reel wears the line this share as fast
+  away: { braked: 0.08, turning: 0.035 }, // distance a surge of force 1 takes back, reel stopped / turning
+  counter: { window: 0.2, early: 0.05, stun: 1.5, reelMul: 2 },
+  // the rod: steps each side of the middle; against the fish it tires and is held back, with it the line goes slack
+  tilt: { steps: 2, tire: 0.4, recover: 0.05, block: 0.9, slack: 0.04, slackReel: 0.6 },
+  fatigue: { force: 0.6, rest: 0.8, swim: 0.5 }, // how much a fully tired fish loses
+  // obstacles at the water's edges: the fish that reaches one is tangled
+  zones: [{ name: 'очерет', side: -1, x: 0.8, d: [0.12, 0.75] }, { name: 'корч', side: 1, x: 0.78, d: [0.2, 0.82] }],
+  // swim: sideways speed when calm; wander: seconds between new headings; rest: calm seconds between surges;
+  // tell: the freeze and glint before a surge; surge: its length; force: how hard; dash: sideways speed in a surge;
+  // aim: where surges go (null — anywhere, 'near' — the nearest obstacle, 'snag' — the snag); deep: drift away when calm;
+  // drift: steady sideways pull toward the aim when calm
+  fish: {
+    roach: { name: 'Плітка', sprite: 'Плітка', size: 0.7, swim: 0.22, wander: [1.4, 2.6], rest: [5, 8], tell: 0.8, surge: [0.4, 0.55], force: 0.3, dash: 0.5, aim: null, deep: 0, drift: 0 },
+    perch: { name: 'Окунь', sprite: 'Окунь', size: 0.75, swim: 0.32, wander: [0.5, 1], rest: [1.2, 2], tell: 0.35, surge: [0.28, 0.4], force: 0.55, dash: 0.9, aim: null, deep: 0, drift: 0 },
+    pike: { name: 'Щука', sprite: 'Щука', size: 1.1, swim: 0.06, wander: [3, 5], rest: [3.5, 5.5], tell: 0.25, surge: [0.7, 0.9], force: 1, dash: 1.5, aim: 'near', deep: 0, drift: 0 },
+    catfish: { name: 'Сом', sprite: 'Сом', size: 1.5, swim: 0.05, wander: [2, 4], rest: [6, 9], tell: 0.5, surge: [1, 1.3], force: 1.6, dash: 0.28, aim: 'snag', deep: 0.006, drift: 0.012 },
+  },
+  trophy: { force: 1.35, rest: 0.75, swim: 1.2, size: 1.3 },
+  // the sliders: [label, min, max, step, default]; all multipliers except the counter window
   tune: {
-    tell: ['Тривалість ознаки', 0.4, 2, 0.05, 1],
-    force: ['Сила ривка', 0.4, 2, 0.05, 1],
+    inertia: ['Інерція котушки', 0.4, 2.5, 0.05, 1],
+    speed: ['Макс. швидкість котушки', 0.5, 2, 0.05, 1],
+    force: ['Сила ривків', 0.3, 2.5, 0.05, 1],
+    freq: ['Частота ривків', 0.4, 2.5, 0.05, 1],
+    tell: ['Тривалість ознаки', 0.4, 2.5, 0.05, 1],
+    window: ['Вікно контру, мс', 60, 450, 10, 200],
     wear: ['Втрата міцності', 0.2, 2.5, 0.05, 1],
-    window: ['Вікно контру, мс', 50, 400, 10, 150],
-    speed: ['Швидкість прогресу', 0.4, 2, 0.05, 1],
+    tilt: ['Ефект нахилу вудки', 0, 2.5, 0.05, 1],
   },
 };
 
 /* ================= lab/fight.js ================= */
-// The mechanic itself: no DOM, no drawing. The page feeds it time and the button; the scene reads its state.
-const tuneDefaults = () => Object.fromEntries(Object.entries(LAB.tune).map(([k, v]) => [k, v[4]]));
-const labPick = (rng, [a, b]) => a + rng() * (b - a);
+// The mechanic: no DOM, no drawing. The page drives the reel and the rod; the view reads the state.
+const labTuneDefaults = () => Object.fromEntries(Object.entries(LAB.tune).map(([k, v]) => [k, v[4]]));
+const fpRange = (rng, [a, b]) => a + rng() * (b - a);
+const fpSign = v => (v > 0 ? 1 : v < 0 ? -1 : 0);
 
-function newLabFight(key, trophy, tune, rng = Math.random) {
-  const F = LAB.fish[key], T = trophy ? LAB.trophy : { force: 1, rest: 1, pull: 1 };
-  const f = {
+function newFpFight(key, trophy, tune, rng = Math.random) {
+  const F = LAB.fish[key], T = trophy ? LAB.trophy : { force: 1, rest: 1, swim: 1, size: 1 };
+  const x0 = (rng() * 2 - 1) * LAB.start.x;
+  return {
     key, trophy, F, tune, rng,
-    force: F.force * T.force * tune.force, restMul: T.rest, pullMul: T.pull * tune.speed,
-    phase: 'tired', t: 0, len: LAB.intro + labPick(rng, F.rest) * T.rest,
-    prog: LAB.startProgress, time: 0, seriesLeft: 0, held: false, surgeWear: 0,
-    counters: 0, late: null, events: [],
+    force: F.force * T.force * tune.force, restMul: T.rest / tune.freq, swimMul: T.swim, size: F.size * T.size,
+    x: x0, d: LAB.start.d, vx: 0, tx: x0, wanderT: 0, dir: 1,
+    phase: 'calm', t: 0, len: fpRange(rng, F.rest) * T.rest / tune.freq,
+    fatigue: 0, time: 0, counters: 0, surgeAt: -9, earlyBrake: null,
+    reel: { w: 0, a: 0, brake: false }, tilt: 0,
+    pending: false, pendingWear: 0, strengthBack: 0, wearing: false, tension: 0, slack: 0,
+    events: [], result: null,
   };
-  return f;
 }
-const labWindow = f => f.tune.window / 1000;
+const fpWindow = f => f.tune.window / 1000;
+const fpMaxW = f => LAB.reel.maxW * f.tune.speed;
 
-// One tick. line is { strength }. Returns 'play', 'catch', 'snap' or 'lost'.
-function stepLabFight(f, line, dt, holding) {
-  const F = f.F, rng = f.rng;
+// A finger going round the reel at fingerW rad/s (either way). The wheel is pushed up toward it, never slowed.
+function driveReel(f, fingerW, dt) {
+  const R = LAB.reel, max = fpMaxW(f), fw = Math.abs(fingerW) * R.gain;
+  f.reel.brake = false;
+  const target = Math.min(max, Math.max(fw, f.reel.w + fw * R.add));
+  if (target > f.reel.w) f.reel.w += (target - f.reel.w) * Math.min(1, 14 * dt);
+}
+
+// A still touch on the reel, counted from `at` (fight seconds). In the first instant of a surge it is a counter.
+function brakeReel(f, at) {
+  const C = LAB.counter;
+  f.reel.brake = true; f.reel.w = 0;
+  // what the line lost while the touch was still being read is given back
+  f.strengthBack = f.pendingWear; f.pendingWear = 0; f.pending = false;
+  if (f.phase === 'surge' && at >= f.surgeAt - C.early && at <= f.surgeAt + fpWindow(f)) return stunFish(f);
+  if (f.phase === 'tell' && f.len - f.t <= C.early) f.earlyBrake = at; // a hair early: counted when the surge comes
+  return null;
+}
+function releaseBrake(f) { f.reel.brake = false; }
+function stunFish(f) {
+  f.phase = 'stun'; f.t = 0; f.len = LAB.counter.stun; f.vx = 0; f.counters++;
+  f.events.push('counter');
+  return 'counter';
+}
+
+// One tick. line: { strength }. Sets f.result to 'catch', 'snap', 'tangle' or 'escape' when it ends.
+function stepFpFight(f, line, dt) {
+  const F = f.F, rng = f.rng, R = LAB.reel, T = LAB.tilt, Fa = LAB.fatigue;
   f.events.length = 0;
-  f.time += dt;
-  f.t += dt;
+  if (f.result) return f.result;
+  if (f.strengthBack) { line.strength = Math.min(1, line.strength + f.strengthBack); f.strengthBack = 0; }
+  f.time += dt; f.t += dt;
+  // the reel: a free wheel slows down, a held one stands
+  const rl = f.reel;
+  if (rl.brake) rl.w = 0;
+  else rl.w = Math.max(0, rl.w - (rl.w / (R.tau * f.tune.inertia) + R.fric / f.tune.inertia) * dt);
+  rl.a += rl.w * dt;
+  const turning = rl.w > R.idle, speed = Math.min(1, rl.w / fpMaxW(f));
   // the fish's own clock
   if (f.t >= f.len) {
     f.t = 0;
-    if (f.phase === 'tired') { f.phase = 'tell'; f.len = F.tell * f.tune.tell; f.fake = !!F.fake && !f.seriesLeft && rng() < F.fake; f.events.push('tell'); }
+    if (f.phase === 'calm') { f.phase = 'tell'; f.len = F.tell * f.tune.tell; f.vx = 0; f.events.push('tell'); }
     else if (f.phase === 'tell') {
-      if (f.fake) { f.phase = 'tired'; f.len = labPick(rng, F.fakeRest); f.events.push('fake'); }
-      else {
-        f.phase = 'surge'; f.len = labPick(rng, F.surge); f.held = holding; f.surgeWear = 0;
-        if (!f.seriesLeft && F.series) f.seriesLeft = F.series;
-        if (f.seriesLeft) f.seriesLeft--;
-        f.events.push('surge');
-      }
-    } else if (f.phase === 'surge') { f.phase = 'tired'; f.len = f.seriesLeft ? F.gap : labPick(rng, F.rest) * f.restMul; f.events.push('calm'); }
-    else if (f.phase === 'stun') { f.phase = 'tired'; f.len = labPick(rng, F.rest) * f.restMul; f.events.push('stun-end'); }
+      f.phase = 'surge'; f.len = fpRange(rng, F.surge); f.surgeAt = f.time;
+      const near = f.x >= 0 ? 1 : -1;
+      f.dir = F.aim === 'snag' ? 1 : F.aim === 'near' ? near : rng() < 0.5 ? -1 : 1;
+      f.events.push('surge');
+      if (f.earlyBrake !== null && rl.brake) { f.earlyBrake = null; stunFish(f); }
+      f.earlyBrake = null;
+    } else {
+      f.events.push(f.phase === 'stun' ? 'stun-end' : 'calm');
+      f.phase = 'calm'; f.len = fpRange(rng, F.rest) * f.restMul * (1 + Fa.rest * f.fatigue);
+    }
   }
-  // what the button does now
-  const P = LAB.pull, D = LAB.drift;
+  // where the fish swims
+  const tired = 1 - Fa.swim * f.fatigue;
+  if (f.phase === 'calm') {
+    f.wanderT -= dt;
+    if (f.wanderT <= 0) {
+      f.wanderT = fpRange(rng, F.wander);
+      f.tx = F.aim === 'snag' ? Math.min(0.9, f.x + 0.2 + rng() * 0.3) : (rng() * 2 - 1) * 0.7;
+    }
+    f.vx = fpSign(f.tx - f.x) * Math.min(Math.abs(f.tx - f.x) * 3, F.swim * f.swimMul * tired) + (F.drift || 0);
+  } else if (f.phase === 'surge') f.vx = f.dir * F.dash * f.swimMul * tired * Math.min(1.5, f.force);
+  else f.vx = 0;
+  // the rod: against the fish's way it tires and holds it back; with it the line goes slack
+  const lean = f.tilt / T.steps;
+  let against = Math.abs(f.vx) > 0.03 ? -fpSign(f.vx) * lean : 0;
+  against *= f.tune.tilt;
+  if (against > 0) { f.fatigue = Math.min(1, f.fatigue + T.tire * against * dt); f.vx *= 1 - Math.min(0.95, T.block * against); }
+  else f.fatigue = Math.max(0, f.fatigue - T.recover * dt);
+  f.slack = against < 0 ? Math.min(1, -against) : 0;
+  f.x = Math.max(-1, Math.min(1, f.x + f.vx * dt));
+  // the distance
+  let dd = 0;
+  const force = f.force * (1 - Fa.force * f.fatigue);
+  f.wearing = false;
   if (f.phase === 'surge') {
-    if (holding) {
-      const w = LAB.wear * f.force * f.tune.wear * dt;
-      line.strength -= w; f.surgeWear += w;
-      f.prog += P.surge * f.pullMul * dt;
-      f.events.push('wear');
-    } else f.prog += D.surge * f.force * dt;
-  } else if (f.phase === 'stun') { if (holding) f.prog += P.stun * f.pullMul * dt; }
-  else f.prog += (holding ? P.tired * f.pullMul : D.tired) * dt;
-  if (line.strength <= 0) { line.strength = 0; return 'snap'; }
-  if (f.prog >= 1) { f.prog = 1; return 'catch'; }
-  if (f.prog <= 0) { f.prog = 0; return 'lost'; }
-  return 'play';
+    const A = LAB.away;
+    dd += (turning ? A.turning : A.braked) * force / Math.max(0.2, f.len) * dt;
+    if (turning) {
+      const w = LAB.wear * f.tune.wear * force * (LAB.wearFloor + (1 - LAB.wearFloor) * speed) * dt;
+      line.strength -= w; f.wearing = true;
+      if (f.pending) f.pendingWear += w;
+    }
+  } else {
+    const mul = f.phase === 'stun' ? LAB.counter.reelMul : 1;
+    dd -= LAB.reelIn * speed * mul * (1 - T.slackReel * f.slack) * dt;
+    if (f.phase === 'calm') dd += (F.deep || 0) * dt;
+  }
+  dd += T.slack * f.slack * dt;
+  f.d = Math.max(0, f.d + dd);
+  // how hard the line pulls, for the picture
+  f.tension = f.phase === 'surge' ? (turning ? 1 : 0.55) : turning ? 0.35 + 0.3 * speed : f.slack > 0 ? 0 : 0.12;
+  // the end
+  if (line.strength <= 0) { line.strength = 0; f.result = 'snap'; }
+  else if (f.d <= LAB.catchAt) f.result = 'catch';
+  else if (f.d >= 1) f.result = 'escape';
+  else for (const z of LAB.zones) if (fpSign(f.x) === z.side && Math.abs(f.x) >= z.x && f.d >= z.d[0] && f.d <= z.d[1]) { f.result = 'tangle'; f.zone = z.name; }
+  return f.result;
 }
 
-// The button came up. In the first instant of a surge it was held into, that is a counter.
-// Returns 'counter', 'late' (in a surge, past the window) or null.
-function releaseLabFight(f, line) {
-  if (f.phase !== 'surge' || !f.held) return null;
-  f.held = false;
-  f.late = f.t;
-  if (f.t > labWindow(f)) return 'late';
-  // a counter: the wear of this instant is given back, the fish is stunned and loses ground
-  line.strength = Math.min(1, line.strength + f.surgeWear);
-  f.phase = 'stun'; f.t = 0; f.len = LAB.counter.stun; f.seriesLeft = 0;
-  f.prog = Math.min(0.999, f.prog + LAB.counter.bonus);
-  f.counters++;
-  return 'counter';
+/* ================= lab/view.js ================= */
+// The first-person picture: horizon, water, the fish's shadow, the line, the rod in your hand and the reel under your thumb.
+class FpView {
+  constructor(w, h) {
+    this.w = w; this.h = h;
+    this.top = Math.round(h * 0.13); // the water starts here
+    this.bot = h - 4; // and reaches your feet here
+    this.R = Math.round(w * 0.175); // the reel: 35% of the width across
+    this.rc = { x: w - this.R - 3, y: h - this.R - 3 };
+    this.bg = new Surface(w, h); this.paint();
+    this.dashes = seededList(18, 5, r => ({ d: 0.05 + r() * 0.9, x: r() * 2 - 1, len: 2 + Math.floor(r() * 4), v: 0.02 + r() * 0.05 }));
+    this.drops = []; this.rings = []; this.fishAt = { x: w / 2, y: h / 2 }; this.face = 1;
+  }
+  // water coordinates → screen
+  sy(d) { return Math.round(this.bot - (this.bot - this.top) * Math.pow(Math.max(0, Math.min(1, d)), 0.75)); }
+  half(d) { return (this.w / 2 - 2) * (1 - 0.45 * d); }
+  sx(x, d) { return Math.round(this.w / 2 + x * this.half(d)); }
+  scale(d) { return 1.5 - 1.15 * Math.min(1, d); }
+  paint() {
+    const S = this.bg, { w, h, top } = this;
+    for (let y = 0; y < top; y++) { const k = y / top; S.dither(0, y, w, 1, k < 0.6 ? 'void' : 'night', k < 0.6 ? 'night' : 'night2', k < 0.6 ? k / 0.6 : (k - 0.6) / 0.4); }
+    // the far bank: a treeline on the horizon
+    for (let x = -4, i = 0; x < w; x += 15, i++) { const tr = SPRITES[i % 3 === 1 ? 'tree_b' : 'tree_a']; S.drawSprite(tr, 0, x, top - tr.h + 1); }
+    for (let y = 0; y < h - top; y++) {
+      const k = y / (h - top);
+      if (k < 0.35) S.dither(0, top + y, w, 1, 'waterM', 'waterD', k / 0.35);
+      else if (k < 0.7) S.dither(0, top + y, w, 1, 'waterD', 'tealD', (k - 0.35) / 0.35);
+      else S.dither(0, top + y, w, 1, 'tealD', 'night', (k - 0.7) / 0.3);
+    }
+    for (let y = 0; y < 5; y++) S.dither(0, top + 1 + y, w, 1, null, 'void', 0.6 - y * 0.12);
+    S.rect(0, top, w, 1, 'waterL');
+    S.drawSprite(SPRITES.moon_4, 0, Math.round(w * 0.7), Math.max(0, top - 18));
+    // the obstacles at the edges: reeds on the left, a snag on the right, drawn where their zones are
+    this.obst = new Surface(w, h);
+    const O = this.obst;
+    for (const z of LAB.zones) {
+      for (let d = z.d[1]; d >= z.d[0]; d -= 0.035) {
+        const y = this.sy(d), sc = this.scale(d), x = this.sx(z.side * (z.x + 0.1), d);
+        if (z.side < 0) {
+          for (let k = 0; k < 3; k++) {
+            const bx = x - 4 + k * 3 + Math.round(Math.sin(d * 40 + k) * 2), hgt = Math.round((7 + k * 3) * sc);
+            O.line(bx, y, bx + (k - 1), y - hgt, k === 1 ? 'reed' : 'reedD');
+            if (k === 1) O.rect(bx, y - hgt - 2, 1, 3, 'wood');
+          }
+        }
+      }
+      // the snag: a few old branches sticking out of the water, bigger the nearer they are
+      if (z.side > 0) for (const d of [0.74, 0.5, 0.28]) {
+        const y = this.sy(d), sc = this.scale(d), x = this.sx(z.x + 0.08, d), len = Math.max(4, Math.round(11 * sc));
+        O.line(x - 1, y + 1, x + len - 1, y - len + 1, 'void');
+        O.line(x, y, x + len, y - len, 'wood'); O.line(x + 1, y, x + len + 1, y - len, 'woodL');
+        O.line(x + (len >> 1), y - (len >> 1), x - (len >> 2), y - len, 'wood');
+        O.line(x + (len >> 1) + 2, y - (len >> 1) - 1, x + len + 2, y - (len >> 1) - 2, 'wood');
+        O.px(x + len + 1, y - len - 1, 'moonD');
+        O.rect(x - 2, y + 1, len >> 1, 1, 'shimmer'); // the water round its foot
+      }
+      // a dotted line on the water where the danger starts
+      for (let d = z.d[0]; d <= z.d[1]; d += 0.04) O.px(this.sx(z.side * z.x, d), this.sy(d), z.side < 0 ? 'reed' : 'woodL');
+    }
+  }
+
+  draw(S, f, line, ui, t) {
+    S.copyFrom(this.bg);
+    // ripples drifting past
+    for (const dsh of this.dashes) {
+      const x = this.sx(((dsh.x + t * dsh.v + 1) % 2) - 1, dsh.d), y = this.sy(dsh.d), len = Math.max(1, Math.round(dsh.len * this.scale(dsh.d)));
+      S.rect(x, y, len, 1, dsh.d > 0.5 ? 'waterL' : 'waterM');
+    }
+    S.blit(this.obst, 0, 0);
+    const fx = this.sx(f.x, f.d), fy = this.sy(f.d), sc = this.scale(f.d) * f.size;
+    this.fishAt = { x: fx, y: fy };
+    if (f.size > 0.01) this.drawFish(S, f, fx, fy, sc, t);
+    for (const r of this.rings) S.ellipse(r.x, r.y, Math.round(r.r), Math.max(1, Math.round(r.r / 3)), r.r / r.max < 0.5 ? 'bone' : 'shimmer');
+    for (const p of this.drops) S.px(p.x, p.y, p.life > 0.25 ? 'bone' : 'shimmer');
+    const tip = this.drawRod(S, f, fx, fy, t);
+    if (f.size > 0.01) this.drawLine(S, f, line, tip, fx, fy, t);
+    this.drawHand(S);
+    this.drawReel(S, f, line, ui, t);
+  }
+
+  drawFish(S, f, fx, fy, sc, t) {
+    const L = Math.max(4, Math.round(9 * sc)), H = Math.max(2, Math.round(3 * sc));
+    const face = f.vx < -0.01 ? -1 : f.vx > 0.01 ? 1 : this.face;
+    this.face = face;
+    const surge = f.phase === 'surge', tell = f.phase === 'tell', stun = f.phase === 'stun';
+    const wag = surge ? (Math.floor(t * 20) % 2 ? 1 : -1) : stun || tell ? 0 : Math.round(Math.sin(t * 5));
+    // the wake behind a fish in a rush
+    if (surge) for (let i = 1; i <= 3; i++) { const bx = fx - face * (L + i * 3); S.line(bx, fy - i, bx - face * 3, fy - i - 1, 'shimmer'); S.line(bx, fy + i, bx - face * 3, fy + i + 1, 'shimmer'); }
+    // the shadow: a body and a tail, darker the closer it is
+    const ink = stun ? 'moonD' : 'void', depth = stun ? 0.6 : 0.65 + 0.3 * (1 - f.d);
+    S.ditherCircle(fx, fy, L, ink, depth * 1.6, H / L);
+    const tx = fx - face * L, ty = fy + wag, tl = Math.max(2, Math.round(3 * sc)), th = Math.max(1, Math.round(2 * sc));
+    S.line(tx, ty, tx - face * tl, ty - th, ink); S.line(tx, ty, tx - face * tl, ty + th, ink);
+    // the glint before a surge: it stops dead and flashes
+    if (tell && Math.floor(t * 14) % 2 === 0) {
+      const gx = fx + face * Math.round(L * 0.6), gy = fy - H - 2;
+      S.rect(fx - Math.round(L / 2), fy - 1, L, 1, 'moon');
+      S.px(gx, gy, 'gold'); S.px(gx, gy - 1, 'moon'); S.px(gx - 1, gy, 'moon'); S.px(gx + 1, gy, 'moon'); S.px(gx, gy + 1, 'moon');
+    }
+    // stunned: a pale glimmer and little stars
+    if (stun) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; S.px(fx + Math.cos(a) * (L + 2), fy - H - 2 + Math.sin(a) * 2, i % 2 ? 'gold' : 'moon'); }
+  }
+
+  drawRod(S, f, fx, fy, t) {
+    const { w, h } = this, bx = Math.round(w * 0.36), by = h + 6;
+    let tipX = w * 0.5 + f.tilt * 13, tipY = h * 0.42;
+    const ten = f.tension || 0;
+    // under load the tip bows toward the fish and down
+    tipX += (fx - tipX) * 0.22 * ten; tipY += 9 * ten;
+    if (f.wearing) tipX += Math.floor(t * 30) % 2 ? 1 : -1;
+    const n = 9, pts = [];
+    for (let i = 0; i <= n; i++) {
+      const k = i / n, bend = ten * 10 * k * k;
+      pts.push([Math.round(bx + (tipX - bx) * k + fpSign(fx - tipX) * bend * 0.3), Math.round(by + (tipY - by) * k + bend)]);
+    }
+    for (let i = 1; i <= n; i++) {
+      const [ax, ay] = pts[i - 1], [cx, cy] = pts[i], thick = i <= 3 ? 3 : i <= 6 ? 2 : 1;
+      S.line(ax + 1, ay + 1, cx + 1, cy + 1, 'void');
+      for (let k = 0; k < thick; k++) S.line(ax - k, ay, cx - k, cy, i <= 3 ? 'wood' : i <= 6 ? 'lamp' : 'gold');
+    }
+    for (const i of [4, 6, 8]) S.px(pts[i][0] + 1, pts[i][1], 'bone'); // the rod's rings
+    return pts[n];
+  }
+
+  drawLine(S, f, line, tip, fx, fy, t) {
+    const st = line.strength;
+    const ink = st > 0.6 ? 'bone' : st > 0.4 ? 'moonS' : st > 0.2 ? 'lamp' : 'red';
+    const shake = f.wearing || st < 0.4;
+    const sag = (1 - Math.min(1, f.tension * 1.6)) * 12 + f.slack * 10;
+    let lx = tip[0], ly = tip[1];
+    for (let i = 1; i <= 8; i++) {
+      const k = i / 8;
+      let x = Math.round(tip[0] + (fx - tip[0]) * k), y = Math.round(tip[1] + (fy - tip[1]) * k + Math.sin(Math.PI * k) * sag);
+      if (shake && i < 8) x += (Math.floor(t * 34 + i * 5) % 3) - 1;
+      S.line(lx, ly, x, y, f.wearing ? (Math.floor(t * 18 + i) % 2 ? 'red' : 'lamp') : ink);
+      lx = x; ly = y;
+    }
+  }
+
+  drawHand(S) {
+    const { h } = this, bx = Math.round(this.w * 0.36);
+    // a sleeve from the bottom edge, and a fist round the rod's butt, the thumb on top
+    S.rect(bx - 12, h - 10, 18, 10, 'void'); S.rect(bx - 11, h - 9, 16, 9, 'night2'); S.rect(bx - 11, h - 9, 16, 1, 'waterD'); S.rect(bx - 3, h - 8, 1, 8, 'night');
+    S.rect(bx - 10, h - 22, 15, 13, 'void');
+    S.rect(bx - 9, h - 21, 13, 11, 'moonS');
+    for (let i = 0; i < 4; i++) S.rect(bx - 9, h - 19 + i * 2, 4 + (i & 1), 1, 'moonD'); // the fingers' folds
+    S.rect(bx - 4, h - 21, 1, 11, 'moonD');
+    S.rect(bx - 1, h - 24, 4, 4, 'void'); S.rect(bx, h - 23, 2, 3, 'moonS'); S.px(bx + 1, h - 23, 'moon'); // the thumb
+    S.rect(bx + 2, h - 20, 1, 9, 'moonD');
+  }
+
+  drawReel(S, f, line, ui, t) {
+    const { R } = this, { x: cx, y: cy } = this.rc, a = f.reel.a, w = f.reel.w, brake = ui.brake;
+    S.ellipse(cx, cy, R + 1, R + 1, 'void', true);
+    S.ellipse(cx, cy, R, R, brake ? 'redD' : 'night2', true);
+    S.ellipse(cx, cy, R, R, brake ? 'red' : 'moonD');
+    S.ellipse(cx, cy, R - 3, R - 3, 'fog');
+    // the spool with line wound on it
+    const sr = Math.round(R * 0.45);
+    S.ellipse(cx, cy, sr, sr, 'night', true);
+    S.ellipse(cx, cy, sr, sr, line.strength > 0.4 ? 'bone' : 'lamp');
+    // spokes turning, with a blur of them when fast
+    for (let k = 0; k < 3; k++) {
+      const ang = a + (k * Math.PI * 2) / 3;
+      if (w > 6) S.line(cx, cy, cx + Math.cos(ang - 0.35) * (R - 4), cy + Math.sin(ang - 0.35) * (R - 4), 'night');
+      S.line(cx, cy, cx + Math.cos(ang) * (R - 4), cy + Math.sin(ang) * (R - 4), 'moonD');
+    }
+    // the handle and its knob go round with the reel
+    const hx = Math.round(cx + Math.cos(a) * (R - 6)), hy = Math.round(cy + Math.sin(a) * (R - 6));
+    S.line(cx, cy, hx, hy, 'wood'); S.line(cx + 1, cy, hx + 1, hy, 'wood');
+    S.ellipse(hx, hy, 3, 3, 'void', true); S.ellipse(hx, hy, 2, 2, 'lamp', true); S.px(hx - 1, hy - 1, 'gold');
+    S.ellipse(cx, cy, 2, 2, 'bone', true);
+    // the only gauge: five marks of line strength beside the reel
+    const n = Math.ceil(line.strength * 5 - 1e-6), px = cx - R - 7;
+    for (let i = 0; i < 5; i++) {
+      const y = this.h - 7 - i * 5, on = i < n;
+      S.rect(px - 1, y - 1, 6, 5, 'void');
+      S.rect(px, y, 4, 3, on ? (n <= 1 ? 'red' : n <= 2 ? 'lamp' : 'bone') : 'night');
+    }
+    if (f.wearing && n > 0 && Math.floor(t * 12) % 2) S.rect(px, this.h - 7 - (n - 1) * 5, 4, 3, 'red');
+  }
+
+  step(dt) {
+    for (const r of this.rings) r.r += dt * 18;
+    this.rings = this.rings.filter(r => r.r < r.max);
+    for (const p of this.drops) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 80 * dt; p.life -= dt; }
+    this.drops = this.drops.filter(p => p.life > 0);
+  }
+  splash(x, y, n, size) {
+    this.rings.push({ x, y, r: 1, max: 6 + 8 * size });
+    for (let i = 0; i < n; i++) this.drops.push({ x, y: y - 1, vx: (i / Math.max(1, n - 1) - 0.5) * 40 * size, vy: -30 - (i * 7) % 15, life: 0.5 });
+  }
 }
 
 /* ================= lab/page.js ================= */
 const $ = s => document.querySelector(s);
 const STORE = (() => { try { return window.localStorage; } catch (e) { return { getItem: () => null, setItem() {} }; } })();
-const LAB_KEY = 'nichna-zavod-fight-lab';
+const LAB_KEY = 'nichna-zavod-fight-lab-fp';
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const blankStats = () => Object.fromEntries(Object.keys(LAB.fish).map(k => [k, { catch: 0, snap: 0, lost: 0, counters: 0, time: 0 }]));
+const OUTCOMES = ['catch', 'snap', 'tangle', 'escape'];
+const blankStats = () => Object.fromEntries(Object.keys(LAB.fish).map(k => [k, { catch: 0, snap: 0, tangle: 0, escape: 0, counters: 0, time: 0 }]));
 const saved = (() => { try { return JSON.parse(STORE.getItem(LAB_KEY) || '{}'); } catch (e) { return {}; } })();
 const L = {
-  fish: LAB.fish[saved.fish] ? saved.fish : 'roach',
-  trophy: !!saved.trophy,
-  tune: { ...tuneDefaults(), ...(saved.tune || {}) },
+  fish: LAB.fish[saved.fish] ? saved.fish : 'roach', trophy: !!saved.trophy,
+  tune: { ...labTuneDefaults(), ...(saved.tune || {}) },
   line: { strength: typeof saved.strength === 'number' ? saved.strength : 1, fights: saved.fights || 0 },
   stats: { ...blankStats(), ...(saved.stats || {}) },
-  fight: null, holding: false, hitStop: 0, splashT: 0, flash: 0,
+  mode: 'pond', mt: 0, fight: null, ui: { brake: false },
 };
 const persist = () => { try { STORE.setItem(LAB_KEY, JSON.stringify({ fish: L.fish, trophy: L.trophy, tune: L.tune, strength: L.line.strength, fights: L.line.fights, stats: L.stats })); } catch (e) {} };
 
@@ -196,54 +469,55 @@ const MUSIC = createMusic(AUDIO);
 attachLifecycle(AUDIO, { onStart: () => { $('#soundbtn').textContent = 'Звук: є'; } });
 const SFX = createSfx(AUDIO, MUSIC);
 
-// the scene: the game's pond, with the fight's own picture drawn over it
-const scene = new PondScene({ calm: REDUCED_MOTION });
+// three pictures: the pond as in the game, the first-person fight, and what the screen shows (a blend of them)
 const cv = $('#cv'), ctx = cv.getContext('2d');
-let pxUnit = 3, sceneReady = false;
+let pxUnit = 3, W = 0, H = 0, pond = null, view = null, fpSurf = null, pondSurf = null, out = null, tmp = null;
 function resize() {
-  const box = $('#scene').getBoundingClientRect();
-  if (!box.width || !box.height) return;
-  const l = pixelLayout(box.width, box.height);
-  pxUnit = l.scale;
-  document.documentElement.style.setProperty('--px', l.scale + 'px');
-  cv.style.width = l.w * l.scale + 'px'; cv.style.height = l.h * l.scale + 'px';
-  cv.style.marginLeft = Math.floor((box.width - l.w * l.scale) / 2) + 'px';
-  cv.style.marginTop = Math.floor(box.height - l.h * l.scale) + 'px';
-  if (cv.width === l.w && cv.height === l.h && sceneReady) return;
-  cv.width = l.w; cv.height = l.h;
-  scene.resize(l.w, l.h);
-  sceneReady = true;
+  const avail = Math.min($('#lab').clientWidth - 24, 496);
+  const scale = Math.max(2, Math.round(avail / LOGICAL_WIDTH)), w = Math.floor(avail / scale);
+  const h = Math.floor(Math.min(innerHeight * 0.66, w * scale * 1.5) / scale);
+  pxUnit = scale;
+  document.documentElement.style.setProperty('--px', scale + 'px');
+  $('#scene').style.height = h * scale + 'px';
+  cv.style.width = w * scale + 'px'; cv.style.height = h * scale + 'px'; cv.style.margin = '0 auto';
+  if (w === W && h === H) return;
+  W = w; H = h; cv.width = w; cv.height = h;
+  pond = new PondScene({ calm: REDUCED_MOTION }); pond.resize(w, h);
+  view = new FpView(w, h);
+  fpSurf = new Surface(w, h); pondSurf = new Surface(w, h); out = new Surface(w, h); tmp = new Surface(w, h);
 }
 window.addEventListener('resize', resize);
 
 function setStatus(html, cls = '') { const el = $('#status'); el.innerHTML = html; el.className = cls; }
 let popT = 0;
-function pop(text, cls = 'gold', ms = 900) {
+function pop(text, cls = 'gold', ms = 1000) {
   const el = $('#pop'); clearTimeout(popT);
   el.textContent = text; el.className = 'pbubble pfbub ' + cls; el.hidden = false;
   popT = setTimeout(() => { el.hidden = true; }, ms);
 }
 function placePop() {
-  const el = $('#pop'); if (el.hidden || !scene.lastFloat) return;
-  const f = scene.lastFloat, box = $('#scene').getBoundingClientRect(), cvb = cv.getBoundingClientRect();
-  const half = el.offsetWidth / 2, x = Math.max(half + 4, Math.min(box.width - half - 4, cvb.left - box.left + (f.x + 1) * pxUnit));
-  el.style.left = Math.round(x) + 'px'; el.style.top = Math.max(4, Math.round(cvb.top - box.top + (f.y - 26) * pxUnit)) + 'px';
+  const el = $('#pop'); if (el.hidden || !view) return;
+  const half = el.offsetWidth / 2, sw = $('#scene').clientWidth, off = cv.offsetLeft;
+  const x = Math.max(half + 4, Math.min(sw - half - 4, off + view.fishAt.x * pxUnit));
+  el.style.left = Math.round(x) + 'px'; el.style.top = Math.max(34, Math.round((view.fishAt.y - 8) * pxUnit)) + 'px';
 }
 
 function renderFishes() {
-  $('#fishes').innerHTML = Object.entries(LAB.fish).map(([k, f]) => `<button data-f="${k}" class="${k === L.fish ? 'on' : ''}">${f.name}</button>`).join('');
-  $('#trophy').textContent = 'Трофей: ' + (L.trophy ? 'так' : 'ні'); $('#trophy').classList.toggle('on', L.trophy);
+  const busy = L.mode !== 'pond';
+  $('#fishes').innerHTML = Object.entries(LAB.fish).map(([k, f]) => `<button data-f="${k}" class="${k === L.fish ? 'on' : ''}" ${busy ? 'disabled' : ''}>${f.name}</button>`).join('');
+  $('#trophy').textContent = 'Трофей: ' + (L.trophy ? 'так' : 'ні'); $('#trophy').classList.toggle('on', L.trophy); $('#trophy').disabled = busy;
+  $('#hook').disabled = busy; $('#retie').disabled = busy;
 }
 function renderLine() {
   const p = Math.round(L.line.strength * 100), el = $('#linepct');
   el.textContent = p + '%'; el.classList.toggle('low', p <= 30);
-  $('#lineboats').textContent = L.line.fights ? `боїв на ній: ${L.line.fights}` : 'нова';
+  $('#linefights').textContent = L.line.fights ? `боїв на ній: ${L.line.fights}` : 'нова';
 }
 function renderStats() {
   const rows = Object.entries(LAB.fish).map(([k, f]) => [f.name, L.stats[k]]);
-  const sum = rows.reduce((a, [, s]) => ({ catch: a.catch + s.catch, snap: a.snap + s.snap, lost: a.lost + s.lost, counters: a.counters + s.counters, time: a.time + s.time }), { catch: 0, snap: 0, lost: 0, counters: 0, time: 0 });
-  const tr = (n, s, cls = '') => { const fights = s.catch + s.snap + s.lost; return `<tr class="${cls}"><td>${n}</td><td>${s.catch}</td><td>${s.snap}</td><td>${s.lost}</td><td>${s.counters}</td><td>${fights ? (s.time / fights).toFixed(1).replace('.', ',') + ' с' : '—'}</td></tr>`; };
-  $('#stats').innerHTML = '<tr><th></th><th>улов</th><th>обрив</th><th>схід</th><th>контр</th><th>сер. бій</th></tr>' + rows.map(([n, s]) => tr(n, s)).join('') + tr('Разом', sum, 'sum');
+  const sum = rows.reduce((a, [, s]) => { for (const k in a) a[k] += s[k] || 0; return a; }, { catch: 0, snap: 0, tangle: 0, escape: 0, counters: 0, time: 0 });
+  const tr = (n, s, cls = '') => { const fights = OUTCOMES.reduce((a, k) => a + (s[k] || 0), 0); return `<tr class="${cls}"><td>${n}</td><td>${s.catch}</td><td>${s.snap}</td><td>${s.tangle}</td><td>${s.escape}</td><td>${s.counters}</td><td>${fights ? (s.time / fights).toFixed(1).replace('.', ',') : '—'}</td></tr>`; };
+  $('#stats').innerHTML = '<tr><th></th><th>улов</th><th>обрив</th><th>запл.</th><th>зійшла</th><th>контр</th><th>бій, с</th></tr>' + rows.map(([n, s]) => tr(n, s)).join('') + tr('Разом', sum, 'sum');
 }
 function renderTunes() {
   $('#tunes').innerHTML = Object.entries(LAB.tune).map(([k, [label, min, max, step]]) =>
@@ -253,152 +527,212 @@ function renderTunes() {
 const tuneText = k => k === 'window' ? Math.round(L.tune[k]) + ' мс' : '×' + (+L.tune[k]).toFixed(2).replace('.', ',');
 function syncTuneLabels() { for (const b of $('#tunes').querySelectorAll('b[data-v]')) b.textContent = tuneText(b.dataset.v); }
 
-function updateAct() {
-  const a = $('#act'), f = L.fight;
-  let label, cls = '';
-  if (!f) { label = 'Почати бій'; }
-  else if (f.phase === 'stun') { label = 'Тягни! Оглушена'; cls = 'go'; }
-  else if (f.phase === 'surge') { label = L.holding ? 'Рветься!' : 'Чекай…'; cls = L.holding ? 'miss' : 'wait'; }
-  else { label = L.holding ? 'Тягну…' : 'Тримай'; cls = L.holding ? 'reel is-pressed' : 'reel'; }
-  const key = label + cls;
-  if (key === a.dataset.key) return;
-  a.dataset.key = key; a.textContent = label; a.className = 'pbtn mainact ' + cls;
+/* ---------- the fight's life: the strike, the fight, and the way back ---------- */
+const ZOOM_STEP = 0.13, DISSOLVE = 0.22; // three zoom steps of 130 ms, then a dither into the first-person view
+let reelPtr = null, tiltPtr = null, hitStop = 0, shake = 0, clicks = 0;
+function hook() {
+  if (L.mode !== 'pond' || !view) return;
+  L.mode = 'zoomIn'; L.mt = 0; L.fight = null; L.ui.brake = false;
+  pond.emit('bite', { style: 'dip' }); SFX.bite();
+  setStatus('Підсічка!'); renderFishes();
 }
-
 function startFight() {
-  L.fight = newLabFight(L.fish, L.trophy, { ...L.tune });
-  L.holding = false; L.line.fights++;
-  scene.emit('hook'); SFX.plop();
-  setStatus(`${LAB.fish[L.fish].name}${L.trophy ? ' (трофей)' : ''} на гачку. Тягни, поки спокійна.`);
-  persist(); renderLine(); updateAct();
+  L.fight = newFpFight(L.fish, L.trophy, { ...L.tune });
+  L.line.fights++; clicks = 0;
+  setStatus(`${LAB.fish[L.fish].name}${L.trophy ? ' (трофей)' : ''} на гачку. Розкручуй котушку.`);
+  persist(); renderLine();
 }
-function endFight(status) {
+function endFight(result) {
   const f = L.fight, s = L.stats[f.key], sec = f.time.toFixed(1).replace('.', ',');
-  s[status]++; s.counters += f.counters; s.time += f.time;
-  L.fight = null; L.holding = false;
-  if (status === 'catch') { scene.emit('land', { fish: null }); SFX.catch(); setStatus(`Улов! <b>${sec} с</b> · контрів ${f.counters} · волосінь ${Math.round(L.line.strength * 100)}%`, 'good'); }
-  else if (status === 'snap') { scene.emit('snap'); SFX.snap(); L.line.strength = 1; L.line.fights = 0; setStatus(`Обрив на ${sec} с! Волосінь луснула. Привʼязано нову.`, 'bad'); }
-  else { scene.emit('lost'); SFX.bad(); setStatus(`Зійшла на ${sec} с. Довго не тягнув.`, 'bad'); }
-  persist(); renderStats(); renderLine(); updateAct();
+  s[result] = (s[result] || 0) + 1; s.counters += f.counters; s.time += f.time;
+  reelPtr = null; tiltPtr = null; L.ui.brake = false; L.mt = 0;
+  if (result === 'catch') { L.mode = 'lift'; SFX.catch(); setStatus(`Улов за <b>${sec} с</b> · контрів ${f.counters} · волосінь ${Math.round(L.line.strength * 100)}%`, 'good'); }
+  else if (result === 'snap') { L.mode = 'snapFx'; SFX.snap(); setStatus(`Обрив на ${sec} с! Привʼязано нову волосінь.`, 'bad'); L.line.strength = 1; L.line.fights = 0; }
+  else if (result === 'tangle') { L.mode = 'lostFx'; SFX.snag(); pop('Заплуталась!', 'bad', 1100); setStatus(`Риба завела в ${f.zone} на ${sec} с.`, 'bad'); }
+  else { L.mode = 'lostFx'; SFX.bad(); pop('Зійшла', 'bad', 1100); setStatus(`Риба пішла надто далеко на ${sec} с.`, 'bad'); }
+  persist(); renderStats(); renderLine();
 }
-
 // What the mechanic's events look and sound like.
-function fightFeedback(f) {
+function fightFeedback(f, dt) {
   for (const e of f.events) {
-    if (e === 'tell') { SFX.shimmer(); SFX.tick(); L.flash = f.len; }
-    else if (e === 'surge') { SFX.jerk(); scene.emit('jerk'); }
-    else if (e === 'calm') { SFX.tired(); }
-    else if (e === 'fake') { setStatus('Обманув: блиснув і не рвонув.'); }
-    else if (e === 'stun-end') { SFX.nibble(); }
+    if (e === 'tell') SFX.shimmer();
+    else if (e === 'surge') { SFX.jerk(); SFX.splash(); view.splash(view.fishAt.x, view.fishAt.y, 6, f.size * view.scale(f.d)); if (!REDUCED_MOTION) shake = 0.15; }
+    else if (e === 'counter') { SFX.pearl(); SFX.stop(); pop('КОНТР!', 'gold', 1000); hitStop = 0.1; view.splash(view.fishAt.x, view.fishAt.y, 10, 1.4); setStatus('Контр! Риба оглушена — крути, поки не очуняла.', 'good'); }
   }
+  // the ratchet: its clicks run as fast as the reel turns
+  clicks += f.reel.w * dt * LAB.reel.clicks / (Math.PI * 2);
+  if (clicks >= 1) { clicks %= 1; SFX.tick(); }
+  // braked in a surge, the drag gives line with a dry rattle; and the water keeps splashing
+  if (dt && f.phase === 'surge' && f.reel.brake && Math.floor(f.time * 14) !== Math.floor((f.time - dt) * 14)) SFX.aim();
+  if (dt && f.phase === 'surge' && Math.floor(f.time * 6) !== Math.floor((f.time - dt) * 6)) view.splash(view.fishAt.x, view.fishAt.y, 3, f.size * view.scale(f.d) * 0.6);
 }
 
-function press(e) {
-  if (e) e.preventDefault();
-  if (!L.fight) { startFight(); return; }
-  L.holding = true; updateAct();
-}
-function release() {
-  if (!L.holding) return;
-  L.holding = false;
-  const f = L.fight;
-  if (f) {
-    const r = releaseLabFight(f, L.line), ms = Math.round((f.late || 0) * 1000);
-    if (r === 'counter') {
-      L.hitStop = 0.09; scene.emit('stage'); SFX.pearl(); SFX.jerk();
-      pop('КОНТР!', 'gold', 1000);
-      setStatus(`Контр! Відпустив через <b>${ms} мс</b> після ривка. Риба оглушена — тягни.`, 'good');
-      renderLine();
-    } else if (r === 'late') setStatus(`Пізно: ${ms} мс (вікно ${Math.round(f.tune.window)} мс). Волосінь уже потерло.`, 'bad');
+/* ---------- touches: the reel under the thumb, the rod anywhere else; both at once is fine ---------- */
+function scenePt(e) { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left) / pxUnit, y: (e.clientY - b.top) / pxUnit, cx: e.clientX, cy: e.clientY }; }
+const onReel = p => Math.hypot(p.x - view.rc.x, p.y - view.rc.y) <= view.R + 6;
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!view) return;
+  if (L.mode === 'pond') { hook(); return; }
+  const f = L.fight; if (L.mode !== 'fight' || !f) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  const p = scenePt(e);
+  if (onReel(p) && !reelPtr) {
+    reelPtr = { id: e.pointerId, ang: Math.atan2(p.y - view.rc.y, p.x - view.rc.x), t: performance.now(), t0: performance.now(), x0: p.cx, y0: p.cy, moved: 0, downAt: f.time, mode: 'pending', fw: 0 };
+    f.pending = true; f.pendingWear = 0;
+  } else if (!tiltPtr) tiltPtr = { id: e.pointerId, x0: p.cx, tilt0: f.tilt };
+});
+cv.addEventListener('pointermove', e => {
+  const f = L.fight; if (!f || L.mode !== 'fight') return;
+  const p = scenePt(e);
+  if (reelPtr && e.pointerId === reelPtr.id) {
+    const now = performance.now(), ang = Math.atan2(p.y - view.rc.y, p.x - view.rc.x);
+    let da = ang - reelPtr.ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    const dt = Math.max(0.004, (now - reelPtr.t) / 1000);
+    reelPtr.moved = Math.max(reelPtr.moved, Math.hypot(p.cx - reelPtr.x0, p.cy - reelPtr.y0));
+    reelPtr.fw = reelPtr.fw * 0.5 + (da / dt) * 0.5;
+    reelPtr.ang = ang; reelPtr.t = now;
+    if (reelPtr.moved > LAB.reel.still) {
+      if (reelPtr.mode !== 'drive') { reelPtr.mode = 'drive'; f.pending = false; f.pendingWear = 0; L.ui.brake = false; releaseBrake(f); }
+      driveReel(f, reelPtr.fw, dt);
+    }
+  } else if (tiltPtr && e.pointerId === tiltPtr.id) {
+    const steps = LAB.tilt.steps, nt = Math.max(-steps, Math.min(steps, tiltPtr.tilt0 + Math.round((p.cx - tiltPtr.x0) / 34)));
+    if (nt !== f.tilt) { f.tilt = nt; SFX.aim(); }
   }
-  updateAct();
+});
+function endPtr(e) {
+  const f = L.fight;
+  if (reelPtr && e.pointerId === reelPtr.id) {
+    if (f) { if (reelPtr.mode === 'brake') releaseBrake(f); f.pending = false; f.pendingWear = 0; }
+    reelPtr = null; L.ui.brake = false;
+  }
+  if (tiltPtr && e.pointerId === tiltPtr.id) tiltPtr = null;
 }
-$('#act').addEventListener('pointerdown', press);
-$('#scene').addEventListener('pointerdown', press);
-window.addEventListener('pointerup', release);
-window.addEventListener('pointercancel', release);
+cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-$('#fishes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || L.fight) return; L.fish = b.dataset.f; persist(); renderFishes(); });
-$('#trophy').addEventListener('click', () => { if (L.fight) return; L.trophy = !L.trophy; persist(); renderFishes(); });
-$('#retie').addEventListener('click', () => { if (L.fight) return; L.line.strength = 1; L.line.fights = 0; persist(); renderLine(); setStatus('Привʼязано нову волосінь.'); });
+$('#hook').addEventListener('click', hook);
+$('#fishes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || L.mode !== 'pond') return; L.fish = b.dataset.f; persist(); renderFishes(); });
+$('#trophy').addEventListener('click', () => { if (L.mode !== 'pond') return; L.trophy = !L.trophy; persist(); renderFishes(); });
+$('#retie').addEventListener('click', () => { if (L.mode !== 'pond') return; L.line.strength = 1; L.line.fights = 0; persist(); renderLine(); setStatus('Привʼязано нову волосінь.'); });
 $('#statreset').addEventListener('click', () => { L.stats = blankStats(); persist(); renderStats(); });
-$('#tunereset').addEventListener('click', () => { L.tune = tuneDefaults(); persist(); renderTunes(); });
+$('#tunereset').addEventListener('click', () => { L.tune = labTuneDefaults(); persist(); renderTunes(); });
 $('#tunes').addEventListener('input', e => { const r = e.target.closest('input[data-t]'); if (!r) return; L.tune[r.dataset.t] = +r.value; syncTuneLabels(); persist(); });
 
-/* ================= lab/picture.js ================= */
-// The fight's whole picture sits in one place, by the fish: its state on the water, and two bars over it.
-const BAR_W = 31;
-function drawFight(S, f, t) {
-  const fl = scene.lastFloat, g = scene.geo;
-  if (!fl) return;
-  const fx = fl.x + 1, fy = fl.y + 9, sp = fishSpriteFor(f.F.sprite), surge = f.phase === 'surge', stun = f.phase === 'stun', tell = f.phase === 'tell';
-  // the fish under the float: slow and level when tired, thrashing when it surges, belly up when stunned
-  const jx = surge ? (Math.floor(t * 22) % 2 ? 3 : -3) : stun ? 0 : Math.round(Math.sin(t * 1.4) * 2);
-  const jy = surge ? (Math.floor(t * 17) % 2 ? 1 : -1) : 0;
-  const x = fx - (sp.w >> 1) + jx, y = fy + jy, flip = surge ? Math.floor(t * 11) % 2 === 0 : Math.sin(t * 0.7) > 0;
-  if (surge) {
-    // the water boils around it
-    for (let i = 0; i < 9; i++) { const a = (i * 2.4 + Math.floor(t * 14) * 1.7) % 6.28, r = 5 + (i * 7 + Math.floor(t * 14) * 3) % 9; S.px(fx + Math.cos(a) * r, fy - 3 + Math.sin(a) * r * 0.4, i % 3 ? 'bone' : 'shimmer'); }
-    S.ellipse(fx, fy - 2, 9 + Math.floor(t * 12) % 4, 3 + Math.floor(t * 12) % 2, 'bone');
+/* ---------- pictures for the way in and out ---------- */
+// dst = src seen k times larger round (cx, cy): whole pixels only
+function zoomInto(dst, src, cx, cy, k) {
+  const w = dst.w, h = dst.h;
+  cx = Math.round(cx); cy = Math.round(cy);
+  for (let y = 0; y < h; y++) {
+    const sy = Math.max(0, Math.min(h - 1, cy + Math.floor((y - cy) / k)));
+    for (let x = 0; x < w; x++) { const sx = Math.max(0, Math.min(w - 1, cx + Math.floor((x - cx) / k))); dst.buf[y * w + x] = src.buf[sy * w + sx]; }
   }
-  S.drawOutline(sp, 0, x, y, tell ? 'gold' : stun ? 'frogL' : surge ? 'red' : 'void');
-  if (tell && Math.floor(t * 16) % 2) S.drawSilhouette(sp, 0, x, y, 'moon'); // the glint: it is about to go
-  else S.drawSprite(sp, 0, x, y, flip);
-  if (tell) for (const [dx, dy] of [[-3, -3], [sp.w + 2, -2], [sp.w >> 1, -5]]) { if (Math.floor(t * 12 + dx) % 2) { S.px(x + dx, y + dy, 'moon'); S.px(x + dx + 1, y + dy, 'gold'); S.px(x + dx, y + dy - 1, 'gold'); } }
-  if (stun) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; S.px(fx + Math.cos(a) * 8, fy - 3 + Math.sin(a) * 2, i % 2 ? 'gold' : 'moon'); }
-  // pulling into a surge: the line shakes and goes red from the rod's tip to the float
-  const tip = scene.rodPts && scene.rodPts[scene.rodPts.length - 1];
-  if (tip && surge && L.holding) {
-    let lx = tip[0], ly = tip[1];
-    for (let i = 1; i <= 6; i++) {
-      const k = i / 6, jit = i < 6 ? (Math.floor(t * 30 + i * 3) % 3) - 1 : 0, nx = Math.round(tip[0] + (fl.x + 1 - tip[0]) * k), ny = Math.round(tip[1] + (fl.y - tip[1]) * k) + jit;
-      S.line(lx, ly, nx, ny, Math.floor(t * 20 + i) % 2 ? 'red' : 'lamp');
-      lx = nx; ly = ny;
-    }
-  }
-  // two bars over the fish: how far it has come, and what is left of the line
-  const bx = clampN(Math.round(fx - BAR_W / 2), 2, g.w - BAR_W - 2), by = clampN(Math.round(fl.y - 15), 6, g.h - 30);
-  S.rect(bx - 1, by - 1, BAR_W + 2, 9, 'void');
-  S.rect(bx, by, BAR_W, 3, 'night');
-  S.rect(bx, by, Math.round(f.prog * BAR_W), 3, stun ? 'moon' : 'frogL');
-  const st = L.line.strength, wearing = surge && L.holding;
-  S.rect(bx, by + 4, BAR_W, 3, 'night');
-  S.rect(bx, by + 4, Math.round(st * BAR_W), 3, wearing && Math.floor(t * 14) % 2 ? 'red' : st > 0.5 ? 'bone' : st > 0.25 ? 'lamp' : 'red');
-  // little marks so the two bars are never mixed up: a fish by the first, a hook by the second
-  S.px(bx - 3, by + 1, 'frogL'); S.px(bx - 4, by + 1, 'frogL'); S.px(bx - 5, by, 'frogL'); S.px(bx - 5, by + 2, 'frogL');
-  S.rect(bx - 4, by + 4, 1, 3, 'bone'); S.px(bx - 3, by + 6, 'bone');
 }
+// dst = a, with b showing through a Bayer pattern: p 0 is all a, 1 is all b
+function dissolve(dst, a, b, p) {
+  const w = dst.w;
+  for (let y = 0; y < dst.h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; dst.buf[i] = p > (BAYER4[(y & 3) * 4 + (x & 3)] + 0.5) / 16 ? b.buf[i] : a.buf[i]; }
+}
+function drawPond(dt) {
+  pond.advance(dt);
+  const g = pond.geo;
+  pond.draw({ state: 'waiting', castT: 0, tension: 0, prog: 0, lampLv: 2, rodTier: 1, moonPhase: 4, location: 'zavod', spot: g.target, aim: g.target, signals: [], traps: [], event: null, power: 0 });
+  pondSurf.copyFrom(pond.surf);
+}
+// the first-person picture with nothing on the hook: for the way out
+const emptyFight = tilt => ({ x: 0, d: 0.6, vx: 0, size: 0, tilt, tension: 0, slack: 0, wearing: false, phase: 'calm', reel: { w: 0, a: 0 } });
+const floatPt = () => { const f = pond.lastFloat || pond.geo.target; return { x: f.x + 1, y: f.y + 4 }; };
 
 /* ================= lab/main.js ================= */
 let last = performance.now();
 function loop(now) {
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
-  const f = L.fight;
-  if (L.hitStop > 0) L.hitStop -= dt; // a counter holds the picture for a breath
-  else if (f) {
-    const status = stepLabFight(f, L.line, dt, L.holding);
-    fightFeedback(f);
-    if (f.phase === 'surge') {
-      L.splashT -= dt;
-      if (L.splashT <= 0) { L.splashT = 0.16; scene.splash(scene.lastFloat.x + 1, scene.lastFloat.y + 4, L.holding ? 4 : 2); if (L.holding) { SFX.splash(); if (!REDUCED_MOTION) scene.shake = 0.08; } }
+  if (!view) { requestAnimationFrame(loop); return; }
+  L.mt += dt;
+  const t = now / 1000;
+  if (L.mode === 'pond') { drawPond(dt); out.copyFrom(pondSurf); }
+  else if (L.mode === 'zoomIn') {
+    // the pond grows round the float in whole steps (×1, ×2, ×3), then the first-person view dithers in
+    drawPond(dt);
+    const fp = floatPt(), k = L.mt < ZOOM_STEP ? 1 : L.mt < ZOOM_STEP * 2 ? 2 : 3;
+    zoomInto(out, pondSurf, fp.x, fp.y, k);
+    const p = (L.mt - ZOOM_STEP * 3) / DISSOLVE;
+    if (p > 0) {
+      if (!L.fight) startFight();
+      view.draw(fpSurf, L.fight, L.line, L.ui, t);
+      tmp.copyFrom(out);
+      dissolve(out, tmp, fpSurf, Math.min(1, Math.round(p * 8) / 8));
+      if (p >= 1) { L.mode = 'fight'; renderFishes(); }
     }
-    if (status !== 'play') endFight(status);
-    else { updateAct(); if (f.events.includes('wear')) renderLine(); }
+  } else if (L.mode === 'fight') {
+    const f = L.fight;
+    // a still touch on the reel becomes the brake, counted from when the finger came down
+    if (reelPtr && reelPtr.mode === 'pending' && (now - reelPtr.t0) / 1000 >= LAB.reel.brakeHold && reelPtr.moved <= LAB.reel.still) {
+      reelPtr.mode = 'brake'; L.ui.brake = true;
+      f.events.length = 0;
+      brakeReel(f, reelPtr.downAt);
+      if (f.events.includes('counter')) fightFeedback(f, 0); else SFX.stop();
+    }
+    if (reelPtr && reelPtr.mode === 'brake') f.reel.brake = true;
+    if (hitStop > 0) hitStop -= dt;
+    else {
+      const r = stepFpFight(f, L.line, dt);
+      fightFeedback(f, dt);
+      if (f.wearing) renderLine();
+      view.step(dt);
+      if (r) endFight(r);
+    }
+    view.draw(fpSurf, f, L.line, L.ui, t);
+    out.copyFrom(fpSurf);
+    if (shake > 0) { shake -= dt; screenShake(out, t); }
+  } else if (L.mode === 'lift') {
+    // the fish comes up out of the water toward you, bigger in whole steps
+    const f = L.fight, sp = fishSpriteFor(f.F.sprite), k = Math.min(1, L.mt / 0.9), z = 1 + Math.min(3, Math.floor(k * 4));
+    view.draw(fpSurf, { ...f, size: 0, tension: 0, wearing: false }, L.line, L.ui, t);
+    out.copyFrom(fpSurf);
+    const src = new Surface(sp.w, sp.h), big = new Surface(sp.w * z, sp.h * z);
+    src.drawSprite(sp, 0, 0, 0, Math.floor(t * 4) % 2 === 0);
+    for (let y = 0; y < big.h; y++) for (let x = 0; x < big.w; x++) big.buf[y * big.w + x] = src.buf[Math.floor(y / z) * sp.w + Math.floor(x / z)];
+    const ox = Math.round(view.fishAt.x + (W / 2 - view.fishAt.x) * k - big.w / 2), oy = Math.round(view.fishAt.y + (H * 0.4 - view.fishAt.y) * k - big.h / 2);
+    out.blit(big, ox, oy);
+    if (Math.floor(t * 10) % 2) for (let i = 0; i < 4; i++) out.px(ox + (i * 7) % big.w, oy + big.h + 2 + i * 2, 'shimmer');
+    if (L.mt >= 1.4) { L.mode = 'zoomOut'; L.mt = 0; }
+  } else if (L.mode === 'snapFx') {
+    // the line whips back at you: lines flying to the screen's corners, a flash, and quickly back
+    view.draw(fpSurf, emptyFight(L.fight.tilt), L.line, L.ui, t);
+    out.copyFrom(fpSurf);
+    const k = Math.min(1, L.mt / 0.3), tx = W * 0.5, ty = H * 0.42;
+    for (let i = 0; i < 5; i++) { const ex = (i / 4) * W; out.line(tx, ty, tx + (ex - tx) * k, ty + (H - ty) * k, i % 2 ? 'bone' : 'red'); }
+    if (L.mt < 0.12) out.dither(0, 0, W, H, null, 'bone', 0.5);
+    if (L.mt >= 0.45) { L.mode = 'zoomOut'; L.mt = DISSOLVE * 0.5; }
+  } else if (L.mode === 'lostFx') {
+    view.draw(fpSurf, { ...L.fight, size: Math.max(0, L.fight.size * (1 - L.mt / 0.6)), tension: 0, wearing: false, slack: 1 }, L.line, L.ui, t);
+    view.step(dt);
+    out.copyFrom(fpSurf);
+    if (L.mt >= 0.9) { L.mode = 'zoomOut'; L.mt = 0; }
+  } else if (L.mode === 'zoomOut') {
+    // the reverse: dither back to the pond seen ×3, then ×2, ×1
+    drawPond(dt);
+    const fp = floatPt(), p = 1 - L.mt / DISSOLVE;
+    if (p > 0) {
+      zoomInto(out, pondSurf, fp.x, fp.y, 3);
+      view.draw(fpSurf, emptyFight(L.fight ? L.fight.tilt : 0), L.line, L.ui, t);
+      tmp.copyFrom(out);
+      dissolve(out, tmp, fpSurf, Math.max(0, Math.round(p * 8) / 8));
+    } else {
+      const s = L.mt - DISSOLVE, k = s < ZOOM_STEP ? 3 : s < ZOOM_STEP * 2 ? 2 : 1;
+      zoomInto(out, pondSurf, fp.x, fp.y, k);
+      if (s >= ZOOM_STEP * 2) { L.mode = 'pond'; L.fight = null; renderFishes(); }
+    }
   }
-  if (sceneReady) {
-    if (L.hitStop <= 0) scene.advance(dt);
-    const g = scene.geo, fg = L.fight;
-    const tension = fg ? (fg.phase === 'surge' ? (L.holding ? 1 : 0.6) : L.holding ? 0.5 : 0.12) : 0;
-    scene.draw({ state: fg ? 'reel' : 'waiting', castT: 0, tension, prog: fg ? fg.prog : 0, lampLv: 2, rodTier: 1, moonPhase: 4, location: 'zavod', spot: g.target, aim: g.target, signals: [], traps: [], event: null, power: 0 });
-    if (fg) drawFight(scene.surf, fg, scene.t);
-    scene.surf.present(ctx);
-    placePop();
-  }
+  out.present(ctx);
+  placePop();
   requestAnimationFrame(loop);
 }
-if (location.hash.includes('test')) window.__LAB = { L, LAB, newLabFight, stepLabFight, releaseLabFight, startFight, press, release, scene };
-resize(); renderFishes(); renderLine(); renderStats(); renderTunes(); updateAct();
+if (location.hash.includes('test')) window.__LAB = { L, LAB, newFpFight, stepFpFight, driveReel, brakeReel, hook, get view() { return view; } };
+resize(); renderFishes(); renderLine(); renderStats(); renderTunes();
 requestAnimationFrame(loop);
 })();
 </script>

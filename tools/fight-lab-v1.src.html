@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Лабораторія бою · Нічна заводь</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0e1a">
+<meta name="robots" content="noindex">
+<style>
+/*@@STYLE@@*/
+/* ---------- the lab's own layout ---------- */
+body{overflow:hidden}
+#lab{position:fixed;top:0;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:calc(var(--px)*2);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.labrow{display:grid;gap:var(--px);flex:none}
+#fishes{grid-template-columns:repeat(4,1fr)}
+#fishes button,#trophy,.labsmall{height:calc(var(--px)*14);padding:0 var(--px);font-family:var(--f-text);font-size:20px;line-height:1;color:var(--fog);background:var(--night);border:0}
+#fishes button.on,#trophy.on{color:var(--void);background:var(--moonS)}
+#scene{flex:none;height:44vh;min-height:230px}
+#status{flex:none;min-height:calc(var(--px)*16);font-size:20px;line-height:1.1;color:var(--moonS);text-align:center}
+#status b{color:var(--gold);font-weight:400}
+#status.bad{color:var(--red)}
+#status.good{color:var(--frogL)}
+#act{flex:none;min-height:calc(var(--px)*26);margin:0 var(--px)}
+.labline{grid-template-columns:1fr auto;align-items:center;font-size:20px;color:var(--bone)}
+.labline b{font-family:var(--f-num);font-weight:400;font-size:14px;color:var(--gold)}
+.labline b.low{color:var(--red)}
+.labhead{margin:calc(var(--px)*2) 0 0;font-family:var(--f-num);font-weight:400;font-size:13px;line-height:1.5;color:var(--gold)}
+.labtune{display:grid;grid-template-columns:1fr calc(var(--px)*22);align-items:center;gap:0 calc(var(--px)*2);font-size:20px;line-height:1;color:var(--bone)}
+.labtune span{grid-column:1/-1}
+.labtune b{font-family:var(--f-num);font-weight:400;font-size:13px;text-align:right;color:var(--gold)}
+.labstats{width:100%;border-collapse:collapse;font-size:20px;line-height:1.2;color:var(--bone)}
+.labstats th{font-weight:400;color:var(--fog);text-align:right;padding:0 var(--px)}
+.labstats td{text-align:right;padding:0 var(--px)}
+.labstats td:first-child,.labstats th:first-child{text-align:left}
+.labstats tr.sum td{color:var(--gold)}
+.labnote{margin:0;font-size:19px;line-height:1.1;color:var(--fog)}
+#pop{position:absolute;z-index:4}
+</style>
+</head>
+<body>
+<div id="lab">
+  <div class="labrow" id="fishes"></div>
+  <div class="labrow" style="grid-template-columns:1fr 1fr">
+    <button id="trophy">Трофей: ні</button>
+    <button id="soundbtn" class="labsmall">Звук: увімкни тапом</button>
+  </div>
+  <div class="scene" id="scene"><canvas id="cv" class="pcanvas"></canvas><div id="pop" class="pbubble pfbub" hidden></div></div>
+  <div id="status">Обери рибу й тисни «Почати бій».</div>
+  <button id="act" class="pbtn mainact">Почати бій</button>
+  <div class="labrow labline"><span>Волосінь: <b id="linepct">100%</b> · <span id="lineboats">нова</span></span><button id="retie" class="labsmall">Перевʼязати</button></div>
+
+  <h3 class="labhead">Статистика</h3>
+  <table class="labstats" id="stats"></table>
+  <div class="labrow" style="grid-template-columns:1fr 1fr"><button id="statreset" class="labsmall">Скинути статистику</button><button id="tunereset" class="labsmall">Повзунки за замовчуванням</button></div>
+
+  <h3 class="labhead">Повзунки</h3>
+  <div id="tunes"></div>
+
+  <h3 class="labhead">Як грати</h3>
+  <p class="labnote">Тримай кнопку — тягнеш. Біля риби дві смужки: зелена — прогрес, світла — міцність волосіні. Спокійна вода — риба втомилась, тягни. Блиснула — зараз рвоне. Вода кипить — рветься: тягнеш далі — волосінь швидко зношується. Відпусти в першу мить ривка — контр: риба оглушена.</p>
+</div>
+<script>
+(()=>{
+'use strict';
+/*@@ENGINE@@*/
+
+/* ================= lab/config.js ================= */
+// «Ривок і перепочинок». One button: held, you pull. The fish is either TIRED or SURGING; a glint warns of every surge.
+// All numbers of the mechanic live here. Rates are per second; progress and line strength run 0..1.
+const LAB = {
+  startProgress: 0.2,
+  intro: 0.8, // calm seconds before the fish's first rest is counted
+  // progress per second while the button is held
+  pull: { tired: 0.09, surge: 0.03, stun: 0.22 },
+  // progress per second while it is not (surge is multiplied by the fish's force)
+  drift: { tired: -0.02, surge: -0.05 },
+  wear: 0.4, // line strength lost per second of pulling into a surge of force 1
+  // let go within `window` seconds of the surge's start, having held into it: the fish is stunned
+  counter: { window: 0.15, stun: 1.5, bonus: 0.1 },
+  // rest: seconds of calm between surges; tell: the glint before a surge; surge: its length; force: how hard it is.
+  // series: surges in a row (gap seconds apart, each with its own tell); fake: share of tells with no surge behind them.
+  fish: {
+    roach: { name: 'Плітка', sprite: 'Плітка', rest: [2.6, 3.6], tell: 0.9, surge: [0.7, 1.0], force: 0.6 },
+    perch: { name: 'Окунь', sprite: 'Окунь', rest: [1.3, 1.4], tell: 0.45, surge: [0.5, 0.55], force: 0.8 },
+    pike: { name: 'Щука', sprite: 'Щука', rest: [3.2, 4.4], tell: 0.3, surge: [0.55, 0.7], force: 1.1, series: 3, gap: 0.5 },
+    zander: { name: 'Судак', sprite: 'Судак', rest: [2.2, 3.4], tell: 0.5, surge: [0.8, 1.1], force: 1.0, fake: 0.35, fakeRest: [0.7, 1.3] },
+  },
+  // the same fish as a trophy: harder and more frequent surges, slower to bring in
+  trophy: { force: 1.3, rest: 0.85, pull: 0.95 },
+  // the sliders: [label, min, max, step, default]; all but the counter window are multipliers
+  tune: {
+    tell: ['Тривалість ознаки', 0.4, 2, 0.05, 1],
+    force: ['Сила ривка', 0.4, 2, 0.05, 1],
+    wear: ['Втрата міцності', 0.2, 2.5, 0.05, 1],
+    window: ['Вікно контру, мс', 50, 400, 10, 150],
+    speed: ['Швидкість прогресу', 0.4, 2, 0.05, 1],
+  },
+};
+
+/* ================= lab/fight.js ================= */
+// The mechanic itself: no DOM, no drawing. The page feeds it time and the button; the scene reads its state.
+const tuneDefaults = () => Object.fromEntries(Object.entries(LAB.tune).map(([k, v]) => [k, v[4]]));
+const labPick = (rng, [a, b]) => a + rng() * (b - a);
+
+function newLabFight(key, trophy, tune, rng = Math.random) {
+  const F = LAB.fish[key], T = trophy ? LAB.trophy : { force: 1, rest: 1, pull: 1 };
+  const f = {
+    key, trophy, F, tune, rng,
+    force: F.force * T.force * tune.force, restMul: T.rest, pullMul: T.pull * tune.speed,
+    phase: 'tired', t: 0, len: LAB.intro + labPick(rng, F.rest) * T.rest,
+    prog: LAB.startProgress, time: 0, seriesLeft: 0, held: false, surgeWear: 0,
+    counters: 0, late: null, events: [],
+  };
+  return f;
+}
+const labWindow = f => f.tune.window / 1000;
+
+// One tick. line is { strength }. Returns 'play', 'catch', 'snap' or 'lost'.
+function stepLabFight(f, line, dt, holding) {
+  const F = f.F, rng = f.rng;
+  f.events.length = 0;
+  f.time += dt;
+  f.t += dt;
+  // the fish's own clock
+  if (f.t >= f.len) {
+    f.t = 0;
+    if (f.phase === 'tired') { f.phase = 'tell'; f.len = F.tell * f.tune.tell; f.fake = !!F.fake && !f.seriesLeft && rng() < F.fake; f.events.push('tell'); }
+    else if (f.phase === 'tell') {
+      if (f.fake) { f.phase = 'tired'; f.len = labPick(rng, F.fakeRest); f.events.push('fake'); }
+      else {
+        f.phase = 'surge'; f.len = labPick(rng, F.surge); f.held = holding; f.surgeWear = 0;
+        if (!f.seriesLeft && F.series) f.seriesLeft = F.series;
+        if (f.seriesLeft) f.seriesLeft--;
+        f.events.push('surge');
+      }
+    } else if (f.phase === 'surge') { f.phase = 'tired'; f.len = f.seriesLeft ? F.gap : labPick(rng, F.rest) * f.restMul; f.events.push('calm'); }
+    else if (f.phase === 'stun') { f.phase = 'tired'; f.len = labPick(rng, F.rest) * f.restMul; f.events.push('stun-end'); }
+  }
+  // what the button does now
+  const P = LAB.pull, D = LAB.drift;
+  if (f.phase === 'surge') {
+    if (holding) {
+      const w = LAB.wear * f.force * f.tune.wear * dt;
+      line.strength -= w; f.surgeWear += w;
+      f.prog += P.surge * f.pullMul * dt;
+      f.events.push('wear');
+    } else f.prog += D.surge * f.force * dt;
+  } else if (f.phase === 'stun') { if (holding) f.prog += P.stun * f.pullMul * dt; }
+  else f.prog += (holding ? P.tired * f.pullMul : D.tired) * dt;
+  if (line.strength <= 0) { line.strength = 0; return 'snap'; }
+  if (f.prog >= 1) { f.prog = 1; return 'catch'; }
+  if (f.prog <= 0) { f.prog = 0; return 'lost'; }
+  return 'play';
+}
+
+// The button came up. In the first instant of a surge it was held into, that is a counter.
+// Returns 'counter', 'late' (in a surge, past the window) or null.
+function releaseLabFight(f, line) {
+  if (f.phase !== 'surge' || !f.held) return null;
+  f.held = false;
+  f.late = f.t;
+  if (f.t > labWindow(f)) return 'late';
+  // a counter: the wear of this instant is given back, the fish is stunned and loses ground
+  line.strength = Math.min(1, line.strength + f.surgeWear);
+  f.phase = 'stun'; f.t = 0; f.len = LAB.counter.stun; f.seriesLeft = 0;
+  f.prog = Math.min(0.999, f.prog + LAB.counter.bonus);
+  f.counters++;
+  return 'counter';
+}
+
+/* ================= lab/page.js ================= */
+const $ = s => document.querySelector(s);
+const STORE = (() => { try { return window.localStorage; } catch (e) { return { getItem: () => null, setItem() {} }; } })();
+const LAB_KEY = 'nichna-zavod-fight-lab';
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const blankStats = () => Object.fromEntries(Object.keys(LAB.fish).map(k => [k, { catch: 0, snap: 0, lost: 0, counters: 0, time: 0 }]));
+const saved = (() => { try { return JSON.parse(STORE.getItem(LAB_KEY) || '{}'); } catch (e) { return {}; } })();
+const L = {
+  fish: LAB.fish[saved.fish] ? saved.fish : 'roach',
+  trophy: !!saved.trophy,
+  tune: { ...tuneDefaults(), ...(saved.tune || {}) },
+  line: { strength: typeof saved.strength === 'number' ? saved.strength : 1, fights: saved.fights || 0 },
+  stats: { ...blankStats(), ...(saved.stats || {}) },
+  fight: null, holding: false, hitStop: 0, splashT: 0, flash: 0,
+};
+const persist = () => { try { STORE.setItem(LAB_KEY, JSON.stringify({ fish: L.fish, trophy: L.trophy, tune: L.tune, strength: L.line.strength, fights: L.line.fights, stats: L.stats })); } catch (e) {} };
+
+// sound: the game's own engine and effects; it wakes on the first finished touch
+const audioPrefs = loadAudioPrefs(STORE, true);
+const AUDIO = createAudioEngine();
+for (const k of BUSES) AUDIO.setLevel(k, audioPrefs[k]);
+applyAudioSession(navigator, audioPrefs.silent);
+const MUSIC = createMusic(AUDIO);
+attachLifecycle(AUDIO, { onStart: () => { $('#soundbtn').textContent = 'Звук: є'; } });
+const SFX = createSfx(AUDIO, MUSIC);
+
+// the scene: the game's pond, with the fight's own picture drawn over it
+const scene = new PondScene({ calm: REDUCED_MOTION });
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let pxUnit = 3, sceneReady = false;
+function resize() {
+  const box = $('#scene').getBoundingClientRect();
+  if (!box.width || !box.height) return;
+  const l = pixelLayout(box.width, box.height);
+  pxUnit = l.scale;
+  document.documentElement.style.setProperty('--px', l.scale + 'px');
+  cv.style.width = l.w * l.scale + 'px'; cv.style.height = l.h * l.scale + 'px';
+  cv.style.marginLeft = Math.floor((box.width - l.w * l.scale) / 2) + 'px';
+  cv.style.marginTop = Math.floor(box.height - l.h * l.scale) + 'px';
+  if (cv.width === l.w && cv.height === l.h && sceneReady) return;
+  cv.width = l.w; cv.height = l.h;
+  scene.resize(l.w, l.h);
+  sceneReady = true;
+}
+window.addEventListener('resize', resize);
+
+function setStatus(html, cls = '') { const el = $('#status'); el.innerHTML = html; el.className = cls; }
+let popT = 0;
+function pop(text, cls = 'gold', ms = 900) {
+  const el = $('#pop'); clearTimeout(popT);
+  el.textContent = text; el.className = 'pbubble pfbub ' + cls; el.hidden = false;
+  popT = setTimeout(() => { el.hidden = true; }, ms);
+}
+function placePop() {
+  const el = $('#pop'); if (el.hidden || !scene.lastFloat) return;
+  const f = scene.lastFloat, box = $('#scene').getBoundingClientRect(), cvb = cv.getBoundingClientRect();
+  const half = el.offsetWidth / 2, x = Math.max(half + 4, Math.min(box.width - half - 4, cvb.left - box.left + (f.x + 1) * pxUnit));
+  el.style.left = Math.round(x) + 'px'; el.style.top = Math.max(4, Math.round(cvb.top - box.top + (f.y - 26) * pxUnit)) + 'px';
+}
+
+function renderFishes() {
+  $('#fishes').innerHTML = Object.entries(LAB.fish).map(([k, f]) => `<button data-f="${k}" class="${k === L.fish ? 'on' : ''}">${f.name}</button>`).join('');
+  $('#trophy').textContent = 'Трофей: ' + (L.trophy ? 'так' : 'ні'); $('#trophy').classList.toggle('on', L.trophy);
+}
+function renderLine() {
+  const p = Math.round(L.line.strength * 100), el = $('#linepct');
+  el.textContent = p + '%'; el.classList.toggle('low', p <= 30);
+  $('#lineboats').textContent = L.line.fights ? `боїв на ній: ${L.line.fights}` : 'нова';
+}
+function renderStats() {
+  const rows = Object.entries(LAB.fish).map(([k, f]) => [f.name, L.stats[k]]);
+  const sum = rows.reduce((a, [, s]) => ({ catch: a.catch + s.catch, snap: a.snap + s.snap, lost: a.lost + s.lost, counters: a.counters + s.counters, time: a.time + s.time }), { catch: 0, snap: 0, lost: 0, counters: 0, time: 0 });
+  const tr = (n, s, cls = '') => { const fights = s.catch + s.snap + s.lost; return `<tr class="${cls}"><td>${n}</td><td>${s.catch}</td><td>${s.snap}</td><td>${s.lost}</td><td>${s.counters}</td><td>${fights ? (s.time / fights).toFixed(1).replace('.', ',') + ' с' : '—'}</td></tr>`; };
+  $('#stats').innerHTML = '<tr><th></th><th>улов</th><th>обрив</th><th>схід</th><th>контр</th><th>сер. бій</th></tr>' + rows.map(([n, s]) => tr(n, s)).join('') + tr('Разом', sum, 'sum');
+}
+function renderTunes() {
+  $('#tunes').innerHTML = Object.entries(LAB.tune).map(([k, [label, min, max, step]]) =>
+    `<label class="labtune"><span>${label}</span><input type="range" class="prange" data-t="${k}" min="${min}" max="${max}" step="${step}" value="${L.tune[k]}"><b data-v="${k}"></b></label>`).join('');
+  syncTuneLabels();
+}
+const tuneText = k => k === 'window' ? Math.round(L.tune[k]) + ' мс' : '×' + (+L.tune[k]).toFixed(2).replace('.', ',');
+function syncTuneLabels() { for (const b of $('#tunes').querySelectorAll('b[data-v]')) b.textContent = tuneText(b.dataset.v); }
+
+function updateAct() {
+  const a = $('#act'), f = L.fight;
+  let label, cls = '';
+  if (!f) { label = 'Почати бій'; }
+  else if (f.phase === 'stun') { label = 'Тягни! Оглушена'; cls = 'go'; }
+  else if (f.phase === 'surge') { label = L.holding ? 'Рветься!' : 'Чекай…'; cls = L.holding ? 'miss' : 'wait'; }
+  else { label = L.holding ? 'Тягну…' : 'Тримай'; cls = L.holding ? 'reel is-pressed' : 'reel'; }
+  const key = label + cls;
+  if (key === a.dataset.key) return;
+  a.dataset.key = key; a.textContent = label; a.className = 'pbtn mainact ' + cls;
+}
+
+function startFight() {
+  L.fight = newLabFight(L.fish, L.trophy, { ...L.tune });
+  L.holding = false; L.line.fights++;
+  scene.emit('hook'); SFX.plop();
+  setStatus(`${LAB.fish[L.fish].name}${L.trophy ? ' (трофей)' : ''} на гачку. Тягни, поки спокійна.`);
+  persist(); renderLine(); updateAct();
+}
+function endFight(status) {
+  const f = L.fight, s = L.stats[f.key], sec = f.time.toFixed(1).replace('.', ',');
+  s[status]++; s.counters += f.counters; s.time += f.time;
+  L.fight = null; L.holding = false;
+  if (status === 'catch') { scene.emit('land', { fish: null }); SFX.catch(); setStatus(`Улов! <b>${sec} с</b> · контрів ${f.counters} · волосінь ${Math.round(L.line.strength * 100)}%`, 'good'); }
+  else if (status === 'snap') { scene.emit('snap'); SFX.snap(); L.line.strength = 1; L.line.fights = 0; setStatus(`Обрив на ${sec} с! Волосінь луснула. Привʼязано нову.`, 'bad'); }
+  else { scene.emit('lost'); SFX.bad(); setStatus(`Зійшла на ${sec} с. Довго не тягнув.`, 'bad'); }
+  persist(); renderStats(); renderLine(); updateAct();
+}
+
+// What the mechanic's events look and sound like.
+function fightFeedback(f) {
+  for (const e of f.events) {
+    if (e === 'tell') { SFX.shimmer(); SFX.tick(); L.flash = f.len; }
+    else if (e === 'surge') { SFX.jerk(); scene.emit('jerk'); }
+    else if (e === 'calm') { SFX.tired(); }
+    else if (e === 'fake') { setStatus('Обманув: блиснув і не рвонув.'); }
+    else if (e === 'stun-end') { SFX.nibble(); }
+  }
+}
+
+function press(e) {
+  if (e) e.preventDefault();
+  if (!L.fight) { startFight(); return; }
+  L.holding = true; updateAct();
+}
+function release() {
+  if (!L.holding) return;
+  L.holding = false;
+  const f = L.fight;
+  if (f) {
+    const r = releaseLabFight(f, L.line), ms = Math.round((f.late || 0) * 1000);
+    if (r === 'counter') {
+      L.hitStop = 0.09; scene.emit('stage'); SFX.pearl(); SFX.jerk();
+      pop('КОНТР!', 'gold', 1000);
+      setStatus(`Контр! Відпустив через <b>${ms} мс</b> після ривка. Риба оглушена — тягни.`, 'good');
+      renderLine();
+    } else if (r === 'late') setStatus(`Пізно: ${ms} мс (вікно ${Math.round(f.tune.window)} мс). Волосінь уже потерло.`, 'bad');
+  }
+  updateAct();
+}
+$('#act').addEventListener('pointerdown', press);
+$('#scene').addEventListener('pointerdown', press);
+window.addEventListener('pointerup', release);
+window.addEventListener('pointercancel', release);
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+$('#fishes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || L.fight) return; L.fish = b.dataset.f; persist(); renderFishes(); });
+$('#trophy').addEventListener('click', () => { if (L.fight) return; L.trophy = !L.trophy; persist(); renderFishes(); });
+$('#retie').addEventListener('click', () => { if (L.fight) return; L.line.strength = 1; L.line.fights = 0; persist(); renderLine(); setStatus('Привʼязано нову волосінь.'); });
+$('#statreset').addEventListener('click', () => { L.stats = blankStats(); persist(); renderStats(); });
+$('#tunereset').addEventListener('click', () => { L.tune = tuneDefaults(); persist(); renderTunes(); });
+$('#tunes').addEventListener('input', e => { const r = e.target.closest('input[data-t]'); if (!r) return; L.tune[r.dataset.t] = +r.value; syncTuneLabels(); persist(); });
+
+/* ================= lab/picture.js ================= */
+// The fight's whole picture sits in one place, by the fish: its state on the water, and two bars over it.
+const BAR_W = 31;
+function drawFight(S, f, t) {
+  const fl = scene.lastFloat, g = scene.geo;
+  if (!fl) return;
+  const fx = fl.x + 1, fy = fl.y + 9, sp = fishSpriteFor(f.F.sprite), surge = f.phase === 'surge', stun = f.phase === 'stun', tell = f.phase === 'tell';
+  // the fish under the float: slow and level when tired, thrashing when it surges, belly up when stunned
+  const jx = surge ? (Math.floor(t * 22) % 2 ? 3 : -3) : stun ? 0 : Math.round(Math.sin(t * 1.4) * 2);
+  const jy = surge ? (Math.floor(t * 17) % 2 ? 1 : -1) : 0;
+  const x = fx - (sp.w >> 1) + jx, y = fy + jy, flip = surge ? Math.floor(t * 11) % 2 === 0 : Math.sin(t * 0.7) > 0;
+  if (surge) {
+    // the water boils around it
+    for (let i = 0; i < 9; i++) { const a = (i * 2.4 + Math.floor(t * 14) * 1.7) % 6.28, r = 5 + (i * 7 + Math.floor(t * 14) * 3) % 9; S.px(fx + Math.cos(a) * r, fy - 3 + Math.sin(a) * r * 0.4, i % 3 ? 'bone' : 'shimmer'); }
+    S.ellipse(fx, fy - 2, 9 + Math.floor(t * 12) % 4, 3 + Math.floor(t * 12) % 2, 'bone');
+  }
+  S.drawOutline(sp, 0, x, y, tell ? 'gold' : stun ? 'frogL' : surge ? 'red' : 'void');
+  if (tell && Math.floor(t * 16) % 2) S.drawSilhouette(sp, 0, x, y, 'moon'); // the glint: it is about to go
+  else S.drawSprite(sp, 0, x, y, flip);
+  if (tell) for (const [dx, dy] of [[-3, -3], [sp.w + 2, -2], [sp.w >> 1, -5]]) { if (Math.floor(t * 12 + dx) % 2) { S.px(x + dx, y + dy, 'moon'); S.px(x + dx + 1, y + dy, 'gold'); S.px(x + dx, y + dy - 1, 'gold'); } }
+  if (stun) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; S.px(fx + Math.cos(a) * 8, fy - 3 + Math.sin(a) * 2, i % 2 ? 'gold' : 'moon'); }
+  // pulling into a surge: the line shakes and goes red from the rod's tip to the float
+  const tip = scene.rodPts && scene.rodPts[scene.rodPts.length - 1];
+  if (tip && surge && L.holding) {
+    let lx = tip[0], ly = tip[1];
+    for (let i = 1; i <= 6; i++) {
+      const k = i / 6, jit = i < 6 ? (Math.floor(t * 30 + i * 3) % 3) - 1 : 0, nx = Math.round(tip[0] + (fl.x + 1 - tip[0]) * k), ny = Math.round(tip[1] + (fl.y - tip[1]) * k) + jit;
+      S.line(lx, ly, nx, ny, Math.floor(t * 20 + i) % 2 ? 'red' : 'lamp');
+      lx = nx; ly = ny;
+    }
+  }
+  // two bars over the fish: how far it has come, and what is left of the line
+  const bx = clampN(Math.round(fx - BAR_W / 2), 2, g.w - BAR_W - 2), by = clampN(Math.round(fl.y - 15), 6, g.h - 30);
+  S.rect(bx - 1, by - 1, BAR_W + 2, 9, 'void');
+  S.rect(bx, by, BAR_W, 3, 'night');
+  S.rect(bx, by, Math.round(f.prog * BAR_W), 3, stun ? 'moon' : 'frogL');
+  const st = L.line.strength, wearing = surge && L.holding;
+  S.rect(bx, by + 4, BAR_W, 3, 'night');
+  S.rect(bx, by + 4, Math.round(st * BAR_W), 3, wearing && Math.floor(t * 14) % 2 ? 'red' : st > 0.5 ? 'bone' : st > 0.25 ? 'lamp' : 'red');
+  // little marks so the two bars are never mixed up: a fish by the first, a hook by the second
+  S.px(bx - 3, by + 1, 'frogL'); S.px(bx - 4, by + 1, 'frogL'); S.px(bx - 5, by, 'frogL'); S.px(bx - 5, by + 2, 'frogL');
+  S.rect(bx - 4, by + 4, 1, 3, 'bone'); S.px(bx - 3, by + 6, 'bone');
+}
+
+/* ================= lab/main.js ================= */
+let last = performance.now();
+function loop(now) {
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
+  const f = L.fight;
+  if (L.hitStop > 0) L.hitStop -= dt; // a counter holds the picture for a breath
+  else if (f) {
+    const status = stepLabFight(f, L.line, dt, L.holding);
+    fightFeedback(f);
+    if (f.phase === 'surge') {
+      L.splashT -= dt;
+      if (L.splashT <= 0) { L.splashT = 0.16; scene.splash(scene.lastFloat.x + 1, scene.lastFloat.y + 4, L.holding ? 4 : 2); if (L.holding) { SFX.splash(); if (!REDUCED_MOTION) scene.shake = 0.08; } }
+    }
+    if (status !== 'play') endFight(status);
+    else { updateAct(); if (f.events.includes('wear')) renderLine(); }
+  }
+  if (sceneReady) {
+    if (L.hitStop <= 0) scene.advance(dt);
+    const g = scene.geo, fg = L.fight;
+    const tension = fg ? (fg.phase === 'surge' ? (L.holding ? 1 : 0.6) : L.holding ? 0.5 : 0.12) : 0;
+    scene.draw({ state: fg ? 'reel' : 'waiting', castT: 0, tension, prog: fg ? fg.prog : 0, lampLv: 2, rodTier: 1, moonPhase: 4, location: 'zavod', spot: g.target, aim: g.target, signals: [], traps: [], event: null, power: 0 });
+    if (fg) drawFight(scene.surf, fg, scene.t);
+    scene.surf.present(ctx);
+    placePop();
+  }
+  requestAnimationFrame(loop);
+}
+if (location.hash.includes('test')) window.__LAB = { L, LAB, newLabFight, stepLabFight, releaseLabFight, startFight, press, release, scene };
+resize(); renderFishes(); renderLine(); renderStats(); renderTunes(); updateAct();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
